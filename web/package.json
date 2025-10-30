@@ -10,6 +10,7 @@
     "postinstall": "shx rm -rf .next && echo 'Ready'"
   },
   "dependencies": {
+    "@radix-ui/react-slot": "^1.1.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.460.0",
@@ -24,6 +25,7 @@
     "@types/react": "^18.3.8",
     "@types/react-dom": "^18.3.0",
     "autoprefixer": "^10.4.20",
+    "@tailwindcss/typography": "^0.5.15",
     "eslint": "^9.13.0",
     "eslint-config-next": "^15.0.0",
     "postcss": "^8.4.47",

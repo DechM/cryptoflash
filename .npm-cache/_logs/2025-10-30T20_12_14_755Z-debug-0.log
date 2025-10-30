@@ -1,0 +1,22 @@
+0 verbose cli /Users/mariyandechev/.nvm/versions/node/v23.11.0/bin/node /Users/mariyandechev/.nvm/versions/node/v23.11.0/lib/node_modules/npm/bin/npm-cli.js
+1 info using npm@10.9.2
+2 info using node@v23.11.0
+3 silly config load:file:/Users/mariyandechev/.nvm/versions/node/v23.11.0/lib/node_modules/npm/npmrc
+4 silly config load:file:/Users/mariyandechev/Documents/cryptoflash/.npmrc
+5 silly config load:file:/Users/mariyandechev/.npmrc
+6 silly config load:file:/Users/mariyandechev/.nvm/versions/node/v23.11.0/etc/npmrc
+7 verbose title npm exec create-next-app@latest web --ts --tailwind --eslint --app --no-src-dir --import-alias @/*
+8 verbose argv "exec" "--yes" "--" "create-next-app@latest" "web" "--ts" "--tailwind" "--eslint" "--app" "--no-src-dir" "--import-alias" "@/*"
+9 verbose logfile logs-max:10 dir:/Users/mariyandechev/Documents/cryptoflash/.npm-cache/_logs/2025-10-30T20_12_14_755Z-
+10 verbose logfile /Users/mariyandechev/Documents/cryptoflash/.npm-cache/_logs/2025-10-30T20_12_14_755Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+13 http fetch GET 200 https://registry.npmjs.org/create-next-app 98ms (cache revalidated)
+14 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+15 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+16 verbose cwd /Users/mariyandechev/Documents/cryptoflash
+17 verbose os Darwin 24.6.0
+18 verbose node v23.11.0
+19 verbose npm  v10.9.2
+20 verbose exit 0
+21 info ok

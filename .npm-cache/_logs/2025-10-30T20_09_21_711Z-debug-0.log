@@ -1,0 +1,43 @@
+0 verbose cli /Users/mariyandechev/.nvm/versions/node/v23.11.0/bin/node /Users/mariyandechev/.nvm/versions/node/v23.11.0/lib/node_modules/npm/bin/npm-cli.js
+1 info using npm@10.9.2
+2 info using node@v23.11.0
+3 silly config load:file:/Users/mariyandechev/.nvm/versions/node/v23.11.0/lib/node_modules/npm/npmrc
+4 silly config load:file:/Users/mariyandechev/Documents/cryptoflash/.npmrc
+5 silly config load:file:/Users/mariyandechev/.npmrc
+6 silly config load:file:/Users/mariyandechev/.nvm/versions/node/v23.11.0/etc/npmrc
+7 verbose title npm exec create-next-app@latest . --ts --tailwind --eslint --app --no-src-dir --import-alias @/*
+8 verbose argv "exec" "--yes" "--" "create-next-app@latest" "." "--ts" "--tailwind" "--eslint" "--app" "--no-src-dir" "--import-alias" "@/*"
+9 verbose logfile logs-max:10 dir:/Users/mariyandechev/Documents/cryptoflash/.npm-cache/_logs/2025-10-30T20_09_21_711Z-
+10 verbose logfile /Users/mariyandechev/Documents/cryptoflash/.npm-cache/_logs/2025-10-30T20_09_21_711Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+13 http fetch GET https://registry.npmjs.org/npm attempt 1 failed with ENOTFOUND
+14 http fetch GET https://registry.npmjs.org/create-next-app attempt 1 failed with ENOTFOUND
+15 http fetch GET https://registry.npmjs.org/npm attempt 2 failed with ENOTFOUND
+16 http fetch GET https://registry.npmjs.org/create-next-app attempt 2 failed with ENOTFOUND
+17 http fetch GET https://registry.npmjs.org/npm attempt 3 failed with ENOTFOUND
+18 http fetch GET https://registry.npmjs.org/create-next-app attempt 3 failed with ENOTFOUND
+19 verbose type system
+20 verbose stack FetchError: request to https://registry.npmjs.org/create-next-app failed, reason: getaddrinfo ENOTFOUND registry.npmjs.org
+20 verbose stack     at ClientRequest.<anonymous> (/Users/mariyandechev/.nvm/versions/node/v23.11.0/lib/node_modules/npm/node_modules/minipass-fetch/lib/index.js:130:14)
+20 verbose stack     at ClientRequest.emit (node:events:507:28)
+20 verbose stack     at emitErrorEvent (node:_http_client:104:11)
+20 verbose stack     at _destroy (node:_http_client:898:9)
+20 verbose stack     at onSocketNT (node:_http_client:918:5)
+20 verbose stack     at process.processTicksAndRejections (node:internal/process/task_queues:91:21)
+21 error code ENOTFOUND
+22 error syscall getaddrinfo
+23 error errno ENOTFOUND
+24 error network request to https://registry.npmjs.org/create-next-app failed, reason: getaddrinfo ENOTFOUND registry.npmjs.org
+25 error network This is a problem related to network connectivity.
+25 error network In most cases you are behind a proxy or have bad network settings.
+25 error network
+25 error network If you are behind a proxy, please make sure that the
+25 error network 'proxy' config is set properly.  See: 'npm help config'
+26 verbose cwd /Users/mariyandechev/Documents/cryptoflash
+27 verbose os Darwin 24.6.0
+28 verbose node v23.11.0
+29 verbose npm  v10.9.2
+30 verbose exit 1
+31 verbose code 1
+32 error A complete log of this run can be found in: /Users/mariyandechev/Documents/cryptoflash/.npm-cache/_logs/2025-10-30T20_09_21_711Z-debug-0.log
