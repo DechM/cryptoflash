@@ -1,18 +1,22 @@
-export default function AnalysisPage({
-  params,
-}: {
-  params: { slug: string; [key: string]: string };
-}) {
-  const { slug } = params;
+// app/analysis/[slug]/page.tsx
+
+type PageProps = {
+  // Next.js 15 may supply params as a Promise in app router
+  params: Promise<{ slug?: string }>;
+};
+
+export default async function AnalysisPage({ params }: PageProps) {
+  const { slug = "" } = await params; // <-- await the promise
+
   return (
-    <div className="text-center py-20">
+    <div className="py-20 text-center">
       <h1 className="text-4xl font-bold">Analysis coming soon</h1>
-      <p className="text-muted-foreground mt-4">Post: {slug}</p>
+      <p className="mt-4 text-muted-foreground">Post: {slug}</p>
     </div>
   );
 }
 
-// empty for now so Next is happy during build
+// keep it empty for now so build is happy
 export async function generateStaticParams(): Promise<{ slug: string }[]> {
   return [];
 }
