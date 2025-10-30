@@ -1,20 +1,22 @@
-import type { Metadata } from 'next';
-
-type Props = { params: { slug: string } };
-
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  return {
-    title: `${params.slug} — Analysis — CryptoFlash`,
-    description: `Long-form research for ${params.slug}.`,
+interface Props {
+  params: {
+    slug: string;
   };
 }
 
 export default function AnalysisPage({ params }: Props) {
+  const { slug } = params;
+
   return (
-    <article className="prose prose-invert max-w-none">
-      <h1 className="mb-2 capitalize">{params.slug.replace(/-/g, ' ')}</h1>
-      <p className="text-muted-foreground">Long-form research placeholder content.</p>
-    </article>
+    <div className="text-center py-20">
+      <h1 className="text-4xl font-bold">Analysis coming soon</h1>
+      <p className="text-muted-foreground mt-4">
+        Post: {slug}
+      </p>
+    </div>
   );
 }
 
+export async function generateStaticParams() {
+  return [];
+}
