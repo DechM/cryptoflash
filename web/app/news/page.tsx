@@ -1,7 +1,5 @@
 import type { Metadata } from 'next';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { NewsItem } from '@/components/news/NewsItem';
-import { getNews, summarizeNewsItems } from '@/lib/news';
+import { NewsList } from '@/components/news/NewsList';
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -18,14 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function NewsPage() {
-  let news = await getNews();
-
-  // Optionally summarize if API key is available
-  if (process.env.OPENAI_API_KEY && news.length > 0) {
-    news = await summarizeNewsItems(news);
-  }
-
+export default function NewsPage() {
   return (
     <div className="space-y-6">
       <div>
@@ -35,26 +26,7 @@ export default async function NewsPage() {
         </p>
       </div>
 
-      {news.length === 0 ? (
-        <Alert variant="default">
-          <AlertDescription>News temporarily unavailable.</AlertDescription>
-        </Alert>
-      ) : (
-        <div className="space-y-4">
-          {news.map((item) => (
-            <NewsItem
-              key={item.id}
-              id={item.id}
-              title={item.title}
-              url={item.url}
-              source={item.source}
-              publishedAt={item.publishedAt}
-              summary={item.summary}
-            />
-          ))}
-        </div>
-      )}
+      <NewsList />
     </div>
   );
 }
-

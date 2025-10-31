@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -9,6 +10,20 @@ import TokenIcon from '@/components/icons/TokenIcon';
 import { formatCompactUSD, formatPercent, formatUSD } from '@/lib/format';
 import { ArrowDown, ArrowUp, Share2 } from 'lucide-react';
 import type { MoverData } from '@/lib/movers';
+import { useLivePrice } from '@/hooks/useLivePrice';
+
+// Component to render price with live updates for BTC/ETH
+function PriceCell({ coin }: { coin: MoverData }) {
+  const isBtc = coin.id === 'bitcoin';
+  const isEth = coin.id === 'ethereum';
+  const liveBtc = isBtc ? useLivePrice('BTCUSDT', 'bitcoin') : null;
+  const liveEth = isEth ? useLivePrice('ETHUSDT', 'ethereum') : null;
+  const liveData = liveBtc || liveEth;
+
+  const price = liveData?.price ?? coin.price;
+
+  return <span className="font-medium">{formatUSD(price)}</span>;
+}
 
 type MoversTableProps = {
   data: MoverData[];
@@ -107,16 +122,18 @@ function MoversTableView({ data }: MoversTableViewProps) {
                   className="hover:bg-muted/10 hover:shadow-[0_1px_0_rgba(255,255,255,0.06)] transition-all"
                 >
                   <TableCell>
-                    <div className="flex items-center gap-2 min-w-0">
+                    <Link href={`/asset/${coin.id}`} className="flex items-center gap-2 min-w-0 hover:text-primary transition-colors">
                       <TokenIcon symbol={coin.symbol} size={20} imageUrl={coin.image} />
                       <div className="min-w-0">
                         <div className="truncate">{coin.name}</div>
                         <div className="text-xs text-muted-foreground uppercase">{coin.symbol}</div>
                       </div>
-                    </div>
+                    </Link>
                   </TableCell>
 
-                  <TableCell className="text-right font-medium">{formatUSD(coin.price)}</TableCell>
+                  <TableCell className="text-right">
+                    <PriceCell coin={coin} />
+                  </TableCell>
 
                   <TableCell className="text-right">
                     <Badge variant={badgeVariant} className="gap-1" aria-label="24h change">
@@ -145,7 +162,7 @@ function MoversTableView({ data }: MoversTableViewProps) {
           const badgeVariant = isPositive ? 'success' : 'destructive';
 
           return (
-            <div key={coin.id} className="border rounded-lg p-4 space-y-2 hover:bg-muted/10 transition-colors">
+            <Link key={coin.id} href={`/asset/${coin.id}`} className="block border rounded-lg p-4 space-y-2 hover:bg-muted/10 transition-colors">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 min-w-0">
                   <TokenIcon symbol={coin.symbol} size={20} imageUrl={coin.image} />
@@ -164,7 +181,7 @@ function MoversTableView({ data }: MoversTableViewProps) {
               <dl className="grid grid-cols-2 gap-2 text-sm">
                 <div>
                   <dt className="text-muted-foreground">Price</dt>
-                  <dd className="font-medium">{formatUSD(coin.price)}</dd>
+                  <dd className="font-medium"><PriceCell coin={coin} /></dd>
                 </div>
                 <div>
                   <dt className="text-muted-foreground">Volume 24h</dt>
@@ -175,7 +192,7 @@ function MoversTableView({ data }: MoversTableViewProps) {
                   <dd className="font-medium">{formatCompactUSD(coin.marketCap)}</dd>
                 </div>
               </dl>
-            </div>
+            </Link>
           );
         })}
       </div>

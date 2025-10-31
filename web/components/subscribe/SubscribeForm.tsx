@@ -2,7 +2,11 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Loader2 } from 'lucide-react';
 
 export function SubscribeForm() {
   const [name, setName] = useState('');
@@ -47,60 +51,50 @@ export function SubscribeForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <label htmlFor="name" className="text-sm font-medium">
-          Name (optional)
-        </label>
-        <input
+        <Label htmlFor="name">Name (Optional)</Label>
+        <Input
           id="name"
           type="text"
+          placeholder="John Doe"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Your name"
-          className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
+          disabled={status === 'loading'}
         />
       </div>
-
       <div className="space-y-2">
-        <label htmlFor="email" className="text-sm font-medium">
-          Email <span className="text-destructive">*</span>
-        </label>
-        <input
+        <Label htmlFor="email">
+          Email Address <span className="text-destructive">*</span>
+        </Label>
+        <Input
           id="email"
           type="email"
-          required
+          placeholder="you@example.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@example.com"
-          className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
-        />
-      </div>
-
-      <div className="flex items-start gap-2">
-        <input
-          id="agree"
-          type="checkbox"
           required
-          checked={agreeToEmails}
-          onChange={(e) => setAgreeToEmails(e.target.checked)}
-          className="mt-1 h-4 w-4 rounded border border-input"
+          disabled={status === 'loading'}
         />
-        <label htmlFor="agree" className="text-sm text-muted-foreground cursor-pointer">
-          I agree to receive emails from CryptoFlash
-        </label>
       </div>
-
-      <Button type="submit" disabled={status === 'loading'} className="w-full">
-        {status === 'loading' ? 'Subscribing...' : 'Subscribe'}
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="agree"
+          checked={agreeToEmails}
+          onCheckedChange={(checked) => setAgreeToEmails(!!checked)}
+          disabled={status === 'loading'}
+          required
+        />
+        <Label htmlFor="agree" className="text-sm font-normal cursor-pointer">
+          I agree to receive emails about CryptoFlash updates and insights.
+        </Label>
+      </div>
+      <Button type="submit" className="w-full" disabled={status === 'loading' || !agreeToEmails}>
+        {status === 'loading' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        Subscribe
       </Button>
 
-      {status === 'success' && message && (
-        <Alert variant="default">
-          <AlertDescription>{message}</AlertDescription>
-        </Alert>
-      )}
-
-      {status === 'error' && message && (
-        <Alert variant="destructive">
+      {message && (
+        <Alert variant={status === 'success' ? 'default' : 'destructive'}>
+          <AlertTitle>{status === 'success' ? 'Success!' : 'Error'}</AlertTitle>
           <AlertDescription>{message}</AlertDescription>
         </Alert>
       )}
