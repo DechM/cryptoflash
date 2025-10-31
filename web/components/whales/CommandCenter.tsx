@@ -214,7 +214,7 @@ function SignalCard({
   };
 
   return (
-    <Link href={`/wallet/${signal.wallet.address}`}>
+    <Link href={`/wallet/${encodeURIComponent(signal.wallet.address)}`}>
       <div className="p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer">
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex-1 min-w-0">

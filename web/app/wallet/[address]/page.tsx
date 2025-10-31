@@ -9,7 +9,8 @@ export async function generateMetadata({
 }: {
   params: Promise<{ address: string }>;
 }): Promise<Metadata> {
-  const { address } = await params;
+  const { address: addressParam } = await params;
+  const address = decodeURIComponent(addressParam);
   const wallets = await getTrackedWallets();
   const wallet = wallets.find((w) => w.address.toLowerCase() === address.toLowerCase());
 
@@ -33,7 +34,9 @@ export default async function WalletDetailPage({
 }: {
   params: Promise<{ address: string }>;
 }) {
-  const { address } = await params;
+  const { address: addressParam } = await params;
+  // Decode address in case it was URL encoded
+  const address = decodeURIComponent(addressParam);
   const wallets = await getTrackedWallets();
   const wallet = wallets.find((w) => w.address.toLowerCase() === address.toLowerCase());
 

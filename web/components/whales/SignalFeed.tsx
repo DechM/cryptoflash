@@ -159,7 +159,7 @@ function SignalCard({ signal }: { signal: WhaleSignal }) {
   const isBuy = signal.transaction.type === 'buy';
 
   return (
-    <Link href={`/wallet/${signal.wallet.address}`}>
+    <Link href={`/wallet/${encodeURIComponent(signal.wallet.address)}`}>
       <Card className={`hover:border-primary/50 transition-all cursor-pointer ${config.bg} ${config.border}`}>
         <CardContent className="p-4">
           <div className="flex items-start justify-between gap-4 mb-3">

@@ -101,7 +101,7 @@ function LeaderboardRow({
   };
 
   return (
-    <Link href={`/wallet/${wallet.address}`}>
+    <Link href={`/wallet/${encodeURIComponent(wallet.address)}`}>
       <div className="flex items-center gap-4 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
         <div className={`w-8 text-center font-bold ${isTop3 ? medalColors[rank as keyof typeof medalColors] : 'text-muted-foreground'}`}>
           {rank}

@@ -79,7 +79,7 @@ function WalletRow({ wallet }: { wallet: TrackedWallet }) {
     <tr className="hover:bg-muted/30 transition-colors">
       <td className="px-4 py-4">
         <Link
-          href={`/wallet/${wallet.address}`}
+          href={`/wallet/${encodeURIComponent(wallet.address)}`}
           className="flex items-center gap-2 group"
         >
           <Radio className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -136,7 +136,7 @@ function WalletCard({ wallet }: { wallet: TrackedWallet }) {
   const isProfit = wallet.totalProfitUsd > 0;
 
   return (
-    <Link href={`/wallet/${wallet.address}`}>
+    <Link href={`/wallet/${encodeURIComponent(wallet.address)}`}>
       <Card className="hover:border-primary/50 transition-all">
         <CardContent className="p-4 space-y-3">
           <div className="flex items-start justify-between">
