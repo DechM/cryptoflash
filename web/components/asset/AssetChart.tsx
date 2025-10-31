@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { createChart, ColorType, IChartApi, ISeriesApi } from 'lightweight-charts';
+import { createChart, ColorType, type IChartApi, type ISeriesApi } from 'lightweight-charts';
 import type { OHLCData } from '@/lib/asset';
 
 type Props = {
@@ -36,13 +36,14 @@ export function AssetChart({ data, livePrice }: Props) {
 
     chartRef.current = chart;
 
-    const candlestickSeries = chart.addCandlestickSeries({
+    // Type assertion needed due to lightweight-charts type definitions
+    const candlestickSeries = (chart as any).addCandlestickSeries({
       upColor: '#22c55e',
       downColor: '#ef4444',
       borderVisible: false,
       wickUpColor: '#22c55e',
       wickDownColor: '#ef4444',
-    });
+    }) as ISeriesApi<'Candlestick'>;
 
     seriesRef.current = candlestickSeries;
 
