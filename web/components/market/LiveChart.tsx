@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { createChart, ColorType, type IChartApi, type ISeriesApi, type Time } from 'lightweight-charts';
+import { createChart, ColorType, AreaSeries, type IChartApi, type ISeriesApi, type Time } from 'lightweight-charts';
 
 type ChartDataPoint = {
   time: number;
@@ -101,34 +101,17 @@ export function LiveChart({ data, currentPrice, coinSymbol }: Props) {
           ? 'rgba(34, 197, 94, 0.01)'
           : 'rgba(239, 68, 68, 0.01)';
 
-        // Use addAreaSeries with runtime check
-        // In lightweight-charts v5, addAreaSeries exists but may not be in types
-        const chartAny = chart as any;
-        let areaSeries: ISeriesApi<'Area'>;
-        
-        if (typeof chartAny.addAreaSeries === 'function') {
-          areaSeries = chartAny.addAreaSeries({
-            lineColor: lineColor,
-            topColor: topColor,
-            bottomColor: bottomColor,
-            lineWidth: 2.5,
-            priceLineVisible: true,
-            lastValueVisible: true,
-            crosshairMarkerVisible: true,
-            crosshairMarkerRadius: 5,
-          }) as ISeriesApi<'Area'>;
-        } else {
-          // Fallback: create area series manually if method doesn't exist
-          console.warn('addAreaSeries not found, using addLineSeries as fallback');
-          areaSeries = chartAny.addLineSeries({
-            color: lineColor,
-            lineWidth: 2.5,
-            priceLineVisible: true,
-            lastValueVisible: true,
-            crosshairMarkerVisible: true,
-            crosshairMarkerRadius: 5,
-          }) as unknown as ISeriesApi<'Area'>;
-        }
+        // In lightweight-charts v5, use addSeries with AreaSeries class
+        const areaSeries = chart.addSeries(AreaSeries, {
+          lineColor: lineColor,
+          topColor: topColor,
+          bottomColor: bottomColor,
+          lineWidth: 2,
+          priceLineVisible: true,
+          lastValueVisible: true,
+          crosshairMarkerVisible: true,
+          crosshairMarkerRadius: 5,
+        }) as ISeriesApi<'Area'>;
 
         seriesRef.current = areaSeries;
 
