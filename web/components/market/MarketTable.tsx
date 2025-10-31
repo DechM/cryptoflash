@@ -5,6 +5,8 @@ import { formatUSD, formatPercent, formatCompactUSD } from '@/lib/format';
 import { LiveSparklineChart } from './LiveSparklineChart';
 import { LivePriceCell } from './LivePriceCell';
 import { LiveChangeCell } from './LiveChangeCell';
+import { LiveMarketCapCell } from './LiveMarketCapCell';
+import { LiveVolumeCell } from './LiveVolumeCell';
 import { ArrowUp, ArrowDown, Search, TrendingUp, TrendingDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import type { MarketCoin } from '@/lib/market';
@@ -250,11 +252,18 @@ function MarketTableRow({ coin }: { coin: MarketCoin }) {
           {formatPercent((coin.price_change_percentage_7d ?? 0) / 100)}
         </span>
       </td>
-      <td className="px-4 py-4 text-right text-sm text-muted-foreground">
-        {formatCompactUSD(coin.market_cap)}
+      <td className="px-4 py-4 text-right">
+        <LiveMarketCapCell
+          marketCap={coin.market_cap}
+          coinId={coin.id}
+          circulatingSupply={coin.circulating_supply || 0}
+        />
       </td>
-      <td className="px-4 py-4 text-right text-sm text-muted-foreground">
-        {formatCompactUSD(coin.total_volume)}
+      <td className="px-4 py-4 text-right">
+        <LiveVolumeCell
+          volume={coin.total_volume}
+          coinId={coin.id}
+        />
       </td>
       <td className="px-4 py-4">
         <div className="h-10 w-24 ml-auto">
@@ -324,11 +333,18 @@ function MarketCard({ coin }: { coin: MarketCoin }) {
           </div>
           <div>
             <div className="text-xs text-muted-foreground mb-1">Market Cap</div>
-            <div className="font-medium text-sm">{formatCompactUSD(coin.market_cap)}</div>
+            <LiveMarketCapCell
+              marketCap={coin.market_cap}
+              coinId={coin.id}
+              circulatingSupply={coin.circulating_supply || 0}
+            />
           </div>
           <div>
             <div className="text-xs text-muted-foreground mb-1">Volume 24h</div>
-            <div className="font-medium text-sm">{formatCompactUSD(coin.total_volume)}</div>
+            <LiveVolumeCell
+              volume={coin.total_volume}
+              coinId={coin.id}
+            />
           </div>
         </div>
 
