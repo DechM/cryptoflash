@@ -146,7 +146,7 @@ export function getPriceFeed(): PriceFeed {
     // Server-side: return a no-op instance
     return {
       subscribe: () => () => {},
-    } as PriceFeed;
+    } as unknown as PriceFeed;
   }
 
   if (!globalThis.__priceFeed) {
