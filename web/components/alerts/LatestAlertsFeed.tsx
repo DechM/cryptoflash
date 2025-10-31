@@ -102,11 +102,10 @@ function AlertCard({ alert }: { alert: CryptoFlashAlert }) {
     return null;
   }
 
-  // Calculate token amount from token.amount string (raw amount with decimals)
+  // Calculate token amount from formatted amount string (already in ETH/BTC, not wei)
+  // Note: alert.token.amount is already formatted decimal string like "8210.938963"
   const token = alert.token;
-  const decimals = token?.decimals ?? 18;
-  const rawAmount = BigInt(token.amount || '0');
-  const tokenAmount = Number(rawAmount) / Math.pow(10, decimals);
+  const tokenAmount = parseFloat(token.amount || '0'); // Already formatted!
   const tokenSymbol = token?.symbol || 'UNKNOWN';
   const usdValue = token.amountUsd || 0;
   

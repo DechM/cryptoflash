@@ -222,11 +222,10 @@ function SignalCard({
     return null;
   }
 
-  // Calculate token amount from raw amount string (includes decimals)
+  // Calculate token amount from formatted amount string (already in ETH/BTC, not wei)
+  // Note: signal.transaction.amount is already formatted decimal string like "8210.938963"
   const token = signal.transaction.token;
-  const decimals = token?.decimals ?? 18;
-  const rawAmount = BigInt(signal.transaction.amount || '0');
-  const tokenAmount = Number(rawAmount) / Math.pow(10, decimals);
+  const tokenAmount = parseFloat(signal.transaction.amount || '0'); // Already formatted!
   const tokenSymbol = token?.symbol || 'UNKNOWN';
   const usdValue = signal.transaction.amountUsd || 0;
   
