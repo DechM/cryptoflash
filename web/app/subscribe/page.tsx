@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { SubscribeForm } from '@/components/subscribe/SubscribeForm';
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -24,10 +25,7 @@ export default function SubscribePage() {
           Join the early access list to receive signals, predictions, and AI briefs directly in your inbox.
         </p>
       </div>
-      <div className="rounded-lg border p-8 text-center text-muted-foreground">
-        <p>Subscription form will appear here.</p>
-        <p className="text-sm mt-2">Coming soon...</p>
-      </div>
+      <SubscribeForm />
     </div>
   );
 }
