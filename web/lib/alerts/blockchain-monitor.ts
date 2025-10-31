@@ -99,14 +99,32 @@ export async function fetchLargeEthereumTransactions(
         const txData = await txResponse.json();
         if (txData.status !== '1' || !Array.isArray(txData.result)) continue;
 
+        // Fetch real-time ETH price ONCE (not in loop) - BEFORE processing transactions
+        let ethPriceUsd = 3000; // Fallback price
+        try {
+          const priceResponse = await fetch(
+            'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd',
+            { next: { revalidate: 60 } }
+          );
+          if (priceResponse.ok) {
+            const priceData = await priceResponse.json();
+            ethPriceUsd = priceData.ethereum?.usd || 3000;
+          }
+        } catch (e) {
+          console.error('Failed to fetch ETH price:', e);
+        }
+
         // Process transactions
-        for (const tx of txData.result.slice(0, 5)) { // Limit to 5 per address
+        for (const tx of txData.result.slice(0, 10)) { // Increased to 10 to find more large transactions
+          // Skip if transaction is too old (older than 24 hours)
+          const txTime = parseInt(tx.timeStamp) * 1000;
+          if (Date.now() - txTime > 24 * 60 * 60 * 1000) continue;
+          
+          // Skip contract interactions (only native ETH transfers for now)
+          if (tx.to === '' || !tx.to) continue;
+          
           const value = BigInt(tx.value || '0');
           const valueEth = Number(value) / 1e18;
-          
-          // Estimate USD value (using ETH price ~$3000 as approximation)
-          // In production, fetch real-time ETH price from CoinGecko
-          const ethPriceUsd = 3000; // TODO: Fetch from CoinGecko
           const valueUsd = valueEth * ethPriceUsd;
 
           if (valueUsd >= minAmountUsd) {
@@ -159,22 +177,18 @@ export async function fetchLargeEthereumTransactions(
       if (alerts.length >= 10) break;
     }
 
-    // If we didn't get enough real alerts, fill with some simulated ones (but mark them clearly)
-    if (alerts.length < 5) {
-      const simulated = generateSimulatedAlerts('ethereum', minAmountUsd);
-      alerts.push(...simulated.slice(0, 5 - alerts.length));
-    }
-
+    // Return ONLY real alerts - NO simulated data!
     return alerts.sort((a, b) => b.timestamp - a.timestamp).slice(0, 10);
   } catch (error) {
     console.error('Failed to fetch Ethereum transactions:', error);
-    // Fallback to simulated alerts if API fails
-    return generateSimulatedAlerts('ethereum', minAmountUsd);
+    // Return empty array if API fails - NO simulated data!
+    return [];
   }
 }
 
 /**
  * Fetch large Bitcoin transactions from Blockstream API (FREE, open source)
+ * Uses REAL blockchain data from Blockstream API
  */
 export async function fetchLargeBitcoinTransactions(
   minAmountUsd: number = ALERT_THRESHOLDS.medium
@@ -185,12 +199,154 @@ export async function fetchLargeBitcoinTransactions(
   }
 
   try {
-    // Blockstream API endpoint for recent transactions
-    // For MVP: Simulate alerts
-    // In production: Use mempool.space API or Blockstream API to monitor mempool
-    return generateSimulatedAlerts('bitcoin', minAmountUsd);
+    // Fetch recent blocks from Blockstream API (last 10 blocks = ~100 minutes)
+    const alerts: CryptoFlashAlert[] = [];
+    
+    // Fetch real-time BTC price from CoinGecko
+    let btcPriceUsd = 65000; // Fallback price
+    try {
+      const priceResponse = await fetch(
+        'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd',
+        { next: { revalidate: 60 } }
+      );
+      if (priceResponse.ok) {
+        const priceData = await priceResponse.json();
+        btcPriceUsd = priceData.bitcoin?.usd || 65000;
+      }
+    } catch (e) {
+      // Use fallback price if CoinGecko fails
+    }
+    
+    // Known Bitcoin whale/exchange addresses to monitor
+    const knownAddresses = [
+      '34xp4vRoCGJym3xR7yCVPFHoCNxv4Twseo', // Binance
+      '3D2oetdNuZUqQHPJmcMDDHYoqkyNVsFk9r', // Bitfinex
+      'bc1qgdjqv0av3q56jvd82tkdjpy7gdp9ut8tlqmgrpmv24sq90ecnvqqjwvw97', // Known whale
+    ];
+
+    // For each known address, get recent transactions
+    for (const address of knownAddresses.slice(0, 2)) { // Limit for free tier
+      if (!blockstreamLimiter.canMakeCall('blockstream')) break;
+      
+      try {
+        // Blockstream API: Get address transactions
+        const response = await fetch(
+          `https://blockstream.info/api/address/${address}/txs`,
+          {
+            next: { revalidate: 60 }, // Cache for 60 seconds
+          }
+        );
+
+        if (!response.ok) continue;
+        
+        const transactions = await response.json();
+        if (!Array.isArray(transactions)) continue;
+
+        // Process transactions (last 5)
+        for (const tx of transactions.slice(0, 5)) {
+          // Get transaction details
+          const txDetailResponse = await fetch(
+            `https://blockstream.info/api/tx/${tx.txid}`,
+            { next: { revalidate: 60 } }
+          );
+
+          if (!txDetailResponse.ok) continue;
+          
+          const txDetail = await txDetailResponse.json();
+          
+          // Skip if transaction is not confirmed or too old
+          if (!txDetail.status?.block_time || !txDetail.status?.block_height) continue;
+          const txTime = txDetail.status.block_time * 1000;
+          if (Date.now() - txTime > 24 * 60 * 60 * 1000) continue;
+          
+          // Calculate largest output value sent to OTHER addresses (exclude change back to sender)
+          let maxOutput = 0;
+          let toAddress = '';
+          
+          for (const output of txDetail.vout || []) {
+            if (!output.scriptpubkey_address) continue;
+            const outputValue = output.value / 100000000; // Convert satoshi to BTC
+            // Check if this output is NOT to the monitored address (i.e., it's a real transfer out)
+            if (outputValue > maxOutput && output.scriptpubkey_address !== address) {
+              maxOutput = outputValue;
+              toAddress = output.scriptpubkey_address;
+            }
+          }
+          
+          // Skip if no valid external output found
+          if (maxOutput === 0 || !toAddress) continue;
+          
+          const valueUsd = maxOutput * btcPriceUsd;
+
+          if (valueUsd >= minAmountUsd) {
+            // Get sender address from inputs
+            let fromAddress = address; // Default to monitored address
+            for (const input of txDetail.vin || []) {
+              if (input.prevout?.scriptpubkey_address && 
+                  input.prevout.scriptpubkey_address !== address) {
+                fromAddress = input.prevout.scriptpubkey_address;
+                break;
+              }
+            }
+            
+            // If all inputs are from monitored address, use it as sender
+            if (fromAddress === address) {
+              // This is a withdrawal FROM the monitored address
+              fromAddress = address;
+            }
+            
+            const fromLabel = getLabelForAddress('bitcoin', fromAddress);
+            const toLabel = getLabelForAddress('bitcoin', toAddress);
+
+            alerts.push({
+              id: `bitcoin-${tx.txid}-${txDetail.status.block_time}`,
+              blockchain: 'bitcoin',
+              txHash: tx.txid, // REAL Bitcoin txHash!
+              timestamp: txDetail.status.block_time * 1000,
+              blockNumber: txDetail.status.block_height,
+              fee: (txDetail.fee / 100000000).toFixed(8), // Convert to BTC
+              feeUsd: (txDetail.fee / 100000000) * btcPriceUsd,
+              cryptoPriceAtTx: btcPriceUsd,
+              token: {
+                symbol: 'BTC',
+                name: 'Bitcoin',
+                decimals: 8,
+                amount: maxOutput.toFixed(8),
+                amountUsd: valueUsd,
+              },
+              from: {
+                address: fromAddress,
+                label: fromLabel || 'Unknown Wallet',
+                amount: maxOutput.toFixed(8),
+                amountUsd: valueUsd,
+              },
+              to: [{
+                address: toAddress,
+                label: toLabel || 'Unknown Wallet',
+                amount: maxOutput.toFixed(8),
+                amountUsd: valueUsd,
+              }],
+              alertType: detectAlertType(fromLabel, toLabel, valueUsd),
+              severity: determineSeverity(valueUsd),
+              timeAgo: formatTimeAgo(txDetail.status.block_time * 1000),
+              isNew: (Date.now() - txDetail.status.block_time * 1000) < 60000,
+            });
+
+            if (alerts.length >= 10) break;
+          }
+        }
+      } catch (error) {
+        console.error(`Error fetching Bitcoin transactions for ${address}:`, error);
+        continue;
+      }
+
+      if (alerts.length >= 10) break;
+    }
+
+    return alerts.sort((a, b) => b.timestamp - a.timestamp).slice(0, 10);
   } catch (error) {
     console.error('Failed to fetch Bitcoin transactions:', error);
+    // Return empty array if API fails - NO simulated data!
     return [];
   }
 }
@@ -258,116 +414,8 @@ function formatTimeAgo(timestamp: number): string {
   return `${Math.floor(seconds / 86400)}d ago`;
 }
 
-/**
- * Generate valid Ethereum txHash format (0x + 64 hex chars)
- * In production, this will come from real blockchain APIs
- */
-function generateEthereumTxHash(): string {
-  const hex = Array.from({ length: 64 }, () => 
-    Math.floor(Math.random() * 16).toString(16)
-  ).join('');
-  return `0x${hex}`;
-}
-
-/**
- * Generate valid Bitcoin txHash format (64 hex chars)
- * In production, this will come from real blockchain APIs
- */
-function generateBitcoinTxHash(): string {
-  return Array.from({ length: 64 }, () => 
-    Math.floor(Math.random() * 16).toString(16)
-  ).join('');
-}
-
-/**
- * Generate simulated alerts for MVP (to be replaced with real blockchain monitoring)
- */
-function generateSimulatedAlerts(
-  blockchain: Blockchain,
-  minAmountUsd: number
-): CryptoFlashAlert[] {
-  const tokens = blockchain === 'bitcoin' 
-    ? [{ symbol: 'BTC', name: 'Bitcoin', decimals: 8 }]
-    : [
-        { symbol: 'ETH', name: 'Ethereum', decimals: 18 },
-        { symbol: 'USDT', name: 'Tether', decimals: 6 },
-        { symbol: 'USDC', name: 'USD Coin', decimals: 6 },
-        { symbol: 'BNB', name: 'Binance Coin', decimals: 18 },
-      ];
-
-  const alerts: CryptoFlashAlert[] = [];
-  const now = Date.now();
-  
-  // Generate 5-10 simulated alerts
-  const count = Math.floor(Math.random() * 5) + 5;
-  
-  for (let i = 0; i < count; i++) {
-    const token = tokens[Math.floor(Math.random() * tokens.length)];
-    const amountUsd = Math.random() * 5000000 + minAmountUsd;
-    const amount = (amountUsd / 3000).toFixed(token.decimals); // Approximate price
-    
-    // Random addresses
-    const fromAddress = blockchain === 'bitcoin'
-      ? 'bc1' + Math.random().toString(36).substring(2, 40)
-      : '0x' + Math.random().toString(16).substring(2, 42);
-      
-    const toAddress = blockchain === 'bitcoin'
-      ? 'bc1' + Math.random().toString(36).substring(2, 40)
-      : '0x' + Math.random().toString(16).substring(2, 42);
-    
-    const fromLabel = Math.random() > 0.5 ? getLabelForAddress(blockchain, fromAddress) : undefined;
-    const toLabel = Math.random() > 0.5 ? getLabelForAddress(blockchain, toAddress) : undefined;
-    
-    const alertType = detectAlertType(fromLabel, toLabel, amountUsd);
-    const severity = determineSeverity(amountUsd);
-    
-    const timestamp = now - Math.random() * 3600000; // Last hour
-    
-    // Generate valid format txHash (will be replaced with real data when API is integrated)
-    // Ethereum txHash: 66 chars (0x + 64 hex), Bitcoin: 64 hex chars
-    const txHash = blockchain === 'bitcoin'
-      ? generateBitcoinTxHash()
-      : generateEthereumTxHash();
-    
-    alerts.push({
-      id: `${blockchain}-${i}-${timestamp}`,
-      blockchain,
-      txHash,
-      timestamp,
-      blockNumber: Math.floor(Math.random() * 1000000) + 18000000,
-      fee: blockchain === 'bitcoin' ? '0.000028' : '0.001',
-      feeUsd: blockchain === 'bitcoin' ? 3 : 3.5,
-      cryptoPriceAtTx: 3000 + Math.random() * 1000,
-      token: {
-        symbol: token.symbol,
-        name: token.name,
-        decimals: token.decimals,
-        amount,
-        amountUsd,
-      },
-      from: {
-        address: fromAddress,
-        label: fromLabel || 'Unknown Wallet',
-        amount,
-        amountUsd,
-      },
-      to: [
-        {
-          address: toAddress,
-          label: toLabel || 'Unknown Wallet',
-          amount,
-          amountUsd,
-        },
-      ],
-      alertType,
-      severity,
-      timeAgo: formatTimeAgo(timestamp),
-      isNew: timestamp > now - 60000, // New if less than 1 minute ago
-    });
-  }
-  
-  return alerts.sort((a, b) => b.timestamp - a.timestamp);
-}
+// DEPRECATED: All simulated alert functions removed
+// All alerts now come from REAL blockchain APIs only (Etherscan, Blockstream)
 
 /**
  * Get all alerts from all blockchains
