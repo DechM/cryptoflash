@@ -1,23 +1,24 @@
+// web/lib/movers.ts
 type CoinGeckoMarket = {
   id: string;
   symbol: string;
   name: string;
-  image: string; // <-- ВАЖНО
   current_price: number;
-  price_change_percentage_24h: number | null;
+  price_change_percentage_24h: number;
   market_cap: number;
   total_volume: number;
+  image: string; // ✅
 };
 
 export type MoverData = {
   id: string;
   symbol: string;
   name: string;
-  image?: string;      // <-- добавяме
   price: number;
   change24h: number;
   marketCap: number;
   volume24h: number;
+  image?: string; // ✅
 };
 
 export async function getMovers(): Promise<MoverData[]> {
@@ -25,36 +26,27 @@ export async function getMovers(): Promise<MoverData[]> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-    const url =
-      "https://api.coingecko.com/api/v3/coins/markets" +
-      "?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&price_change_percentage=24h";
-
-    const response = await fetch(url, {
-      next: { revalidate: 120 },
-      signal: controller.signal,
-      // CoinGecko е публично – не ни трябва API ключ
-    });
+    const res = await fetch(
+      'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&price_change_percentage=24h',
+      { next: { revalidate: 120 }, signal: controller.signal }
+    );
 
     clearTimeout(timeoutId);
+    if (!res.ok) throw new Error(`CoinGecko API error: ${res.status}`);
 
-    if (!response.ok) {
-      throw new Error(`CoinGecko API error: ${response.status}`);
-    }
-
-    const data = (await response.json()) as CoinGeckoMarket[];
-
-    return data.map((coin) => ({
-      id: coin.id,
-      symbol: coin.symbol,
-      name: coin.name,
-      image: coin.image, // <-- взимаме иконката
-      price: coin.current_price,
-      change24h: coin.price_change_percentage_24h ?? 0,
-      marketCap: coin.market_cap,
-      volume24h: coin.total_volume,
+    const data = (await res.json()) as CoinGeckoMarket[];
+    return data.map((c) => ({
+      id: c.id,
+      symbol: c.symbol,
+      name: c.name,
+      price: c.current_price,
+      change24h: c.price_change_percentage_24h ?? 0,
+      marketCap: c.market_cap,
+      volume24h: c.total_volume,
+      image: c.image, // ✅
     }));
-  } catch (error) {
-    console.error("Failed to fetch movers data:", error);
+  } catch (err) {
+    console.error('Failed to fetch movers data:', err);
     return [];
   }
 }

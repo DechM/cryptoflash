@@ -37,6 +37,7 @@ export default async function HomePage() {
               change24h={btcTicker.change24h}
               volume24h={btcTicker.volume24h}
               updatedAt={btcTicker.updatedAt}
+              imageUrl={btcTicker.image}
             />
           )}
           {ethTicker && (
@@ -47,6 +48,7 @@ export default async function HomePage() {
               change24h={ethTicker.change24h}
               volume24h={ethTicker.volume24h}
               updatedAt={ethTicker.updatedAt}
+              imageUrl={ethTicker.image}
             />
           )}
           <Card>

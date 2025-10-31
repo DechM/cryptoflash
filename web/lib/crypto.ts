@@ -5,6 +5,7 @@ type CoinGeckoMarket = {
   current_price: number;
   price_change_percentage_24h: number;
   total_volume: number;
+  image: string;
 };
 
 export type TickerData = {
@@ -15,6 +16,7 @@ export type TickerData = {
   change24h: number;
   volume24h: number;
   updatedAt: number;
+  image?: string;
 };
 
 let cachedData: TickerData[] | null = null;
@@ -50,6 +52,7 @@ export async function getTickers(): Promise<TickerData[]> {
         change24h: coin.price_change_percentage_24h ?? 0,
         volume24h: coin.total_volume,
         updatedAt: now,
+        image: coin.image,
       }));
 
       cachedData = normalized;

@@ -13,6 +13,7 @@ type Props = {
   change24h: number;
   volume24h: number;
   updatedAt?: number;
+  imageUrl?: string;
 };
 
 export default function TickerCard({
@@ -22,6 +23,7 @@ export default function TickerCard({
   change24h,
   volume24h,
   updatedAt,
+  imageUrl,
 }: Props) {
   const isPositive = change24h > 0;
   const displayName = (symbol || "").toUpperCase();
@@ -30,7 +32,7 @@ export default function TickerCard({
     <Card className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <TokenIcon symbol={symbol} size={18} className="text-muted-foreground" />
+          <TokenIcon symbol={symbol} size={18} className="text-muted-foreground" imageUrl={imageUrl} />
           <span className="uppercase">{displayName}</span>
           <span className="text-sm font-normal text-muted-foreground truncate">
             {name}

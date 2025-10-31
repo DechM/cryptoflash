@@ -43,13 +43,21 @@ export function TokenIcon({ symbol, size = 20, className = "", imageUrl }: Props
     );
   }
 
-  // 3) накрая – инициали, без да “счупваме” layout
-  const initials = sym.slice(0, 3);
+  // 3) накрая – инициали, без да "счупваме" layout
+  // Use first 2-3 chars depending on symbol length
+  const initials = sym.length <= 3 ? sym : sym.slice(0, 2);
+  const fontSize = initials.length > 2 ? Math.max(8, size * 0.35) : Math.max(9, size * 0.4);
+  
   return (
     <span
       aria-label={`${sym} icon`}
-      className={`inline-flex items-center justify-center rounded-full bg-muted/40 text-[10px] font-medium text-muted-foreground ${className}`}
-      style={{ width: size, height: size }}
+      className={`inline-flex items-center justify-center rounded-full bg-muted/40 font-medium text-muted-foreground ${className}`}
+      style={{ 
+        width: size, 
+        height: size,
+        fontSize: `${fontSize}px`,
+        lineHeight: 1,
+      }}
     >
       {initials}
     </span>
