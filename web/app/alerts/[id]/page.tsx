@@ -25,6 +25,7 @@ import {
   MessageCircle,
 } from 'lucide-react';
 import { generateXShareUrl } from '@/lib/alerts/social';
+import { trackWalletTransfers, getWalletTransfers } from '@/lib/alerts/wallet-tracking';
 import Link from 'next/link';
 import useSWR from 'swr';
 
@@ -43,7 +44,31 @@ export default function AlertDetailPage() {
     }
   );
 
+  // Fetch all alerts to track wallet-to-wallet transfers
+  const { data: allAlerts } = useSWR<CryptoFlashAlert[]>(
+    '/api/alerts?minAmountUsd=0',
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      refreshInterval: 60000, // Refresh every minute
+    }
+  );
+
   const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  // Track wallet transfers
+  const walletTransferStats = useMemo(() => {
+    if (!allAlerts || !alert?.from?.address || !alert?.to?.[0]?.address) {
+      return null;
+    }
+    
+    const transferMap = trackWalletTransfers(allAlerts);
+    const fromAddress = alert.from.address.toLowerCase();
+    const toAddress = alert.to[0].address.toLowerCase();
+    const key = `${alert.blockchain}:${fromAddress}->${toAddress}`;
+    
+    return transferMap.get(key);
+  }, [allAlerts, alert]);
 
   // Safe access helpers with useMemo - MUST be called before any returns (React hooks rules)
   const safeToken = useMemo(() => {
@@ -468,6 +493,35 @@ export default function AlertDetailPage() {
               </div>
             </div>
           </div>
+
+          {/* Wallet Transfer Stats */}
+          {walletTransferStats && walletTransferStats.totalTransfers > 1 && (
+            <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 mb-4">
+              <div className="text-sm font-semibold mb-2 text-primary">Wallet Transfer History</div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <div className="text-muted-foreground">Total Transfers</div>
+                  <div className="font-semibold">{walletTransferStats.totalTransfers}</div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground">Total Volume</div>
+                  <div className="font-semibold">{formatCompactUSD(walletTransferStats.totalAmountUsd)}</div>
+                </div>
+              </div>
+              {Object.keys(walletTransferStats.tokens).length > 0 && (
+                <div className="mt-3 pt-3 border-t border-border/50">
+                  <div className="text-xs text-muted-foreground mb-2">By Token:</div>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(walletTransferStats.tokens).map(([token, stats]) => (
+                      <Badge key={token} variant="outline" className="text-xs">
+                        {token}: {stats.count} tx ({formatCompactUSD(stats.totalUsd)})
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Arrow */}
           <div className="flex justify-center">
