@@ -10,9 +10,13 @@ import { Menu, X } from 'lucide-react';
 
 const navItems = [
   { href: '/', label: 'Home' },
+  { href: '/pulse', label: 'Pulse Stream' },
+  { href: '/radar', label: 'Money Flow' },
+  { href: '/alpha', label: 'Alpha Signals' },
+  { href: '/hunter', label: 'Signal Hunter' },
   { href: '/signals', label: 'Market Signals' },
-  { href: '/predictions', label: 'Prediction Signals' },
-  { href: '/news', label: 'AI Crypto Briefs' },
+  { href: '/predictions', label: 'Predictions' },
+  { href: '/news', label: 'News' },
   { href: '/subscribe', label: 'Subscribe' },
   { href: '/about', label: 'About' },
 ];

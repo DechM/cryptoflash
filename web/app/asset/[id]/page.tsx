@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AssetHeader } from '@/components/asset/AssetHeader';
-import { AssetChart } from '@/components/asset/AssetChart';
+import { AssetChartWithPulse } from '@/components/asset/AssetChartWithPulse';
 import { getAssetData, getAssetOHLC } from '@/lib/asset';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
@@ -54,7 +54,11 @@ export default async function AssetPage({ params }: { params: Promise<{ id: stri
               <AlertDescription>Chart data temporarily unavailable.</AlertDescription>
             </Alert>
           ) : (
-            <AssetChart data={ohlcData} livePrice={asset.id === 'bitcoin' || asset.id === 'ethereum' ? asset.currentPrice : undefined} />
+            <AssetChartWithPulse
+              data={ohlcData}
+              livePrice={asset.id === 'bitcoin' || asset.id === 'ethereum' ? asset.currentPrice : undefined}
+              tokenSymbol={asset.symbol}
+            />
           )}
         </CardContent>
       </Card>
