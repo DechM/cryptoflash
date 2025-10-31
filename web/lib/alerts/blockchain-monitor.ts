@@ -40,7 +40,7 @@ const blockstreamLimiter = new RateLimiter(1, 1000); // 1 call per second (conse
  * Gets latest blocks AND checks known whale addresses
  */
 export async function fetchLargeEthereumTransactions(
-  minAmountUsd: number = 0  // Default $0 to get all transactions
+  minAmountUsd: number = ALERT_THRESHOLDS.low  // Default $100k for whale transactions only
 ): Promise<CryptoFlashAlert[]> {
   if (!etherscanLimiter.canMakeCall('etherscan')) {
     console.log('Rate limited: Etherscan');
@@ -199,9 +199,9 @@ export async function fetchLargeEthereumTransactions(
           const valueEth = Number(value) / 1e18;
           const valueUsd = valueEth * ethPriceUsd;
 
-          // With $0 threshold, accept all transactions (but filter dust < $0.10)
-          const effectiveThreshold = Math.max(minAmountUsd, 0.1); // Minimum $0.10 to filter dust
-          if (valueUsd >= effectiveThreshold) {
+          // Only large whale transactions - minimum $100k
+          const whaleThreshold = Math.max(minAmountUsd, ALERT_THRESHOLDS.low);
+          if (valueUsd >= whaleThreshold) {
             // Get block timestamp (if available) or use current time
             const blockTimestamp = blockResult.timestamp 
               ? (typeof blockResult.timestamp === 'string' && blockResult.timestamp.startsWith('0x')
@@ -338,8 +338,9 @@ export async function fetchLargeEthereumTransactions(
           const valueEth = Number(value) / 1e18;
           const valueUsd = valueEth * ethPriceUsd;
 
-          // With $0 threshold, we accept ALL transactions, but filter very small ones (dust)
-          if (valueUsd >= 0.1) { // At least $0.10 to filter dust
+          // Only whale transactions from known addresses - minimum $100k
+          const whaleThreshold = Math.max(minAmountUsd, ALERT_THRESHOLDS.low);
+          if (valueUsd >= whaleThreshold) {
             const fromLabel = getLabelForAddress('ethereum', tx.from);
             const toLabel = getLabelForAddress('ethereum', tx.to);
 
@@ -655,12 +656,24 @@ export async function getAllAlerts(
   minAmountUsd: number = ALERT_THRESHOLDS.low
 ): Promise<CryptoFlashAlert[]> {
   try {
-    const [ethereumAlerts, bitcoinAlerts] = await Promise.all([
+    // Import multichain monitor functions dynamically to avoid circular dependencies
+    const { fetchLargeEVMTransactions } = await import('./multichain-monitor');
+    
+    const [ethereumAlerts, bitcoinAlerts, bscAlerts, polygonAlerts, arbitrumAlerts] = await Promise.all([
       fetchLargeEthereumTransactions(minAmountUsd),
       fetchLargeBitcoinTransactions(minAmountUsd),
+      fetchLargeEVMTransactions('bsc', minAmountUsd),
+      fetchLargeEVMTransactions('polygon', minAmountUsd),
+      fetchLargeEVMTransactions('arbitrum', minAmountUsd),
     ]);
 
-    return [...ethereumAlerts, ...bitcoinAlerts].sort(
+    return [
+      ...ethereumAlerts, 
+      ...bitcoinAlerts, 
+      ...bscAlerts, 
+      ...polygonAlerts, 
+      ...arbitrumAlerts
+    ].sort(
       (a, b) => b.timestamp - a.timestamp
     );
   } catch (error) {

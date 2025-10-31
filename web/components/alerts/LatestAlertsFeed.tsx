@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatCompactUSD } from '@/lib/format';
 import { getTokenEmoji } from '@/lib/alerts/token-emoji';
+import { ALERT_THRESHOLDS } from '@/lib/alerts/types';
 import type { CryptoFlashAlert } from '@/lib/alerts/types';
 import Link from 'next/link';
 import { ExternalLink, TrendingUp, TrendingDown, ArrowRight } from 'lucide-react';
@@ -17,7 +18,7 @@ type Props = {
   minAmountUsd?: number;
 };
 
-export function LatestAlertsFeed({ limit = 20, minAmountUsd = 0 }: Props) {
+export function LatestAlertsFeed({ limit = 20, minAmountUsd = ALERT_THRESHOLDS.low }: Props) {
   const { data: alerts, error, isLoading } = useSWR<CryptoFlashAlert[]>(
     `/api/alerts?minAmountUsd=${minAmountUsd}`,
     fetcher,

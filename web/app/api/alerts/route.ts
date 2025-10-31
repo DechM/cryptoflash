@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAllAlerts, filterAlerts } from '@/lib/alerts/blockchain-monitor';
 import { alertCache, CACHE_KEYS, CACHE_TTL } from '@/lib/alerts/cache';
+import { ALERT_THRESHOLDS } from '@/lib/alerts/types';
 import type { AlertFilters } from '@/lib/alerts/types';
 
 export async function GET(request: Request) {
@@ -34,8 +35,8 @@ export async function GET(request: Request) {
       });
     }
 
-    // Fetch fresh alerts - $0 threshold to get ALL transactions
-    const minAmountUsd = filters.minAmountUsd ?? 0; // Default $0 to get all transactions
+    // Fetch fresh alerts - $100k threshold for whale transactions only
+    const minAmountUsd = filters.minAmountUsd ?? ALERT_THRESHOLDS.low; // Default $100k for whales
     const allAlerts = await getAllAlerts(minAmountUsd);
     
     // Force refresh bypasses cache
