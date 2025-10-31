@@ -66,9 +66,19 @@ export async function GET(
     ]);
 
     // Format OHLC data from price data
-    const prices = chartData.prices || [];
+    // Safely handle chart data structure
+    if (!chartData || typeof chartData !== 'object') {
+      throw new Error('Invalid chart data structure from CoinGecko');
+    }
+
+    const prices = (chartData.prices && Array.isArray(chartData.prices)) ? chartData.prices : [];
     const ohlcData = prices
-      .filter(([timestamp, price]: [number, number]) => timestamp && price && !isNaN(price) && price > 0)
+      .filter(([timestamp, price]: [number, number]) => {
+        return timestamp && typeof timestamp === 'number' && 
+               price && typeof price === 'number' && 
+               !isNaN(price) && !isNaN(timestamp) && 
+               price > 0 && timestamp > 0;
+      })
       .map(([timestamp, price]: [number, number]) => ({
         time: Math.floor(timestamp / 1000),
         value: price,

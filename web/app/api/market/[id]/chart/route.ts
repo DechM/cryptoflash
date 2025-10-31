@@ -98,9 +98,18 @@ export async function GET(
       }
     } else {
       // Price data
+      if (!data || typeof data !== 'object' || !Array.isArray(data.prices)) {
+        throw new Error('Invalid chart data structure from CoinGecko');
+      }
+      
       const prices = data.prices || [];
       chartData = prices
-        .filter(([timestamp, price]: [number, number]) => timestamp && price && !isNaN(price) && price > 0)
+        .filter(([timestamp, price]: [number, number]) => {
+          return timestamp && typeof timestamp === 'number' && 
+                 price && typeof price === 'number' && 
+                 !isNaN(price) && !isNaN(timestamp) && 
+                 price > 0 && timestamp > 0;
+        })
         .map(([timestamp, price]: [number, number]) => ({
           time: Math.floor(timestamp / 1000),
           value: price,
