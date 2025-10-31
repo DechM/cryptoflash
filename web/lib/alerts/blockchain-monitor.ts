@@ -161,6 +161,27 @@ function formatTimeAgo(timestamp: number): string {
 }
 
 /**
+ * Generate valid Ethereum txHash format (0x + 64 hex chars)
+ * In production, this will come from real blockchain APIs
+ */
+function generateEthereumTxHash(): string {
+  const hex = Array.from({ length: 64 }, () => 
+    Math.floor(Math.random() * 16).toString(16)
+  ).join('');
+  return `0x${hex}`;
+}
+
+/**
+ * Generate valid Bitcoin txHash format (64 hex chars)
+ * In production, this will come from real blockchain APIs
+ */
+function generateBitcoinTxHash(): string {
+  return Array.from({ length: 64 }, () => 
+    Math.floor(Math.random() * 16).toString(16)
+  ).join('');
+}
+
+/**
  * Generate simulated alerts for MVP (to be replaced with real blockchain monitoring)
  */
 function generateSimulatedAlerts(
@@ -204,12 +225,16 @@ function generateSimulatedAlerts(
     
     const timestamp = now - Math.random() * 3600000; // Last hour
     
+    // Generate valid format txHash (will be replaced with real data when API is integrated)
+    // Ethereum txHash: 66 chars (0x + 64 hex), Bitcoin: 64 hex chars
+    const txHash = blockchain === 'bitcoin'
+      ? generateBitcoinTxHash()
+      : generateEthereumTxHash();
+    
     alerts.push({
       id: `${blockchain}-${i}-${timestamp}`,
       blockchain,
-      txHash: blockchain === 'bitcoin'
-        ? Math.random().toString(16).substring(2, 66)
-        : '0x' + Math.random().toString(16).substring(2, 66),
+      txHash,
       timestamp,
       blockNumber: Math.floor(Math.random() * 1000000) + 18000000,
       fee: blockchain === 'bitcoin' ? '0.000028' : '0.001',

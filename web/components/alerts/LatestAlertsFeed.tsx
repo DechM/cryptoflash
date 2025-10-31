@@ -139,10 +139,23 @@ function AlertCard({ alert }: { alert: CryptoFlashAlert }) {
             ) : (
               <TrendingDown className="h-3 w-3 text-red-400" />
             )}
-            <span className="truncate">
-              {alert?.from?.label || 'Unknown'} →{' '}
-              {alert?.to?.[0]?.label || 'Unknown'}
-            </span>
+            <div className="flex-1 min-w-0">
+              <div className="truncate">
+                <span className="font-medium">{alert?.from?.label || 'Unknown Wallet'}</span>
+                {alert?.from?.address && (
+                  <span className="text-muted-foreground/70 ml-1">
+                    ({alert.from.address.substring(0, 6)}...{alert.from.address.slice(-4)})
+                  </span>
+                )}
+                <span className="mx-1">→</span>
+                <span className="font-medium">{alert?.to?.[0]?.label || 'Unknown Wallet'}</span>
+                {alert?.to?.[0]?.address && (
+                  <span className="text-muted-foreground/70 ml-1">
+                    ({alert.to[0].address.substring(0, 6)}...{alert.to[0].address.slice(-4)})
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
           <div className="flex items-center justify-between">
             <span>{alert.timeAgo}</span>

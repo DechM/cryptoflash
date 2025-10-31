@@ -186,13 +186,42 @@ export default function AlertDetailPage() {
     unknown_wallet_activity: 'Unknown Activity',
   };
 
+  // Validate txHash before creating explorer URL
+  const isValidTxHash = (hash: string | undefined, blockchain: string): boolean => {
+    if (!hash) return false;
+    if (blockchain === 'bitcoin') {
+      // Bitcoin txHash: 64 hex chars
+      return /^[a-fA-F0-9]{64}$/.test(hash);
+    } else {
+      // Ethereum and EVM chains: 0x + 64 hex chars
+      return /^0x[a-fA-F0-9]{64}$/.test(hash);
+    }
+  };
+
+  const getBlockchainExplorerUrl = (blockchain: string, txHash: string | undefined): string => {
+    if (!txHash || !isValidTxHash(txHash, blockchain)) {
+      return '#'; // Return invalid link if hash is not valid
+    }
+    
+    const explorers: Record<string, string> = {
+      ethereum: `https://etherscan.io/tx/${txHash}`,
+      bitcoin: `https://blockstream.info/tx/${txHash}`,
+      bsc: `https://bscscan.com/tx/${txHash}`,
+      solana: `https://solscan.io/tx/${txHash}`,
+      polygon: `https://polygonscan.com/tx/${txHash}`,
+      arbitrum: `https://arbiscan.io/tx/${txHash}`,
+    };
+    
+    return explorers[blockchain] || '#';
+  };
+
   const blockchainExplorers: Record<string, string> = {
-    ethereum: `https://etherscan.io/tx/${alert?.txHash || ''}`,
-    bitcoin: `https://blockstream.info/tx/${alert?.txHash || ''}`,
-    bsc: `https://bscscan.com/tx/${alert?.txHash || ''}`,
-    solana: `https://solscan.io/tx/${alert?.txHash || ''}`,
-    polygon: `https://polygonscan.com/tx/${alert?.txHash || ''}`,
-    arbitrum: `https://arbiscan.io/tx/${alert?.txHash || ''}`,
+    ethereum: getBlockchainExplorerUrl('ethereum', alert?.txHash),
+    bitcoin: getBlockchainExplorerUrl('bitcoin', alert?.txHash),
+    bsc: getBlockchainExplorerUrl('bsc', alert?.txHash),
+    solana: getBlockchainExplorerUrl('solana', alert?.txHash),
+    polygon: getBlockchainExplorerUrl('polygon', alert?.txHash),
+    arbitrum: getBlockchainExplorerUrl('arbitrum', alert?.txHash),
   };
 
   return (
@@ -259,9 +288,15 @@ export default function AlertDetailPage() {
                     href={generateXShareUrl(alert)}
                     target="_blank"
                     rel="noopener noreferrer"
+                    className="flex items-center gap-2"
                   >
                     <Share2 className="h-4 w-4" />
-                    Share on X
+                    <span className="flex items-center gap-1">
+                      <span className="text-lg">
+                        {getTokenEmoji(safeToken?.symbol || 'BTC') || '🪙'}
+                      </span>
+                      Share on X
+                    </span>
                   </a>
                 </Button>
               ) : null}

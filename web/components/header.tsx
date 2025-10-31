@@ -7,6 +7,7 @@ import Logo from '@/components/brand/Logo';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Menu, X } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 const navItems = [
   { href: '/', label: 'Command Center' },
@@ -48,6 +49,7 @@ export function Header() {
               </Link>
             );
           })}
+          <ThemeToggle />
         </nav>
 
         {/* Mobile menu button */}
@@ -98,6 +100,9 @@ export function Header() {
                 </Link>
               );
             })}
+            <div className="px-3 py-2">
+              <ThemeToggle />
+            </div>
           </nav>
         </>
       )}
