@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatUSD, formatCompactUSD, formatPercent, formatTimeAgo } from '@/lib/format';
 import { ArrowUp, ArrowDown, Minus } from 'lucide-react';
 import { TokenIcon } from '@/components/icons/TokenIcon';
+import { cn } from '@/lib/utils';
 
 type TickerCardProps = {
   name: string;
@@ -25,7 +26,7 @@ export function TickerCard({ name, symbol, price, change24h, volume24h, updatedA
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="h-8 md:h-10 w-40 bg-muted rounded" />
+          <div className="h-9 md:h-11 w-40 bg-muted rounded" />
           <div className="h-4 w-24 bg-muted rounded" />
           <div className="h-4 w-32 bg-muted rounded" />
           <div className="h-3 w-20 bg-muted rounded" />
@@ -42,11 +43,19 @@ export function TickerCard({ name, symbol, price, change24h, volume24h, updatedA
 
   const displayName = symbol.toUpperCase() === 'BTC' ? 'BTC (Bitcoin)' : symbol.toUpperCase() === 'ETH' ? 'ETH (Ethereum)' : name;
 
+  const symbolUpper = symbol.toUpperCase();
+  const glowClass =
+    symbolUpper === 'BTC'
+      ? 'shadow-[0_0_40px_rgba(255,153,0,0.12)] hover:shadow-[0_0_64px_rgba(255,153,0,0.18)]'
+      : symbolUpper === 'ETH'
+        ? 'shadow-[0_0_40px_rgba(129,102,255,0.12)] hover:shadow-[0_0_64px_rgba(129,102,255,0.18)]'
+        : '';
+
   return (
-    <Card className="transition-all hover:border-primary/40 bg-gradient-to-br from-card to-card/50 hover:shadow-md">
+    <Card className={cn('transition-all duration-300 hover:border-primary/40 bg-gradient-to-br from-card to-card/50 hover:shadow-md', glowClass)}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <TokenIcon symbol={symbol} className="text-muted-foreground" />
+          <TokenIcon symbol={symbol} size="md" className="text-muted-foreground" />
           <span>{displayName}</span>
         </CardTitle>
       </CardHeader>
@@ -54,7 +63,7 @@ export function TickerCard({ name, symbol, price, change24h, volume24h, updatedA
         <dl className="space-y-3">
           <div>
             <dt className="sr-only">Current Price</dt>
-            <dd className="text-2xl md:text-3xl font-semibold">{formatUSD(price)}</dd>
+            <dd className="text-3xl md:text-4xl font-semibold">{formatUSD(price)}</dd>
           </div>
           <div>
             <dt className="sr-only">24 Hour Change</dt>

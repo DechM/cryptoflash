@@ -43,7 +43,8 @@ export function MoversTable({ data, updatedAt }: MoversTableProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">Data refreshes every ~2 minutes</p>
         <Button variant="outline" size="sm" onClick={handleShare} className="gap-2">
           <Share2 className="h-4 w-4" />
           Share
@@ -93,10 +94,10 @@ function MoversTableView({ data }: MoversTableViewProps) {
               const isPositive = coin.change24h > 0;
               const badgeVariant = isPositive ? 'success' : 'destructive';
               return (
-                <TableRow key={coin.id} className="hover:bg-accent/50 transition-colors">
+                <TableRow key={coin.id} className="hover:bg-muted/10 hover:shadow-[0_1px_0_rgba(255,255,255,0.06)] transition-all">
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <TokenIcon symbol={coin.symbol} className="text-muted-foreground" />
+                      <TokenIcon symbol={coin.symbol} size="sm" className="text-muted-foreground" />
                       <div>
                         <div className="font-medium">{coin.name}</div>
                         <div className="text-xs text-muted-foreground uppercase">{coin.symbol}</div>
@@ -125,10 +126,10 @@ function MoversTableView({ data }: MoversTableViewProps) {
           const isPositive = coin.change24h > 0;
           const badgeVariant = isPositive ? 'success' : 'destructive';
           return (
-            <div key={coin.id} className="border rounded-lg p-4 space-y-2 hover:bg-accent/50 transition-colors">
+            <div key={coin.id} className="border rounded-lg p-4 space-y-2 hover:bg-muted/10 transition-colors">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <TokenIcon symbol={coin.symbol} className="text-muted-foreground" />
+                  <TokenIcon symbol={coin.symbol} size="sm" className="text-muted-foreground" />
                   <div>
                     <div className="font-medium">{coin.name}</div>
                     <div className="text-xs text-muted-foreground uppercase">{coin.symbol}</div>
