@@ -45,6 +45,100 @@ export default function AlertDetailPage() {
 
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
+  // Safe access helpers with useMemo - MUST be called before any returns (React hooks rules)
+  const safeToken = useMemo(() => {
+    // If alert is not loaded yet, return safe default
+    if (!alert || !alert.token) {
+      return {
+        symbol: 'UNKNOWN',
+        name: 'Unknown Token',
+        emoji: '🪙',
+        decimals: 18,
+        amount: '0',
+        amountUsd: 0,
+      };
+    }
+    
+    const token = alert.token;
+    
+    // If token is missing or invalid, return safe default
+    if (!token || typeof token !== 'object') {
+      return {
+        symbol: 'UNKNOWN',
+        name: 'Unknown Token',
+        emoji: '🪙',
+        decimals: 18,
+        amount: '0',
+        amountUsd: 0,
+      };
+    }
+
+    // Ensure emoji is always set
+    const emoji = token.emoji || getTokenEmoji(token.symbol || 'BTC') || '🪙';
+    
+    return {
+      symbol: token.symbol || 'UNKNOWN',
+      name: token.name || 'Unknown Token',
+      emoji: emoji,
+      decimals: token.decimals ?? 18,
+      amount: token.amount || '0',
+      amountUsd: token.amountUsd ?? 0,
+    };
+  }, [alert?.token]);
+
+  const safeFrom = useMemo(() => {
+    if (!alert || !alert.from) {
+      return {
+        address: '',
+        label: 'Unknown Wallet',
+        amount: '0',
+        amountUsd: 0,
+      };
+    }
+    const from = alert.from;
+    if (!from || typeof from !== 'object') {
+      return {
+        address: '',
+        label: 'Unknown Wallet',
+        amount: '0',
+        amountUsd: 0,
+      };
+    }
+    return {
+      address: from.address || '',
+      label: from.label || 'Unknown Wallet',
+      amount: from.amount || '0',
+      amountUsd: from.amountUsd ?? 0,
+    };
+  }, [alert?.from]);
+
+  const safeTo = useMemo(() => {
+    if (!alert || !alert.to) {
+      return [{
+        address: '',
+        label: 'Unknown Wallet',
+        amount: '0',
+        amountUsd: 0,
+      }];
+    }
+    const to = alert.to;
+    if (!Array.isArray(to) || to.length === 0) {
+      return [{
+        address: '',
+        label: 'Unknown Wallet',
+        amount: '0',
+        amountUsd: 0,
+      }];
+    }
+    return to.map((recipient) => ({
+      address: recipient?.address || '',
+      label: recipient?.label || 'Unknown Wallet',
+      amount: recipient?.amount || '0',
+      amountUsd: recipient?.amountUsd ?? 0,
+    }));
+  }, [alert?.to]);
+
+  // NOW we can do early returns after hooks
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -69,72 +163,6 @@ export default function AlertDetailPage() {
   if (!alert || typeof alert !== 'object') {
     return notFound();
   }
-
-  // Safe access helpers with useMemo for stability
-  const safeToken = useMemo(() => {
-    const token = alert?.token;
-    
-    // If token is missing or invalid, return safe default
-    if (!token || typeof token !== 'object') {
-      const defaultToken = {
-        symbol: 'UNKNOWN',
-        name: 'Unknown Token',
-        emoji: '🪙',
-        decimals: 18,
-        amount: '0',
-        amountUsd: 0,
-      };
-      return defaultToken;
-    }
-
-    // Ensure emoji is always set
-    const emoji = token.emoji || getTokenEmoji(token.symbol || 'BTC') || '🪙';
-    
-    return {
-      symbol: token.symbol || 'UNKNOWN',
-      name: token.name || 'Unknown Token',
-      emoji: emoji,
-      decimals: token.decimals ?? 18,
-      amount: token.amount || '0',
-      amountUsd: token.amountUsd ?? 0,
-    };
-  }, [alert?.token]);
-
-  const safeFrom = useMemo(() => {
-    const from = alert?.from;
-    if (!from || typeof from !== 'object') {
-      return {
-        address: '',
-        label: 'Unknown Wallet',
-        amount: '0',
-        amountUsd: 0,
-      };
-    }
-    return {
-      address: from.address || '',
-      label: from.label || 'Unknown Wallet',
-      amount: from.amount || '0',
-      amountUsd: from.amountUsd ?? 0,
-    };
-  }, [alert?.from]);
-
-  const safeTo = useMemo(() => {
-    const to = alert?.to;
-    if (!Array.isArray(to) || to.length === 0) {
-      return [{
-        address: '',
-        label: 'Unknown Wallet',
-        amount: '0',
-        amountUsd: 0,
-      }];
-    }
-    return to.map((recipient) => ({
-      address: recipient?.address || '',
-      label: recipient?.label || 'Unknown Wallet',
-      amount: recipient?.amount || '0',
-      amountUsd: recipient?.amountUsd ?? 0,
-    }));
-  }, [alert?.to]);
 
   const copyToClipboard = async (text: string, field: string) => {
     try {
@@ -189,11 +217,11 @@ export default function AlertDetailPage() {
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-4 flex-1">
               <span className="text-5xl">
-                {safeToken.emoji}
+                {safeToken?.emoji || '🪙'}
               </span>
               <div>
                 <CardTitle className="text-3xl mb-2">
-                  {formatCompactUSD(safeToken.amountUsd)} {safeToken.symbol}
+                  {formatCompactUSD(safeToken?.amountUsd || 0)} {safeToken?.symbol || 'UNKNOWN'}
                 </CardTitle>
                 <div className="flex items-center gap-2 flex-wrap">
                   <Badge
@@ -251,7 +279,7 @@ export default function AlertDetailPage() {
           <div className="mb-4 pb-4 border-b border-border/50">
             <div className="text-sm text-muted-foreground mb-1">Description</div>
             <p className="text-sm">
-              Large transfer of {safeToken.symbol} detected on {(alert?.blockchain || 'ethereum').toUpperCase()}. 
+              Large transfer of {safeToken?.symbol || 'cryptocurrency'} detected on {(alert?.blockchain || 'ethereum').toUpperCase()}. 
               {alert?.alertType === 'exchange_withdrawal' && ' Funds withdrawn from exchange.'}
               {alert?.alertType === 'exchange_deposit' && ' Funds deposited to exchange.'}
               {alert?.alertType === 'whale_buy' && ' Potential whale accumulation detected.'}
@@ -264,7 +292,7 @@ export default function AlertDetailPage() {
             <div>
               <div className="text-sm text-muted-foreground mb-1">Token</div>
               <div className="font-semibold">
-                {safeToken.name} ({safeToken.symbol})
+                {safeToken?.name || 'Unknown'} ({safeToken?.symbol || 'UNKNOWN'})
               </div>
             </div>
             <div>
@@ -380,13 +408,13 @@ export default function AlertDetailPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="font-semibold mb-1">
-                    {safeFrom.label}
+                    {safeFrom?.label || 'Unknown Wallet'}
                   </div>
                   <div className="flex items-center gap-2">
                     <code className="text-xs font-mono text-muted-foreground truncate flex-1">
-                      {safeFrom.address || 'N/A'}
+                      {safeFrom?.address || 'N/A'}
                     </code>
-                    {safeFrom.address && (
+                    {safeFrom?.address && (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -405,7 +433,7 @@ export default function AlertDetailPage() {
                 <div className="text-right">
                   <div className="text-sm text-muted-foreground">Amount</div>
                   <div className="font-semibold">
-                    {formatCompactUSD(safeFrom.amountUsd)}
+                    {formatCompactUSD(safeFrom?.amountUsd || 0)}
                   </div>
                 </div>
               </div>
@@ -425,7 +453,7 @@ export default function AlertDetailPage() {
           <div>
             <div className="text-sm text-muted-foreground mb-2">To</div>
             <div className="space-y-3">
-              {safeTo.map((recipient, index) => (
+              {(safeTo || []).map((recipient, index) => (
                 <div
                   key={index}
                   className="bg-muted/30 rounded-lg p-4 space-y-2"
@@ -458,7 +486,7 @@ export default function AlertDetailPage() {
                     <div className="text-right ml-4">
                       <div className="text-sm text-muted-foreground">Amount</div>
                       <div className="font-semibold">
-                        {formatCompactUSD(recipient.amountUsd)}
+                        {formatCompactUSD(recipient?.amountUsd || 0)}
                       </div>
                     </div>
                   </div>
