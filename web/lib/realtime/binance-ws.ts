@@ -93,6 +93,7 @@ class BinanceWebSocket {
       // Binance combined stream for mini ticker (all symbols at once)
       // This gives us price updates for all symbols efficiently
       const streams = Array.from(this.subscriptions)
+        .filter((symbol) => symbol && typeof symbol === 'string')
         .map((symbol) => `${symbol.toLowerCase()}@miniTicker`)
         .join('/');
 
@@ -172,6 +173,10 @@ class BinanceWebSocket {
   }
 
   subscribe(coinId: string, callback: Listener): () => void {
+    if (!coinId || typeof coinId !== 'string') {
+      return () => {};
+    }
+    
     const symbol = SYMBOL_MAP[coinId.toLowerCase()];
     if (!symbol) {
       // Not available on Binance, return no-op unsubscribe

@@ -5,7 +5,15 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const resolvedParams = await params;
+    const { id } = resolvedParams;
+
+    if (!id || typeof id !== 'string') {
+      return NextResponse.json(
+        { error: 'Invalid coin ID' },
+        { status: 400 }
+      );
+    }
 
     // Fetch coin data from CoinGecko
     const controller = new AbortController();

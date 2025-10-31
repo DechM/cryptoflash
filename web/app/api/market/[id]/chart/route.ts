@@ -25,7 +25,16 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const resolvedParams = await params;
+    const { id } = resolvedParams;
+    
+    if (!id || typeof id !== 'string') {
+      return NextResponse.json(
+        { error: 'Invalid coin ID' },
+        { status: 400 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const range = (searchParams.get('range') || 'all') as TimeRange;
     const type = searchParams.get('type') || 'price'; // 'price' or 'market_cap'
