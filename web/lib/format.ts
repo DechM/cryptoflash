@@ -25,9 +25,16 @@ export function formatPercent(n: number): string {
   return `${sign}${n.toFixed(2)}%`;
 }
 
-export function formatTimeAgo(timestamp: Date | number): string {
+export function formatTimeAgo(timestamp: Date | number | string): string {
   const now = Date.now();
-  const then = typeof timestamp === 'number' ? timestamp : timestamp.getTime();
+  let then: number;
+  if (typeof timestamp === 'string') {
+    then = new Date(timestamp).getTime();
+  } else if (typeof timestamp === 'number') {
+    then = timestamp;
+  } else {
+    then = timestamp.getTime();
+  }
   const diffMs = now - then;
   const diffSeconds = Math.floor(diffMs / 1000);
   const diffMinutes = Math.floor(diffSeconds / 60);
@@ -47,4 +54,8 @@ export function formatTimeAgo(timestamp: Date | number): string {
     return `${diffDays}d ago`;
   }
   return 'over a week ago';
+}
+
+export function formatDecimal(price: number): string {
+  return (price * 100).toFixed(1) + '%';
 }
