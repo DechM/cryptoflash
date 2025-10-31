@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAllAlerts } from '@/lib/alerts/blockchain-monitor';
 import { alertCache, CACHE_KEYS, CACHE_TTL } from '@/lib/alerts/cache';
-import { getTokenEmoji } from '@/lib/alerts/token-emoji';
 import type { CryptoFlashAlert } from '@/lib/alerts/types';
 
 export async function GET(
@@ -23,23 +22,13 @@ export async function GET(
     const cached = alertCache.get<CryptoFlashAlert>(cacheKey);
 
     if (cached) {
-      // Validate cached data before returning
-      if (cached && typeof cached === 'object' && cached.token) {
-        // Ensure cached token has emoji
-        const normalizedCached = {
-          ...cached,
-          token: {
-            ...cached.token,
-            emoji: cached.token.emoji || getTokenEmoji(cached.token.symbol || 'BTC') || '🪙',
-          },
-        };
-        return NextResponse.json(normalizedCached, {
-          headers: {
-            'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
-            'X-Cache': 'HIT',
-          },
-        });
-      }
+      // Return cached data as-is (emoji will be fetched dynamically in UI)
+      return NextResponse.json(cached, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+          'X-Cache': 'HIT',
+        },
+      });
     }
 
     // Fetch all alerts and find the one matching the ID
@@ -56,11 +45,10 @@ export async function GET(
     // Validate and normalize alert data - ensure all required fields exist
     const normalizedAlert: CryptoFlashAlert = {
       ...alert,
-      // Ensure token always has all required fields including emoji
+      // Ensure token always has all required fields (emoji is fetched dynamically in UI)
       token: {
         symbol: alert.token?.symbol || 'UNKNOWN',
         name: alert.token?.name || 'Unknown Token',
-        emoji: alert.token?.emoji || getTokenEmoji(alert.token?.symbol || 'BTC') || '🪙',
         decimals: alert.token?.decimals ?? 18,
         amount: alert.token?.amount || '0',
         amountUsd: alert.token?.amountUsd ?? 0,

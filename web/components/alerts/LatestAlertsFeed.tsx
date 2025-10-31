@@ -107,7 +107,7 @@ function AlertCard({ alert }: { alert: CryptoFlashAlert }) {
         <div className="flex items-start justify-between gap-3 mb-2">
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <span className="text-2xl shrink-0">
-              {alert.token.emoji || getTokenEmoji(alert.token.symbol)}
+              {getTokenEmoji(alert.token.symbol) || '🪙'}
             </span>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">

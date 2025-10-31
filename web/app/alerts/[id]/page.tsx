@@ -52,7 +52,6 @@ export default function AlertDetailPage() {
       return {
         symbol: 'UNKNOWN',
         name: 'Unknown Token',
-        emoji: '🪙',
         decimals: 18,
         amount: '0',
         amountUsd: 0,
@@ -66,20 +65,15 @@ export default function AlertDetailPage() {
       return {
         symbol: 'UNKNOWN',
         name: 'Unknown Token',
-        emoji: '🪙',
         decimals: 18,
         amount: '0',
         amountUsd: 0,
       };
     }
-
-    // Ensure emoji is always set
-    const emoji = token.emoji || getTokenEmoji(token.symbol || 'BTC') || '🪙';
     
     return {
       symbol: token.symbol || 'UNKNOWN',
       name: token.name || 'Unknown Token',
-      emoji: emoji,
       decimals: token.decimals ?? 18,
       amount: token.amount || '0',
       amountUsd: token.amountUsd ?? 0,
@@ -216,9 +210,9 @@ export default function AlertDetailPage() {
         <CardHeader>
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-4 flex-1">
-              <span className="text-5xl">
-                {safeToken?.emoji || '🪙'}
-              </span>
+                <span className="text-5xl">
+                  {getTokenEmoji(safeToken?.symbol || 'BTC') || '🪙'}
+                </span>
               <div>
                 <CardTitle className="text-3xl mb-2">
                   {formatCompactUSD(safeToken?.amountUsd || 0)} {safeToken?.symbol || 'UNKNOWN'}

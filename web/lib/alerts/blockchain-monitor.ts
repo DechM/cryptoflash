@@ -1,7 +1,6 @@
 // Blockchain transaction monitoring with FREE APIs only
 import type { CryptoFlashAlert, Blockchain, AlertType, KnownLabel } from './types';
 import { KNOWN_EXCHANGES, ALERT_THRESHOLDS } from './types';
-import { getTokenEmoji } from './token-emoji';
 
 // Rate limiter for API calls
 class RateLimiter {
@@ -176,15 +175,6 @@ function generateSimulatedAlerts(
         { symbol: 'USDC', name: 'USD Coin', decimals: 6 },
         { symbol: 'BNB', name: 'Binance Coin', decimals: 18 },
       ];
-  
-  // Add emojis using the token-emoji map - ensure emoji is always set
-  const tokensWithEmojis = tokens.map(token => {
-    const emoji = getTokenEmoji(token.symbol);
-    return {
-      ...token,
-      emoji: emoji || '🪙', // Fallback emoji if getTokenEmoji returns empty
-    };
-  });
 
   const alerts: CryptoFlashAlert[] = [];
   const now = Date.now();
@@ -193,7 +183,7 @@ function generateSimulatedAlerts(
   const count = Math.floor(Math.random() * 5) + 5;
   
   for (let i = 0; i < count; i++) {
-    const token = tokensWithEmojis[Math.floor(Math.random() * tokensWithEmojis.length)];
+    const token = tokens[Math.floor(Math.random() * tokens.length)];
     const amountUsd = Math.random() * 5000000 + minAmountUsd;
     const amount = (amountUsd / 3000).toFixed(token.decimals); // Approximate price
     
@@ -228,7 +218,6 @@ function generateSimulatedAlerts(
       token: {
         symbol: token.symbol,
         name: token.name,
-        emoji: token.emoji,
         decimals: token.decimals,
         amount,
         amountUsd,

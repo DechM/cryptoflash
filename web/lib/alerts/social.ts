@@ -3,13 +3,14 @@
 
 import type { CryptoFlashAlert } from './types';
 import { formatCompactUSD } from '@/lib/format';
+import { getTokenEmoji } from './token-emoji';
 
 /**
  * Generate X (Twitter) share URL (FREE - no API needed)
  * This creates a pre-filled tweet that users can share
  */
 export function generateXShareUrl(alert: CryptoFlashAlert): string {
-  const emoji = alert.token.emoji || '🪙';
+  const emoji = getTokenEmoji(alert.token.symbol) || '🪙';
   const amount = formatCompactUSD(alert.token.amountUsd);
   const symbol = alert.token.symbol;
   const blockchain = alert.blockchain.toUpperCase();
@@ -29,7 +30,7 @@ export async function postToDiscordWebhook(
   webhookUrl: string
 ): Promise<boolean> {
   try {
-    const emoji = alert.token.emoji || '🪙';
+    const emoji = getTokenEmoji(alert.token.symbol) || '🪙';
     const amount = formatCompactUSD(alert.token.amountUsd);
     const symbol = alert.token.symbol;
     
@@ -131,7 +132,7 @@ export async function postToTelegram(
   chatId: string
 ): Promise<boolean> {
   try {
-    const emoji = alert.token.emoji || '🪙';
+    const emoji = getTokenEmoji(alert.token.symbol) || '🪙';
     const amount = formatCompactUSD(alert.token.amountUsd);
     const symbol = alert.token.symbol;
     

@@ -44,11 +44,10 @@ export type CryptoFlashAlert = {
   // Crypto price at transaction time
   cryptoPriceAtTx: number;
   
-  // Token info
+  // Token info (emoji is fetched dynamically from token-emoji.ts)
   token: {
     symbol: string;
     name: string;
-    emoji?: string; // e.g., 🪙 for BTC, 💎 for ETH
     decimals: number;
     amount: string; // Raw amount
     amountUsd: number;
