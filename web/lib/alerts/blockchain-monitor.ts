@@ -91,13 +91,22 @@ export async function fetchLargeEthereumTransactions(
     }
 
     const blockNumberData = await blockNumberResponse.json();
-    if (blockNumberData.status !== '1' || !blockNumberData.result) {
-      console.error('[Etherscan] Block number API error:', blockNumberData.message || 'Unknown');
+    
+    // V2 proxy endpoints return JSON-RPC format: {jsonrpc: "2.0", id: X, result: "0x..."}
+    // NOT the standard Etherscan format: {status: "1", message: "OK", result: "0x..."}
+    let latestBlockHex: string;
+    if (blockNumberData.jsonrpc && blockNumberData.result) {
+      // JSON-RPC format (V2 proxy endpoint)
+      latestBlockHex = blockNumberData.result;
+    } else if (blockNumberData.status === '1' && blockNumberData.result) {
+      // Standard Etherscan format (fallback)
+      latestBlockHex = blockNumberData.result;
+    } else {
+      console.error('[Etherscan] Block number API error:', blockNumberData.message || blockNumberData.error || 'Unknown');
       console.error('[Etherscan] Full response:', JSON.stringify(blockNumberData, null, 2));
       return [];
     }
 
-    const latestBlockHex = blockNumberData.result;
     const latestBlock = parseInt(latestBlockHex, 16);
     console.log(`[Etherscan] ✅ Latest block: ${latestBlock} (hex: ${latestBlockHex})`);
 
@@ -139,14 +148,28 @@ export async function fetchLargeEthereumTransactions(
         }
 
         const blockData = await blockResponse.json();
-        if (blockData.status !== '1' || !blockData.result || !blockData.result.transactions) {
+        
+        // V2 proxy endpoints return JSON-RPC format: {jsonrpc: "2.0", id: X, result: {...}}
+        // NOT the standard Etherscan format: {status: "1", message: "OK", result: {...}}
+        let blockResult: any;
+        if (blockData.jsonrpc && blockData.result) {
+          // JSON-RPC format (V2 proxy endpoint)
+          blockResult = blockData.result;
+        } else if (blockData.status === '1' && blockData.result) {
+          // Standard Etherscan format (fallback)
+          blockResult = blockData.result;
+        } else {
           if (i % 20 === 0) {
             console.log(`[Etherscan] Block ${blockNumber} returned no transactions or error`);
           }
           continue;
         }
+        
+        if (!blockResult || !blockResult.transactions) {
+          continue;
+        }
 
-        const transactions = blockData.result.transactions;
+        const transactions = blockResult.transactions;
         
         if (!Array.isArray(transactions) || transactions.length === 0) {
           continue;
@@ -180,8 +203,10 @@ export async function fetchLargeEthereumTransactions(
           const effectiveThreshold = Math.max(minAmountUsd, 0.1); // Minimum $0.10 to filter dust
           if (valueUsd >= effectiveThreshold) {
             // Get block timestamp (if available) or use current time
-            const blockTimestamp = blockData.result.timestamp 
-              ? parseInt(blockData.result.timestamp, 16) * 1000 
+            const blockTimestamp = blockResult.timestamp 
+              ? (typeof blockResult.timestamp === 'string' && blockResult.timestamp.startsWith('0x')
+                  ? parseInt(blockResult.timestamp, 16) * 1000
+                  : parseInt(blockResult.timestamp) * 1000)
               : Date.now();
 
             const fromLabel = getLabelForAddress('ethereum', tx.from);
