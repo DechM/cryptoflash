@@ -11,6 +11,49 @@ function getLabelForAddress(blockchain: string, address: string): KnownLabel | u
   return exchanges[lowerAddress] || undefined;
 }
 
+// Helper functions (duplicated from blockchain-monitor.ts to avoid circular deps)
+function detectAlertType(
+  fromLabel: KnownLabel | undefined,
+  toLabel: KnownLabel | undefined,
+  amountUsd: number
+): 'large_transfer' | 'exchange_transfer' | 'whale_buy' | 'whale_sell' | 'token_burn' | 'exchange_withdrawal' | 'exchange_deposit' | 'unknown_wallet_activity' {
+  const isExchangeFrom = fromLabel && fromLabel !== 'Unknown Wallet';
+  const isExchangeTo = toLabel && toLabel !== 'Unknown Wallet';
+  
+  if (isExchangeFrom && !isExchangeTo) {
+    return 'exchange_withdrawal';
+  }
+  
+  if (!isExchangeFrom && isExchangeTo) {
+    return 'exchange_deposit';
+  }
+  
+  if (isExchangeFrom && isExchangeTo) {
+    return 'exchange_transfer';
+  }
+  
+  if (amountUsd > ALERT_THRESHOLDS.critical) {
+    return 'whale_buy';
+  }
+  
+  return 'large_transfer';
+}
+
+function determineSeverity(amountUsd: number): 'low' | 'medium' | 'high' | 'critical' {
+  if (amountUsd >= ALERT_THRESHOLDS.critical) return 'critical';
+  if (amountUsd >= ALERT_THRESHOLDS.high) return 'high';
+  if (amountUsd >= ALERT_THRESHOLDS.medium) return 'medium';
+  return 'low';
+}
+
+function formatTimeAgo(timestamp: number): string {
+  const seconds = Math.floor((Date.now() - timestamp) / 1000);
+  if (seconds < 60) return 'just now';
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  return `${Math.floor(seconds / 86400)}d ago`;
+}
+
 // Rate limiter (same as blockchain-monitor.ts)
 class RateLimiter {
   private calls: Map<string, number[]> = new Map();
