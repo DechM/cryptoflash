@@ -177,11 +177,14 @@ function generateSimulatedAlerts(
         { symbol: 'BNB', name: 'Binance Coin', decimals: 18 },
       ];
   
-  // Add emojis using the token-emoji map
-  const tokensWithEmojis = tokens.map(token => ({
-    ...token,
-    emoji: getTokenEmoji(token.symbol),
-  }));
+  // Add emojis using the token-emoji map - ensure emoji is always set
+  const tokensWithEmojis = tokens.map(token => {
+    const emoji = getTokenEmoji(token.symbol);
+    return {
+      ...token,
+      emoji: emoji || '🪙', // Fallback emoji if getTokenEmoji returns empty
+    };
+  });
 
   const alerts: CryptoFlashAlert[] = [];
   const now = Date.now();

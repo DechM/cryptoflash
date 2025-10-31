@@ -65,18 +65,34 @@ export default function AlertDetailPage() {
     return notFound();
   }
 
-  // Safe access helpers
-  if (!alert?.token || !alert?.from || !alert?.to) {
-    return (
-      <div className="space-y-6">
-        <Card className="glass-card border-border/50">
-          <CardContent className="p-6 text-center">
-            <p className="text-muted-foreground">Loading alert details...</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
+  // Safe access helpers - ensure all required fields exist
+  const safeToken = alert?.token || {
+    symbol: 'UNKNOWN',
+    name: 'Unknown Token',
+    emoji: '🪙',
+    decimals: 18,
+    amount: '0',
+    amountUsd: 0,
+  };
+
+  // Ensure emoji is always set
+  if (!safeToken.emoji) {
+    safeToken.emoji = getTokenEmoji(safeToken.symbol);
   }
+
+  const safeFrom = alert?.from || {
+    address: '',
+    label: 'Unknown Wallet',
+    amount: '0',
+    amountUsd: 0,
+  };
+
+  const safeTo = alert?.to && alert.to.length > 0 ? alert.to : [{
+    address: '',
+    label: 'Unknown Wallet',
+    amount: '0',
+    amountUsd: 0,
+  }];
 
   const copyToClipboard = async (text: string, field: string) => {
     try {
@@ -131,30 +147,30 @@ export default function AlertDetailPage() {
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-4 flex-1">
               <span className="text-5xl">
-                {alert.token?.emoji || getTokenEmoji(alert.token?.symbol || 'BTC')}
+                {safeToken.emoji}
               </span>
               <div>
                 <CardTitle className="text-3xl mb-2">
-                  {formatCompactUSD(alert.token?.amountUsd || 0)} {alert.token?.symbol || 'UNKNOWN'}
+                  {formatCompactUSD(safeToken.amountUsd)} {safeToken.symbol}
                 </CardTitle>
                 <div className="flex items-center gap-2 flex-wrap">
                   <Badge
                     variant="outline"
-                    className={severityColors[alert.severity || 'low']}
+                    className={severityColors[alert?.severity || 'low']}
                   >
-                    {alert.severity || 'low'}
+                    {alert?.severity || 'low'}
                   </Badge>
                   <Badge variant="outline">
-                    {alertTypeLabels[alert.alertType || 'large_transfer']}
+                    {alertTypeLabels[alert?.alertType || 'large_transfer']}
                   </Badge>
                   <Badge variant="outline" className="uppercase">
-                    {alert.blockchain || 'ethereum'}
+                    {alert?.blockchain || 'ethereum'}
                   </Badge>
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              {alert.xPostUrl ? (
+              {alert?.xPostUrl ? (
                 <Button
                   asChild
                   variant="outline"
@@ -169,7 +185,7 @@ export default function AlertDetailPage() {
                     View on X
                   </a>
                 </Button>
-              ) : (
+              ) : alert ? (
                 <Button
                   asChild
                   variant="outline"
@@ -184,7 +200,7 @@ export default function AlertDetailPage() {
                     Share on X
                   </a>
                 </Button>
-              )}
+              ) : null}
             </div>
           </div>
         </CardHeader>
@@ -193,12 +209,12 @@ export default function AlertDetailPage() {
           <div className="mb-4 pb-4 border-b border-border/50">
             <div className="text-sm text-muted-foreground mb-1">Description</div>
             <p className="text-sm">
-              Large transfer of {alert.token?.symbol || 'cryptocurrency'} detected on {(alert.blockchain || 'ethereum').toUpperCase()}. 
-              {alert.alertType === 'exchange_withdrawal' && ' Funds withdrawn from exchange.'}
-              {alert.alertType === 'exchange_deposit' && ' Funds deposited to exchange.'}
-              {alert.alertType === 'whale_buy' && ' Potential whale accumulation detected.'}
-              {alert.alertType === 'whale_sell' && ' Potential whale distribution detected.'}
-              {alert.alertType === 'large_transfer' && ' Large amount transferred between wallets.'}
+              Large transfer of {safeToken.symbol} detected on {(alert?.blockchain || 'ethereum').toUpperCase()}. 
+              {alert?.alertType === 'exchange_withdrawal' && ' Funds withdrawn from exchange.'}
+              {alert?.alertType === 'exchange_deposit' && ' Funds deposited to exchange.'}
+              {alert?.alertType === 'whale_buy' && ' Potential whale accumulation detected.'}
+              {alert?.alertType === 'whale_sell' && ' Potential whale distribution detected.'}
+              {alert?.alertType === 'large_transfer' && ' Large amount transferred between wallets.'}
             </p>
           </div>
           
@@ -206,20 +222,20 @@ export default function AlertDetailPage() {
             <div>
               <div className="text-sm text-muted-foreground mb-1">Token</div>
               <div className="font-semibold">
-                {alert.token?.name || 'Unknown'} ({alert.token?.symbol || 'UNKNOWN'})
+                {safeToken.name} ({safeToken.symbol})
               </div>
             </div>
             <div>
               <div className="text-sm text-muted-foreground mb-1">Price at TX</div>
               <div className="font-semibold">
-                {formatUSD(alert.cryptoPriceAtTx || 0)}
+                {formatUSD(alert?.cryptoPriceAtTx || 0)}
               </div>
             </div>
             <div>
               <div className="text-sm text-muted-foreground mb-1">Transaction Fee</div>
               <div className="font-semibold">
-                {alert.fee || '0'} {(alert.blockchain || 'ethereum') === 'bitcoin' ? 'BTC' : 'ETH'}
-                {alert.feeUsd && ` (${formatUSD(alert.feeUsd)})`}
+                {alert?.fee || '0'} {(alert?.blockchain || 'ethereum') === 'bitcoin' ? 'BTC' : 'ETH'}
+                {alert?.feeUsd && ` (${formatUSD(alert.feeUsd)})`}
               </div>
             </div>
           </div>
@@ -240,40 +256,44 @@ export default function AlertDetailPage() {
               <div className="text-sm text-muted-foreground mb-1">Transaction Hash</div>
               <div className="flex items-center gap-2">
                 <code className="text-xs font-mono bg-muted/30 px-2 py-1 rounded flex-1 truncate">
-                  {alert.txHash || 'N/A'}
+                  {alert?.txHash || 'N/A'}
                 </code>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="shrink-0"
-                  onClick={() => copyToClipboard(alert.txHash, 'txHash')}
-                >
-                  {copiedField === 'txHash' ? (
-                    <Check className="h-4 w-4 text-emerald-400" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="shrink-0"
-                  asChild
-                >
-                  <a
-                    href={blockchainExplorers[alert.blockchain] || '#'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                </Button>
+                {alert?.txHash && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="shrink-0"
+                      onClick={() => copyToClipboard(alert.txHash, 'txHash')}
+                    >
+                      {copiedField === 'txHash' ? (
+                        <Check className="h-4 w-4 text-emerald-400" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="shrink-0"
+                      asChild
+                    >
+                      <a
+                        href={blockchainExplorers[alert.blockchain || 'ethereum'] || '#'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
             <div>
               <div className="text-sm text-muted-foreground mb-1">Block Number</div>
               <div className="font-mono text-sm">
-                {alert.blockNumber?.toLocaleString() || 'N/A'}
+                {alert?.blockNumber ? alert.blockNumber.toLocaleString() : 'N/A'}
               </div>
             </div>
             <div>
@@ -281,16 +301,18 @@ export default function AlertDetailPage() {
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm">
-                  {new Date(alert.timestamp).toLocaleString()}
+                  {alert?.timestamp ? new Date(alert.timestamp).toLocaleString() : 'N/A'}
                 </span>
-                <span className="text-xs text-muted-foreground">
-                  ({alert.timeAgo})
-                </span>
+                {alert?.timeAgo && (
+                  <span className="text-xs text-muted-foreground">
+                    ({alert.timeAgo})
+                  </span>
+                )}
               </div>
             </div>
             <div>
               <div className="text-sm text-muted-foreground mb-1">Blockchain</div>
-              <div className="uppercase font-semibold">{alert.blockchain || 'ethereum'}</div>
+              <div className="uppercase font-semibold">{alert?.blockchain || 'ethereum'}</div>
             </div>
           </div>
         </CardContent>
@@ -300,7 +322,7 @@ export default function AlertDetailPage() {
       <Card className="glass-card border-border/50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            {alert.alertType === 'whale_buy' || alert.alertType === 'exchange_withdrawal' ? (
+            {alert?.alertType === 'whale_buy' || alert?.alertType === 'exchange_withdrawal' ? (
               <TrendingUp className="h-5 w-5 text-emerald-400" />
             ) : (
               <TrendingDown className="h-5 w-5 text-red-400" />
@@ -316,18 +338,18 @@ export default function AlertDetailPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="font-semibold mb-1">
-                    {alert.from?.label || 'Unknown Wallet'}
+                    {safeFrom.label}
                   </div>
                   <div className="flex items-center gap-2">
                     <code className="text-xs font-mono text-muted-foreground truncate flex-1">
-                      {alert.from?.address || 'N/A'}
+                      {safeFrom.address || 'N/A'}
                     </code>
-                    {alert.from?.address && (
+                    {safeFrom.address && (
                       <Button
                         variant="ghost"
                         size="sm"
                         className="shrink-0"
-                        onClick={() => copyToClipboard(alert.from.address, 'from')}
+                        onClick={() => copyToClipboard(safeFrom.address, 'from')}
                       >
                         {copiedField === 'from' ? (
                           <Check className="h-4 w-4 text-emerald-400" />
@@ -341,7 +363,7 @@ export default function AlertDetailPage() {
                 <div className="text-right">
                   <div className="text-sm text-muted-foreground">Amount</div>
                   <div className="font-semibold">
-                    {formatCompactUSD(alert.from?.amountUsd || 0)}
+                    {formatCompactUSD(safeFrom.amountUsd)}
                   </div>
                 </div>
               </div>
@@ -361,7 +383,7 @@ export default function AlertDetailPage() {
           <div>
             <div className="text-sm text-muted-foreground mb-2">To</div>
             <div className="space-y-3">
-              {(alert.to || []).map((recipient, index) => (
+              {safeTo.map((recipient, index) => (
                 <div
                   key={index}
                   className="bg-muted/30 rounded-lg p-4 space-y-2"
@@ -369,13 +391,13 @@ export default function AlertDetailPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold mb-1">
-                        {recipient?.label || 'Unknown Wallet'}
+                        {recipient.label || 'Unknown Wallet'}
                       </div>
                       <div className="flex items-center gap-2">
                         <code className="text-xs font-mono text-muted-foreground truncate flex-1">
-                          {recipient?.address || 'N/A'}
+                          {recipient.address || 'N/A'}
                         </code>
-                        {recipient?.address && (
+                        {recipient.address && (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -394,7 +416,7 @@ export default function AlertDetailPage() {
                     <div className="text-right ml-4">
                       <div className="text-sm text-muted-foreground">Amount</div>
                       <div className="font-semibold">
-                        {formatCompactUSD(recipient?.amountUsd || 0)}
+                        {formatCompactUSD(recipient.amountUsd)}
                       </div>
                     </div>
                   </div>
