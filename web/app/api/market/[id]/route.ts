@@ -68,36 +68,44 @@ export async function GET(
       }
     }
 
+    // Helper to safely get numeric value
+    const getNumeric = (value: number | undefined | null, defaultValue = 0): number => {
+      if (value === null || value === undefined || isNaN(value) || !isFinite(value)) {
+        return defaultValue;
+      }
+      return Number(value);
+    };
+
     const formattedData = {
-      id: coinData.id,
-      name: coinData.name,
+      id: coinData.id || '',
+      name: coinData.name || '',
       symbol: coinData.symbol?.toUpperCase() || '',
       image: coinData.image?.large || coinData.image?.small || '',
-      current_price: coinData.market_data?.current_price?.usd || 0,
-      market_cap: coinData.market_data?.market_cap?.usd || 0,
+      current_price: getNumeric(coinData.market_data?.current_price?.usd),
+      market_cap: getNumeric(coinData.market_data?.market_cap?.usd),
       market_cap_rank: coinData.market_cap_rank || null,
-      total_volume: coinData.market_data?.total_volume?.usd || 0,
-      high_24h: coinData.market_data?.high_24h?.usd || 0,
-      low_24h: coinData.market_data?.low_24h?.usd || 0,
-      price_change_24h: coinData.market_data?.price_change_24h || 0,
-      price_change_percentage_24h: coinData.market_data?.price_change_percentage_24h || 0,
-      price_change_percentage_7d: priceChange7d || 0,
-      circulating_supply: coinData.market_data?.circulating_supply || 0,
-      total_supply: coinData.market_data?.total_supply || 0,
-      max_supply: coinData.market_data?.max_supply || null,
-      ath: coinData.market_data?.ath?.usd || 0,
-      ath_change_percentage: coinData.market_data?.ath_change_percentage?.usd || 0,
-      atl: coinData.market_data?.atl?.usd || 0,
-      atl_change_percentage: coinData.market_data?.atl_change_percentage?.usd || 0,
+      total_volume: getNumeric(coinData.market_data?.total_volume?.usd),
+      high_24h: getNumeric(coinData.market_data?.high_24h?.usd),
+      low_24h: getNumeric(coinData.market_data?.low_24h?.usd),
+      price_change_24h: getNumeric(coinData.market_data?.price_change_24h),
+      price_change_percentage_24h: getNumeric(coinData.market_data?.price_change_percentage_24h),
+      price_change_percentage_7d: getNumeric(priceChange7d),
+      circulating_supply: getNumeric(coinData.market_data?.circulating_supply),
+      total_supply: getNumeric(coinData.market_data?.total_supply),
+      max_supply: coinData.market_data?.max_supply ? getNumeric(coinData.market_data.max_supply) : null,
+      ath: getNumeric(coinData.market_data?.ath?.usd),
+      ath_change_percentage: getNumeric(coinData.market_data?.ath_change_percentage?.usd),
+      atl: getNumeric(coinData.market_data?.atl?.usd),
+      atl_change_percentage: getNumeric(coinData.market_data?.atl_change_percentage?.usd),
       description: coinData.description?.en || '',
       homepage: coinData.links?.homepage?.[0] || '',
       blockchain_site: coinData.links?.blockchain_site || [],
       chart_data: ohlcData,
       market_cap_history: ohlcData.map((point: { time: number; value: number }) => ({
         time: point.time,
-        value: point.value * (coinData.market_data?.circulating_supply || 0),
+        value: point.value * getNumeric(coinData.market_data?.circulating_supply),
       })),
-      last_updated: coinData.last_updated,
+      last_updated: coinData.last_updated || new Date().toISOString(),
     };
 
     return NextResponse.json(formattedData, {
@@ -107,8 +115,19 @@ export async function GET(
     });
   } catch (error) {
     console.error('Coin API error:', error);
+    
+    // More detailed error logging
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
+    
+    // Return 500 with error details in development, generic message in production
     return NextResponse.json(
-      { error: 'Failed to fetch coin data' },
+      { 
+        error: 'Failed to fetch coin data',
+        message: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined
+      },
       { status: 500 }
     );
   }

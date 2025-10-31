@@ -145,16 +145,22 @@ class BinanceWebSocket {
         }
       };
 
-      this.ws.onclose = () => {
+      this.ws.onclose = (event) => {
         this.isConnected = false;
-        console.log('Binance WebSocket disconnected');
-        this.scheduleReconnect();
+        // Only log if not a clean close (code 1000) or intentional shutdown
+        if (event.code !== 1000) {
+          console.log('Binance WebSocket disconnected', event.code, event.reason);
+          this.scheduleReconnect();
+        }
       };
 
       this.ws.onerror = (error) => {
-        console.error('Binance WebSocket error:', error);
+        // Suppress excessive error logging in production
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Binance WebSocket error:', error);
+        }
         this.isConnected = false;
-        this.ws?.close();
+        // Don't close immediately, let onclose handle it
       };
     } catch (error) {
       console.error('Failed to establish Binance WebSocket:', error);
