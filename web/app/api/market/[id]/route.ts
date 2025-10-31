@@ -20,7 +20,7 @@ export async function GET(
         }
       ),
       fetch(
-        `https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=7&interval=hourly`,
+        `https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=30&interval=daily`,
         {
           signal: controller.signal,
           next: { revalidate: 10 },
