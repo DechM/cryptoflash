@@ -31,7 +31,7 @@ export async function GET(
         }
       ),
       fetch(
-        `https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=max&interval=daily`,
+        `https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=365&interval=daily`,
         {
           signal: controller.signal,
           next: { revalidate: 3600 }, // Cache for 1 hour for historical data
