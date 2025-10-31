@@ -4,16 +4,17 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const resolvedParams = await params;
-    const { id } = resolvedParams;
+  const resolvedParams = await params;
+  const { id } = resolvedParams;
 
-    if (!id || typeof id !== 'string') {
-      return NextResponse.json(
-        { error: 'Invalid coin ID' },
-        { status: 400 }
-      );
-    }
+  if (!id || typeof id !== 'string') {
+    return NextResponse.json(
+      { error: 'Invalid coin ID' },
+      { status: 400 }
+    );
+  }
+
+  try {
 
     // Fetch coin data from CoinGecko
     const controller = new AbortController();
