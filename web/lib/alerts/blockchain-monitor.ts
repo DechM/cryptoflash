@@ -49,28 +49,7 @@ export async function fetchLargeEthereumTransactions(
   try {
     const apiKey = process.env.ETHERSCAN_API_KEY || 'YourApiKeyToken';
     
-    // Step 1: Get latest block number
-    const blockResponse = await fetch(
-      `https://api.etherscan.com/api?module=proxy&action=eth_blockNumber&apikey=${apiKey}`,
-      {
-        next: { revalidate: 15 }, // Revalidate every 15s for fresh data
-      }
-    );
-
-    if (!blockResponse.ok) {
-      throw new Error('Etherscan API error: blockNumber');
-    }
-
-    const blockData = await blockResponse.json();
-    if (blockData.status !== '1') {
-      throw new Error('Etherscan API returned error');
-    }
-
-    const latestBlockHex = blockData.result;
-    const latestBlock = parseInt(latestBlockHex, 16);
-    
-    // Step 2: Fetch last 10 blocks for large transactions
-    // For free tier: We'll check known whale addresses and recent large transfers
+    // No need to get latest block - we'll use startblock=0 which gets all recent transactions
     const alerts: CryptoFlashAlert[] = [];
     
     // Known whale/exchange addresses to monitor (these generate real transactions)
@@ -82,22 +61,50 @@ export async function fetchLargeEthereumTransactions(
       '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045', // Vitalik Buterin
     ];
 
-    // Fetch transactions for known whale addresses (last 10k transactions)
-    for (const address of knownWhaleAddresses.slice(0, 3)) { // Limit to 3 for free tier
+    // Fetch transactions for ALL known whale addresses to get more data
+    for (const address of knownWhaleAddresses) {
       if (!etherscanLimiter.canMakeCall('etherscan')) break;
       
       try {
-        const txResponse = await fetch(
-          `https://api.etherscan.com/api?module=account&action=txlist&address=${address}&startblock=${latestBlock - 100}&endblock=${latestBlock}&sort=desc&apikey=${apiKey}`,
+        // Use Etherscan API - try with API key, fallback to without if needed
+        // Free tier allows 5 calls/sec, so we can check multiple addresses
+        let txResponse;
+        let txData;
+        
+        // Try with API key first
+        txResponse = await fetch(
+          `https://api.etherscan.com/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=desc&page=1&offset=20&apikey=${apiKey}`,
           {
             next: { revalidate: 30 },
           }
         );
 
-        if (!txResponse.ok) continue;
+        if (!txResponse.ok) {
+          console.log(`[Etherscan] HTTP error for ${address}:`, txResponse.status);
+          continue;
+        }
         
-        const txData = await txResponse.json();
-        if (txData.status !== '1' || !Array.isArray(txData.result)) continue;
+        txData = await txResponse.json();
+        
+        // If API key fails, try without it (some endpoints work without key for limited calls)
+        if (txData.status !== '1' && txData.message?.includes('Invalid API Key')) {
+          console.log(`[Etherscan] API key issue, trying without key for ${address}`);
+          // For now, skip if API key is required - user needs to set ETHERSCAN_API_KEY
+          console.log(`[Etherscan] Please set ETHERSCAN_API_KEY environment variable`);
+          continue;
+        }
+        
+        if (txData.status !== '1') {
+          console.log(`[Etherscan] API error for ${address}:`, txData.message || 'Unknown', txData.result || '');
+          continue;
+        }
+        
+        if (!Array.isArray(txData.result) || txData.result.length === 0) {
+          console.log(`[Etherscan] No transactions for ${address} in blocks ${Math.max(0, latestBlock - 1000)} - ${latestBlock}`);
+          continue;
+        }
+
+        console.log(`[Etherscan] Found ${txData.result.length} transactions for ${address}`);
 
         // Fetch real-time ETH price ONCE (not in loop) - BEFORE processing transactions
         let ethPriceUsd = 3000; // Fallback price
@@ -115,13 +122,20 @@ export async function fetchLargeEthereumTransactions(
         }
 
         // Process transactions
+        let processedCount = 0;
         for (const tx of txData.result.slice(0, 10)) { // Increased to 10 to find more large transactions
-          // Skip if transaction is too old (older than 24 hours)
+          // Skip if transaction is too old (older than 48 hours) - increased for more data
           const txTime = parseInt(tx.timeStamp) * 1000;
-          if (Date.now() - txTime > 24 * 60 * 60 * 1000) continue;
+          if (Date.now() - txTime > 48 * 60 * 60 * 1000) {
+            processedCount++;
+            continue;
+          }
           
           // Skip contract interactions (only native ETH transfers for now)
-          if (tx.to === '' || !tx.to) continue;
+          if (tx.to === '' || !tx.to) {
+            processedCount++;
+            continue;
+          }
           
           const value = BigInt(tx.value || '0');
           const valueEth = Number(value) / 1e18;
@@ -168,9 +182,12 @@ export async function fetchLargeEthereumTransactions(
             // Stop after finding enough alerts
             if (alerts.length >= 10) break;
           }
+          processedCount++;
         }
+        
+        console.log(`[Etherscan] Processed ${processedCount} transactions from ${address}, found ${alerts.length} alerts so far`);
       } catch (error) {
-        console.error(`Error fetching transactions for ${address}:`, error);
+        console.error(`[Etherscan] Error fetching transactions for ${address}:`, error);
         continue;
       }
 
@@ -178,9 +195,11 @@ export async function fetchLargeEthereumTransactions(
     }
 
     // Return ONLY real alerts - NO simulated data!
-    return alerts.sort((a, b) => b.timestamp - a.timestamp).slice(0, 10);
+    const sortedAlerts = alerts.sort((a, b) => b.timestamp - a.timestamp).slice(0, 10);
+    console.log(`[Etherscan] Returning ${sortedAlerts.length} total alerts`);
+    return sortedAlerts;
   } catch (error) {
-    console.error('Failed to fetch Ethereum transactions:', error);
+    console.error('[Etherscan] Failed to fetch Ethereum transactions:', error);
     // Return empty array if API fails - NO simulated data!
     return [];
   }
@@ -242,8 +261,10 @@ export async function fetchLargeBitcoinTransactions(
         const transactions = await response.json();
         if (!Array.isArray(transactions)) continue;
 
-        // Process transactions (last 5)
-        for (const tx of transactions.slice(0, 5)) {
+        console.log(`[Blockstream] Found ${transactions.length} transactions for ${address}`);
+        
+        // Process transactions (last 10 for more data)
+        for (const tx of transactions.slice(0, 10)) {
           // Get transaction details
           const txDetailResponse = await fetch(
             `https://blockstream.info/api/tx/${tx.txid}`,
@@ -254,10 +275,10 @@ export async function fetchLargeBitcoinTransactions(
           
           const txDetail = await txDetailResponse.json();
           
-          // Skip if transaction is not confirmed or too old
+          // Skip if transaction is not confirmed or too old (increased to 48 hours)
           if (!txDetail.status?.block_time || !txDetail.status?.block_height) continue;
           const txTime = txDetail.status.block_time * 1000;
-          if (Date.now() - txTime > 24 * 60 * 60 * 1000) continue;
+          if (Date.now() - txTime > 48 * 60 * 60 * 1000) continue;
           
           // Calculate largest output value sent to OTHER addresses (exclude change back to sender)
           let maxOutput = 0;

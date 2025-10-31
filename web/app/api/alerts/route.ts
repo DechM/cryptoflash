@@ -34,8 +34,8 @@ export async function GET(request: Request) {
       });
     }
 
-    // Fetch fresh alerts
-    const minAmountUsd = filters.minAmountUsd || 100000; // Default $100k threshold
+    // Fetch fresh alerts - use lower threshold to get more data
+    const minAmountUsd = filters.minAmountUsd || 50000; // Default $50k threshold (lowered for more alerts)
     const allAlerts = await getAllAlerts(minAmountUsd);
     
     // Cache individual alerts by ID so they can be found by detail route
