@@ -17,7 +17,10 @@ export async function GET(
 
     // Fetch coin data from CoinGecko
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+      console.error(`Request timeout for ${id}`);
+    }, 30000); // Increased timeout to 30s for large responses
 
     const [coinResponse, marketChartResponse] = await Promise.all([
       fetch(
@@ -129,13 +132,22 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error('Coin API error:', error);
+    console.error(`Coin API error for ${id}:`, error);
     
     // More detailed error logging
     if (error instanceof Error) {
+      console.error('Error name:', error.name);
       console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
+      if (error.name === 'AbortError') {
+        console.error('Request was aborted (timeout or cancelled)');
+      }
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error stack:', error.stack);
+      }
     }
+    
+    // Return appropriate status codes
+    const statusCode = error instanceof Error && error.message.includes('timeout') ? 504 : 500;
     
     // Return 500 with error details in development, generic message in production
     return NextResponse.json(
@@ -143,7 +155,7 @@ export async function GET(
         error: 'Failed to fetch coin data',
         message: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined
       },
-      { status: 500 }
+      { status: statusCode }
     );
   }
 }
