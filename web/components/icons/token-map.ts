@@ -119,3 +119,8 @@ export const TOKEN_MAP: Record<string, string> = {
   ZEC: "ZEC",
   ZRX: "ZRX",
 } as const;
+
+export function getTokenIcon(symbol: string): string {
+  const upperSymbol = symbol.toUpperCase();
+  return TOKEN_MAP[upperSymbol] || '●';
+}
