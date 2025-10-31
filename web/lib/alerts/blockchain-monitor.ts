@@ -93,12 +93,13 @@ export async function fetchLargeEthereumTransactions(
     const blockNumberData = await blockNumberResponse.json();
     if (blockNumberData.status !== '1' || !blockNumberData.result) {
       console.error('[Etherscan] Block number API error:', blockNumberData.message || 'Unknown');
+      console.error('[Etherscan] Full response:', JSON.stringify(blockNumberData, null, 2));
       return [];
     }
 
     const latestBlockHex = blockNumberData.result;
     const latestBlock = parseInt(latestBlockHex, 16);
-    console.log(`[Etherscan] Latest block: ${latestBlock}`);
+    console.log(`[Etherscan] ✅ Latest block: ${latestBlock} (hex: ${latestBlockHex})`);
 
     // Step 2: Scan last 150 blocks for large transactions (about 30 minutes of blocks)
     // Free tier: 5 calls/sec, so we can check ~150 blocks with delays
@@ -139,6 +140,9 @@ export async function fetchLargeEthereumTransactions(
 
         const blockData = await blockResponse.json();
         if (blockData.status !== '1' || !blockData.result || !blockData.result.transactions) {
+          if (i % 20 === 0) {
+            console.log(`[Etherscan] Block ${blockNumber} returned no transactions or error`);
+          }
           continue;
         }
 
@@ -150,11 +154,17 @@ export async function fetchLargeEthereumTransactions(
         
         // Log progress every 20 blocks
         if (i % 20 === 0) {
-          console.log(`[Etherscan] Scanned ${i} blocks, found ${alerts.length} alerts so far`);
+          console.log(`[Etherscan] Scanned ${i} blocks, found ${alerts.length} alerts so far, block ${blockNumber} has ${transactions.length} transactions`);
         }
         
         // Process transactions in this block
         for (const tx of transactions) {
+          // CRITICAL: Validate tx.hash exists and is valid BEFORE using it
+          if (!tx.hash || typeof tx.hash !== 'string' || !tx.hash.startsWith('0x') || tx.hash.length !== 66) {
+            console.warn(`[Etherscan] Skipping transaction with invalid hash in block ${blockNumber}`);
+            continue;
+          }
+
           // Skip if already processed (duplicate check)
           if (uniqueTxHashes.has(tx.hash)) continue;
           uniqueTxHashes.add(tx.hash);
@@ -253,16 +263,28 @@ export async function fetchLargeEthereumTransactions(
           { next: { revalidate: 30 } }
         );
 
-        if (!txResponse.ok) continue;
+        if (!txResponse.ok) {
+          console.warn(`[Etherscan] Failed to fetch from whale address ${address.substring(0,10)}...: ${txResponse.status}`);
+          continue;
+        }
         
         const txData = await txResponse.json();
         if (txData.status !== '1' || !Array.isArray(txData.result) || txData.result.length === 0) {
+          if (txData.status !== '1') {
+            console.warn(`[Etherscan] Whale address ${address.substring(0,10)}... API error: ${txData.message || 'Unknown'}`);
+          }
           continue;
         }
 
-        console.log(`[Etherscan] Whale address ${address.substring(0,10)}... returned ${txData.result.length} transactions`);
+        console.log(`[Etherscan] ✅ Whale address ${address.substring(0,10)}... returned ${txData.result.length} transactions`);
 
         for (const tx of txData.result.slice(0, 20)) {
+          // CRITICAL: Validate tx.hash exists and is valid BEFORE using it
+          if (!tx.hash || typeof tx.hash !== 'string' || !tx.hash.startsWith('0x') || tx.hash.length !== 66) {
+            console.warn(`[Etherscan] Skipping transaction with invalid hash from whale address ${address.substring(0,10)}...`);
+            continue;
+          }
+
           // Skip duplicates
           if (uniqueTxHashes.has(tx.hash)) continue;
           uniqueTxHashes.add(tx.hash);
@@ -332,12 +354,21 @@ export async function fetchLargeEthereumTransactions(
 
     // Return ONLY real alerts - NO simulated data!
     const sortedAlerts = alerts.sort((a, b) => b.timestamp - a.timestamp).slice(0, 50);
-    console.log(`[Etherscan] Total alerts after both approaches: ${sortedAlerts.length} (block scanning + whale addresses)`);
+    console.log(`[Etherscan] ✅ Total alerts after both approaches: ${sortedAlerts.length} (block scanning + whale addresses)`);
     
     // Validate all txHash are real and valid format
     const invalidHashes = sortedAlerts.filter(a => !a.txHash || !a.txHash.startsWith('0x') || a.txHash.length !== 66);
     if (invalidHashes.length > 0) {
-      console.error(`[Etherscan] WARNING: ${invalidHashes.length} alerts with invalid txHash format!`);
+      console.error(`[Etherscan] ❌ WARNING: ${invalidHashes.length} alerts with invalid txHash format!`);
+      console.error(`[Etherscan] Invalid alerts:`, invalidHashes.map(a => ({ id: a.id, txHash: a.txHash })));
+    }
+    
+    // Log sample alert for debugging
+    if (sortedAlerts.length > 0) {
+      const sample = sortedAlerts[0];
+      console.log(`[Etherscan] ✅ Sample alert: ${sample.txHash}, $${sample.token.amountUsd.toFixed(2)}, block ${sample.blockNumber}`);
+    } else {
+      console.warn(`[Etherscan] ⚠️ NO ALERTS FOUND! Check API key and rate limits.`);
     }
     
     return sortedAlerts;
