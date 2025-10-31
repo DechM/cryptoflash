@@ -99,7 +99,7 @@ export function getPulseWebSocket(): PulseWebSocket {
   if (typeof window === 'undefined') {
     return {
       subscribe: () => () => {},
-    } as PulseWebSocket;
+    } as unknown as PulseWebSocket;
   }
 
   if (!globalThis.__pulseWS) {
