@@ -61,10 +61,15 @@ export async function GET(
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      throw new Error('CoinGecko API error');
+      const errorText = await response.text().catch(() => 'Unknown error');
+      console.error(`CoinGecko chart API error (${response.status}) for ${id}:`, errorText);
+      throw new Error(`Failed to fetch chart data: ${response.status} ${response.statusText}`);
     }
 
-    const data = await response.json();
+    const data = await response.json().catch((err) => {
+      console.error(`Failed to parse chart data JSON for ${id}:`, err);
+      throw new Error('Invalid chart data response from CoinGecko');
+    });
 
     let chartData: Array<{ time: number; value: number }> = [];
 

@@ -38,13 +38,28 @@ export async function GET(
 
     clearTimeout(timeoutId);
 
-    if (!coinResponse.ok || !marketChartResponse.ok) {
-      throw new Error('CoinGecko API error');
+    // Check individual response statuses for better error messages
+    if (!coinResponse.ok) {
+      const errorText = await coinResponse.text().catch(() => 'Unknown error');
+      console.error(`CoinGecko coin API error (${coinResponse.status}):`, errorText);
+      throw new Error(`Failed to fetch coin data: ${coinResponse.status} ${coinResponse.statusText}`);
+    }
+
+    if (!marketChartResponse.ok) {
+      const errorText = await marketChartResponse.text().catch(() => 'Unknown error');
+      console.error(`CoinGecko chart API error (${marketChartResponse.status}):`, errorText);
+      throw new Error(`Failed to fetch chart data: ${marketChartResponse.status} ${marketChartResponse.statusText}`);
     }
 
     const [coinData, chartData] = await Promise.all([
-      coinResponse.json(),
-      marketChartResponse.json(),
+      coinResponse.json().catch((err) => {
+        console.error('Failed to parse coin data JSON:', err);
+        throw new Error('Invalid coin data response from CoinGecko');
+      }),
+      marketChartResponse.json().catch((err) => {
+        console.error('Failed to parse chart data JSON:', err);
+        throw new Error('Invalid chart data response from CoinGecko');
+      }),
     ]);
 
     // Format OHLC data from price data
