@@ -1,9 +1,8 @@
 "use client";
 
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+import { usePathname } from 'next/navigation';
 import Logo from "@/components/brand/Logo";
-
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -16,24 +15,36 @@ const navItems = [
 ];
 
 export function Header() {
+  const pathname = usePathname();
+
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur">
-  <div className="mx-auto flex h-14 max-w-7xl items-center px-3 sm:px-4">
-    {/* Лого вляво */}
-    <Logo className="hidden md:flex" withText imgSize={30} />
-    <Logo className="md:hidden" withText={false} imgSize={26} />
+      <div className="mx-auto flex h-14 max-w-7xl items-center px-3 sm:px-4">
+        <Logo className="hidden md:flex" withText imgSize={30} />
+        <Logo className="md:hidden" withText={false} imgSize={26} />
 
-    {/* Навигация вдясно */}
-    <nav className="ml-auto flex items-center gap-3 sm:gap-5">
-      <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Home</Link>
-      <Link href="/signals" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Market Signals</Link>
-      <Link href="/predictions" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Prediction Signals</Link>
-      <Link href="/briefs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">AI Crypto Briefs</Link>
-      <Link href="/subscribe" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Subscribe</Link>
-      <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">About</Link>
-    </nav>
-  </div>
-</header>
+        <nav className="ml-auto flex items-center gap-3 sm:gap-5" aria-label="Main navigation">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-sm px-1",
+                  isActive
+                    ? "text-primary font-medium"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                aria-current={isActive ? "page" : undefined}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+    </header>
   );
 }
 

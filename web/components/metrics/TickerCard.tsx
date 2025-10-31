@@ -27,8 +27,16 @@ export default function TickerCard({
   const isPositive = change24h > 0;
   const displayName = (symbol || "").toUpperCase();
 
+  const symbolUpper = symbol.toUpperCase();
+  const glowClass =
+    symbolUpper === 'BTC'
+      ? 'hover:shadow-[0_0_40px_rgba(255,153,0,0.12)] hover:shadow-[0_0_64px_rgba(255,153,0,0.18)]'
+      : symbolUpper === 'ETH'
+        ? 'hover:shadow-[0_0_40px_rgba(129,102,255,0.12)] hover:shadow-[0_0_64px_rgba(129,102,255,0.18)]'
+        : '';
+
   return (
-    <Card className="bg-card border border-border shadow-sm hover:shadow-md transition-shadow">
+    <Card className={cn("bg-card border border-border shadow-sm transition-all duration-300", glowClass)}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <TokenIcon symbol={symbol} size={18} className="text-muted-foreground" imageUrl={imageUrl} />

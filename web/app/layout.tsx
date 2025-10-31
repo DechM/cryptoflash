@@ -4,8 +4,8 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { Header } from '@/components/header';
 
 export const metadata: Metadata = {
-  title: 'CryptoFlash — Real-Time Crypto Signals & Movers',
-  description: 'Live crypto signals, top movers, and insights — stay ahead with actionable market intelligence.',
+  title: 'CryptoFlash — Real-time Crypto Signals',
+  description: 'Market signals, prediction odds, AI briefs — fast.',
   metadataBase: new URL('https://cryptoflash.app'),
   icons: {
     icon: [
@@ -19,23 +19,27 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     siteName: 'CryptoFlash',
-    title: 'CryptoFlash — Real-Time Crypto Signals & Movers',
-    description: 'Live crypto signals, top movers, and insights — stay ahead with actionable market intelligence.',
+    title: 'CryptoFlash — Real-time Crypto Signals',
+    description: 'Market signals, prediction odds, AI briefs — fast.',
     images: [
       {
-        url: '/og.jpg',
+        url: '/branding/crypto-flash-x-profile-picture.png',
         width: 1200,
         height: 630,
         alt: 'CryptoFlash',
       },
     ],
+    url: 'https://cryptoflash.app',
   },
   twitter: {
     card: 'summary_large_image',
     creator: '@CryptoFlashGuru',
-    title: 'CryptoFlash — Real-Time Crypto Signals & Movers',
-    description: 'Live crypto signals, top movers, and insights — stay ahead with actionable market intelligence.',
-    images: ['/og.jpg'],
+    title: 'CryptoFlash — Real-time Crypto Signals',
+    description: 'Market signals, prediction odds, AI briefs — fast.',
+    images: ['/branding/crypto-flash-x-profile-picture.png'],
+  },
+  alternates: {
+    canonical: 'https://cryptoflash.app',
   },
 };
 
