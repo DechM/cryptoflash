@@ -100,10 +100,10 @@ export async function fetchLargeEthereumTransactions(
     const latestBlock = parseInt(latestBlockHex, 16);
     console.log(`[Etherscan] Latest block: ${latestBlock}`);
 
-    // Step 2: Scan last 100 blocks for large transactions (about 20 minutes of blocks)
-    // Free tier: 5 calls/sec, so we can check ~100 blocks with delays
+    // Step 2: Scan last 150 blocks for large transactions (about 30 minutes of blocks)
+    // Free tier: 5 calls/sec, so we can check ~150 blocks with delays
     // NOTE: We scan blocks backwards (newest first) to find recent large transactions
-    const blocksToScan = 100;
+    const blocksToScan = 150; // Increased from 100 to find more transactions
     const uniqueTxHashes = new Set<string>(); // Avoid duplicates
     
     console.log(`[Etherscan] Starting to scan ${blocksToScan} blocks (from ${latestBlock} backwards) for transactions >= $${minAmountUsd}`);
