@@ -21,6 +21,9 @@ export function formatCompactUSD(n: number): string {
 }
 
 export function formatPercent(n: number): string {
+  if (typeof n !== 'number' || isNaN(n) || !isFinite(n)) {
+    return 'N/A';
+  }
   const sign = n >= 0 ? '+' : '';
   return `${sign}${n.toFixed(2)}%`;
 }

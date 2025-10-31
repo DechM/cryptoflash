@@ -254,7 +254,7 @@ function MarketTableRow({ coin }: { coin: MarketCoin }) {
           ) : (
             <TrendingDown className="h-3 w-3" />
           )}
-          {formatPercent(coin.price_change_percentage_7d / 100)}
+          {formatPercent((coin.price_change_percentage_7d ?? 0) / 100)}
         </span>
       </td>
       <td className="px-4 py-4 text-right text-sm text-muted-foreground">
@@ -329,7 +329,7 @@ function MarketCard({ coin }: { coin: MarketCoin }) {
               ) : (
                 <TrendingDown className="h-3 w-3" />
               )}
-              {formatPercent(coin.price_change_percentage_24h / 100)}
+              {formatPercent((coin.price_change_percentage_24h ?? 0) / 100)}
             </span>
           </div>
           <div>

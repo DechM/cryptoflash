@@ -23,6 +23,10 @@ export function LiveChart({ data, currentPrice, coinSymbol }: Props) {
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
+    // Only initialize if we have valid data
+    const validData = data.filter((d) => d && typeof d.time === 'number' && typeof d.value === 'number' && !isNaN(d.value));
+    if (validData.length === 0) return;
+
     const chart = createChart(chartContainerRef.current, {
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
@@ -52,7 +56,7 @@ export function LiveChart({ data, currentPrice, coinSymbol }: Props) {
     seriesRef.current = areaSeries;
 
     // Format data for lightweight-charts
-    const formattedData = data.map((d) => ({
+    const formattedData = validData.map((d) => ({
       time: d.time as Time,
       value: d.value,
     }));
@@ -72,15 +76,18 @@ export function LiveChart({ data, currentPrice, coinSymbol }: Props) {
       window.removeEventListener('resize', handleResize);
       chart.remove();
     };
-  }, []);
+  }, [data]);
 
   // Update chart with new price
   useEffect(() => {
-    if (!seriesRef.current || !chartRef.current || data.length === 0) return;
+    if (!seriesRef.current || !chartRef.current || data.length === 0 || !currentPrice || isNaN(currentPrice)) return;
 
     setIsUpdating(true);
     
-    const lastDataPoint = data[data.length - 1];
+    const validData = data.filter((d) => d && typeof d.value === 'number' && !isNaN(d.value));
+    if (validData.length === 0) return;
+
+    const lastDataPoint = validData[validData.length - 1];
     const now = Math.floor(Date.now() / 1000);
 
     // Add or update the latest point

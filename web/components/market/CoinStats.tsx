@@ -74,7 +74,7 @@ export function CoinStats({ data }: Props) {
                 ) : (
                   <TrendingDown className="h-3 w-3" />
                 )}
-                {formatPercent(data.price_change_percentage_24h / 100)}
+                {formatPercent((data.price_change_percentage_24h ?? 0) / 100)}
               </Badge>
             </div>
           </div>
@@ -144,7 +144,7 @@ export function CoinStats({ data }: Props) {
               ) : (
                 <TrendingDown className="h-5 w-5" />
               )}
-              {formatPercent(data.price_change_percentage_7d / 100)}
+              {formatPercent((data.price_change_percentage_7d ?? 0) / 100)}
             </div>
           </CardContent>
         </Card>
@@ -154,9 +154,9 @@ export function CoinStats({ data }: Props) {
             <CardTitle className="text-sm">All-Time High</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-xl font-bold">{formatUSD(data.ath)}</div>
+            <div className="text-xl font-bold">{formatUSD(data.ath || 0)}</div>
             <div className="text-sm text-muted-foreground mt-1">
-              {formatPercent(data.ath_change_percentage / 100)} from current
+              {formatPercent((data.ath_change_percentage ?? 0) / 100)} from current
             </div>
           </CardContent>
         </Card>
@@ -166,9 +166,9 @@ export function CoinStats({ data }: Props) {
             <CardTitle className="text-sm">All-Time Low</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-xl font-bold">{formatUSD(data.atl)}</div>
+            <div className="text-xl font-bold">{formatUSD(data.atl || 0)}</div>
             <div className="text-sm text-muted-foreground mt-1">
-              {formatPercent(data.atl_change_percentage / 100)} from current
+              {formatPercent((data.atl_change_percentage ?? 0) / 100)} from current
             </div>
           </CardContent>
         </Card>
