@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, notFound } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -65,34 +65,76 @@ export default function AlertDetailPage() {
     return notFound();
   }
 
-  // Safe access helpers - ensure all required fields exist
-  const safeToken = alert?.token || {
-    symbol: 'UNKNOWN',
-    name: 'Unknown Token',
-    emoji: '🪙',
-    decimals: 18,
-    amount: '0',
-    amountUsd: 0,
-  };
-
-  // Ensure emoji is always set
-  if (!safeToken.emoji) {
-    safeToken.emoji = getTokenEmoji(safeToken.symbol);
+  // Validate alert has all required fields
+  if (!alert || typeof alert !== 'object') {
+    return notFound();
   }
 
-  const safeFrom = alert?.from || {
-    address: '',
-    label: 'Unknown Wallet',
-    amount: '0',
-    amountUsd: 0,
-  };
+  // Safe access helpers with useMemo for stability
+  const safeToken = useMemo(() => {
+    const token = alert?.token;
+    
+    // If token is missing or invalid, return safe default
+    if (!token || typeof token !== 'object') {
+      const defaultToken = {
+        symbol: 'UNKNOWN',
+        name: 'Unknown Token',
+        emoji: '🪙',
+        decimals: 18,
+        amount: '0',
+        amountUsd: 0,
+      };
+      return defaultToken;
+    }
 
-  const safeTo = alert?.to && alert.to.length > 0 ? alert.to : [{
-    address: '',
-    label: 'Unknown Wallet',
-    amount: '0',
-    amountUsd: 0,
-  }];
+    // Ensure emoji is always set
+    const emoji = token.emoji || getTokenEmoji(token.symbol || 'BTC') || '🪙';
+    
+    return {
+      symbol: token.symbol || 'UNKNOWN',
+      name: token.name || 'Unknown Token',
+      emoji: emoji,
+      decimals: token.decimals ?? 18,
+      amount: token.amount || '0',
+      amountUsd: token.amountUsd ?? 0,
+    };
+  }, [alert?.token]);
+
+  const safeFrom = useMemo(() => {
+    const from = alert?.from;
+    if (!from || typeof from !== 'object') {
+      return {
+        address: '',
+        label: 'Unknown Wallet',
+        amount: '0',
+        amountUsd: 0,
+      };
+    }
+    return {
+      address: from.address || '',
+      label: from.label || 'Unknown Wallet',
+      amount: from.amount || '0',
+      amountUsd: from.amountUsd ?? 0,
+    };
+  }, [alert?.from]);
+
+  const safeTo = useMemo(() => {
+    const to = alert?.to;
+    if (!Array.isArray(to) || to.length === 0) {
+      return [{
+        address: '',
+        label: 'Unknown Wallet',
+        amount: '0',
+        amountUsd: 0,
+      }];
+    }
+    return to.map((recipient) => ({
+      address: recipient?.address || '',
+      label: recipient?.label || 'Unknown Wallet',
+      amount: recipient?.amount || '0',
+      amountUsd: recipient?.amountUsd ?? 0,
+    }));
+  }, [alert?.to]);
 
   const copyToClipboard = async (text: string, field: string) => {
     try {

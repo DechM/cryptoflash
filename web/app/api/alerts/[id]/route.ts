@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getAllAlerts } from '@/lib/alerts/blockchain-monitor';
 import { alertCache, CACHE_KEYS, CACHE_TTL } from '@/lib/alerts/cache';
+import { getTokenEmoji } from '@/lib/alerts/token-emoji';
+import type { CryptoFlashAlert } from '@/lib/alerts/types';
 
 export async function GET(
   request: Request,
@@ -18,20 +20,31 @@ export async function GET(
 
     // Check cache first
     const cacheKey = CACHE_KEYS.transaction(id);
-    const cached = alertCache.get(cacheKey);
+    const cached = alertCache.get<CryptoFlashAlert>(cacheKey);
 
     if (cached) {
-      return NextResponse.json(cached, {
-        headers: {
-          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
-          'X-Cache': 'HIT',
-        },
-      });
+      // Validate cached data before returning
+      if (cached && typeof cached === 'object' && cached.token) {
+        // Ensure cached token has emoji
+        const normalizedCached = {
+          ...cached,
+          token: {
+            ...cached.token,
+            emoji: cached.token.emoji || getTokenEmoji(cached.token.symbol || 'BTC') || '🪙',
+          },
+        };
+        return NextResponse.json(normalizedCached, {
+          headers: {
+            'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+            'X-Cache': 'HIT',
+          },
+        });
+      }
     }
 
     // Fetch all alerts and find the one matching the ID
     const allAlerts = await getAllAlerts(0); // Get all alerts
-    const alert = allAlerts.find((a) => a.id === id);
+    let alert = allAlerts.find((a) => a.id === id);
 
     if (!alert) {
       return NextResponse.json(
@@ -40,10 +53,49 @@ export async function GET(
       );
     }
 
-    // Cache result
-    alertCache.set(cacheKey, alert, CACHE_TTL.transaction);
+    // Validate and normalize alert data - ensure all required fields exist
+    const normalizedAlert: CryptoFlashAlert = {
+      ...alert,
+      // Ensure token always has all required fields including emoji
+      token: {
+        symbol: alert.token?.symbol || 'UNKNOWN',
+        name: alert.token?.name || 'Unknown Token',
+        emoji: alert.token?.emoji || getTokenEmoji(alert.token?.symbol || 'BTC') || '🪙',
+        decimals: alert.token?.decimals ?? 18,
+        amount: alert.token?.amount || '0',
+        amountUsd: alert.token?.amountUsd ?? 0,
+      },
+      // Ensure from always exists
+      from: alert.from || {
+        address: '',
+        label: 'Unknown Wallet',
+        amount: '0',
+        amountUsd: 0,
+      },
+      // Ensure to is always an array with at least one element
+      to: (Array.isArray(alert.to) && alert.to.length > 0) ? alert.to : [{
+        address: '',
+        label: 'Unknown Wallet',
+        amount: '0',
+        amountUsd: 0,
+      }],
+      // Ensure other required fields
+      blockchain: alert.blockchain || 'ethereum',
+      txHash: alert.txHash || '',
+      timestamp: alert.timestamp || Date.now(),
+      alertType: alert.alertType || 'large_transfer',
+      severity: alert.severity || 'low',
+      cryptoPriceAtTx: alert.cryptoPriceAtTx ?? 0,
+      fee: alert.fee || '0',
+      feeUsd: alert.feeUsd,
+      blockNumber: alert.blockNumber,
+      timeAgo: alert.timeAgo || 'just now',
+    };
 
-    return NextResponse.json(alert, {
+    // Cache normalized result
+    alertCache.set(cacheKey, normalizedAlert, CACHE_TTL.transaction);
+
+    return NextResponse.json(normalizedAlert, {
       headers: {
         'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
         'X-Cache': 'MISS',
