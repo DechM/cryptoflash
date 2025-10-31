@@ -47,16 +47,16 @@ export function AssetChart({ data, livePrice }: Props) {
 
     seriesRef.current = candlestickSeries;
 
-    // Format data for lightweight-charts: time must be in seconds
+    // Format data for lightweight-charts: time must be in seconds as UTCTimestamp
     const formattedData = data.map((d) => ({
-      time: d.time,
+      time: d.time as any, // Cast to Time type (can be number or UTCTimestamp)
       open: d.open,
       high: d.high,
       low: d.low,
       close: d.close,
     }));
 
-    candlestickSeries.setData(formattedData);
+    candlestickSeries.setData(formattedData as any);
 
     chart.timeScale().fitContent();
 
