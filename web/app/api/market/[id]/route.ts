@@ -20,10 +20,10 @@ export async function GET(
         }
       ),
       fetch(
-        `https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=30&interval=daily`,
+        `https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=max&interval=daily`,
         {
           signal: controller.signal,
-          next: { revalidate: 10 },
+          next: { revalidate: 3600 }, // Cache for 1 hour for historical data
         }
       ),
     ]);
@@ -85,6 +85,10 @@ export async function GET(
       homepage: coinData.links?.homepage?.[0] || '',
       blockchain_site: coinData.links?.blockchain_site || [],
       chart_data: ohlcData,
+      market_cap_history: ohlcData.map((point: { time: number; value: number }) => ({
+        time: point.time,
+        value: point.value * (coinData.market_data?.circulating_supply || 0),
+      })),
       last_updated: coinData.last_updated,
     };
 

@@ -1,11 +1,13 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { LiveChart } from './LiveChart';
+import { EnhancedLiveChart } from './EnhancedLiveChart';
+import { ChartFilters } from './ChartFilters';
 import { CoinStats } from './CoinStats';
 import useSWR from 'swr';
 import { Loader2 } from 'lucide-react';
 import { useLiveCryptoPrice } from '@/hooks/useLiveCryptoPrice';
+import { useState, useMemo } from 'react';
 
 type CoinData = {
   id: string;
@@ -41,14 +43,34 @@ type Props = {
   coinId: string;
 };
 
+type ChartType = 'price' | 'market_cap';
+type TimeRange = '24h' | '7d' | '30d' | '1y' | 'all';
+
 export function CoinDetail({ coinId }: Props) {
+  const [chartType, setChartType] = useState<ChartType>('price');
+  const [timeRange, setTimeRange] = useState<TimeRange>('all');
+
   const { data, error, isLoading } = useSWR<CoinData>(
     `/api/market/${coinId}`,
     fetcher,
     {
-      refreshInterval: 30000, // Update every 30 seconds (WebSocket handles live prices)
+      refreshInterval: 30000,
       revalidateOnFocus: true,
       revalidateOnReconnect: true,
+    }
+  );
+
+  // Fetch chart data based on filters
+  const { data: chartDataResponse } = useSWR<{
+    data: Array<{ time: number; value: number }>;
+    range: TimeRange;
+    type: ChartType;
+  }>(
+    data ? `/api/market/${coinId}/chart?range=${timeRange}&type=${chartType}` : null,
+    fetcher,
+    {
+      refreshInterval: timeRange === 'all' ? 3600000 : 60000, // 1 hour for 'all', 1 min for others
+      revalidateOnFocus: true,
     }
   );
 
@@ -58,6 +80,35 @@ export function CoinDetail({ coinId }: Props) {
     fallbackPrice: data?.current_price,
     fallbackChange24h: data?.price_change_percentage_24h,
   });
+
+  // Filter data based on time range
+  const filteredChartData = useMemo(() => {
+    if (!chartDataResponse?.data) return data?.chart_data || [];
+    
+    const now = Date.now();
+    let cutoffTime = now;
+
+    switch (timeRange) {
+      case '24h':
+        cutoffTime = now - 24 * 60 * 60 * 1000;
+        break;
+      case '7d':
+        cutoffTime = now - 7 * 24 * 60 * 60 * 1000;
+        break;
+      case '30d':
+        cutoffTime = now - 30 * 24 * 60 * 60 * 1000;
+        break;
+      case '1y':
+        cutoffTime = now - 365 * 24 * 60 * 60 * 1000;
+        break;
+      case 'all':
+        return chartDataResponse.data;
+    }
+
+    return chartDataResponse.data.filter(
+      (point) => point.time * 1000 >= cutoffTime
+    );
+  }, [chartDataResponse, timeRange, data?.chart_data]);
 
   if (isLoading) {
     return (
@@ -85,11 +136,13 @@ export function CoinDetail({ coinId }: Props) {
     <div className="space-y-6">
       <CoinStats data={data} />
 
-      {/* Live Chart */}
+      {/* Enhanced Live Chart with Filters */}
       <Card className="glass-card border-border/50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <span>{data.name} Price Chart (7 Days)</span>
+            <span>
+              {data.name} {chartType === 'market_cap' ? 'Market Cap' : 'Price'} Chart
+            </span>
             <span className="ml-2 inline-flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-xs font-normal text-muted-foreground ml-auto">
               Live
@@ -97,15 +150,27 @@ export function CoinDetail({ coinId }: Props) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {data.chart_data && data.chart_data.length > 0 ? (
-            <LiveChart
-              data={data.chart_data}
+          <ChartFilters
+            chartType={chartType}
+            timeRange={timeRange}
+            onChartTypeChange={setChartType}
+            onTimeRangeChange={setTimeRange}
+          />
+          {filteredChartData && filteredChartData.length > 0 ? (
+            <EnhancedLiveChart
+              data={filteredChartData}
+              marketCapData={chartType === 'market_cap' ? filteredChartData : undefined}
               currentPrice={livePrice || data.current_price}
+              currentMarketCap={data.market_cap}
               coinSymbol={data.symbol}
+              coinName={data.name}
+              chartType={chartType}
+              timeRange={timeRange}
             />
           ) : (
             <div className="text-center py-8 text-muted-foreground">
-              Chart data unavailable
+              <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+              Loading chart data...
             </div>
           )}
         </CardContent>
