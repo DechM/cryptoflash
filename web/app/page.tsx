@@ -1,30 +1,60 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { TickerCard } from '@/components/metrics/TickerCard';
+import { RefreshButton } from '@/components/RefreshButton';
+import { getTickers } from '@/lib/crypto';
 
-export default function HomePage() {
+export default async function HomePage() {
+  const tickers = await getTickers();
+
+  const btcTicker = tickers.find((t) => t.id === 'bitcoin');
+  const ethTicker = tickers.find((t) => t.id === 'ethereum');
+
   return (
     <div className="container-grid">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Dashboard</h1>
         <div className="flex items-center gap-2">
           <Badge>Beta</Badge>
-          <Button>Refresh</Button>
+          <RefreshButton />
         </div>
       </div>
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {[1, 2, 3].map((i) => (
-          <Card key={i}>
+      {tickers.length === 0 ? (
+        <Alert variant="default">
+          <AlertDescription>Live market data temporarily unavailable. Retrying soon.</AlertDescription>
+        </Alert>
+      ) : (
+        <section className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {btcTicker && (
+            <TickerCard
+              name={btcTicker.name}
+              symbol={btcTicker.symbol}
+              price={btcTicker.price}
+              change24h={btcTicker.change24h}
+              volume24h={btcTicker.volume24h}
+            />
+          )}
+          {ethTicker && (
+            <TickerCard
+              name={ethTicker.name}
+              symbol={ethTicker.symbol}
+              price={ethTicker.price}
+              change24h={ethTicker.change24h}
+              volume24h={ethTicker.volume24h}
+            />
+          )}
+          <Card>
             <CardHeader>
-              <CardTitle>Metric {i}</CardTitle>
+              <CardTitle>Metric 3</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">--</div>
               <p className="text-sm text-muted-foreground">Placeholder description</p>
             </CardContent>
           </Card>
-        ))}
-      </section>
+        </section>
+      )}
     </div>
   );
 }
