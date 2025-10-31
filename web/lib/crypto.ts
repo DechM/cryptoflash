@@ -14,6 +14,7 @@ export type TickerData = {
   price: number;
   change24h: number;
   volume24h: number;
+  updatedAt: number;
 };
 
 let cachedData: TickerData[] | null = null;
@@ -40,6 +41,7 @@ export async function getTickers(): Promise<TickerData[]> {
 
       const data = (await response.json()) as CoinGeckoMarket[];
 
+      const now = Date.now();
       const normalized: TickerData[] = data.map((coin) => ({
         id: coin.id as 'bitcoin' | 'ethereum',
         symbol: coin.symbol,
@@ -47,6 +49,7 @@ export async function getTickers(): Promise<TickerData[]> {
         price: coin.current_price,
         change24h: coin.price_change_percentage_24h ?? 0,
         volume24h: coin.total_volume,
+        updatedAt: now,
       }));
 
       cachedData = normalized;
