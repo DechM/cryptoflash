@@ -87,9 +87,9 @@ export async function getWalletTransactions(
       return generateSimulatedTransactions(address, limit);
     }
 
-    // Real Etherscan API call
+    // Real Etherscan API call (V2)
     const response = await fetch(
-      `https://api.etherscan.com/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&page=1&offset=${limit}&sort=desc&apikey=${apiKey}`,
+      `https://api.etherscan.io/v2/api?chainid=1&module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&page=1&offset=${limit}&sort=desc&apikey=${apiKey}`,
       {
         next: { revalidate: 60 },
       }

@@ -32,7 +32,6 @@ export async function GET(
     }
 
     // Fetch all alerts and find the one matching the ID
-    // Note: We need to fetch fresh alerts since IDs are generated dynamically
     const allAlerts = await getAllAlerts(0); // Get all alerts
     
     // Cache individual alerts by ID so they can be found later
@@ -41,11 +40,31 @@ export async function GET(
       alertCache.set(alertCacheKey, a, CACHE_TTL.transaction);
     });
     
+    // Try to find alert by ID first
     let alert = allAlerts.find((a) => a.id === id);
 
+    // Fallback: If not found by ID, try to find by txHash
+    // This handles old links that might have timestamp in ID, or direct txHash lookup
     if (!alert) {
+      if (id.startsWith('ethereum-')) {
+        // Extract txHash from ID (remove "ethereum-" prefix, handle old format with timestamp)
+        const txHashMatch = id.match(/^ethereum-(0x[a-fA-F0-9]{64})/);
+        if (txHashMatch && txHashMatch[1]) {
+          const txHash = txHashMatch[1];
+          alert = allAlerts.find((a) => a.txHash === txHash);
+          console.log(`[Alert Detail] Found by txHash fallback: ${txHash}`);
+        }
+      } else if (id.startsWith('0x') && id.length === 66) {
+        // Direct txHash (without "ethereum-" prefix)
+        alert = allAlerts.find((a) => a.txHash === id);
+        console.log(`[Alert Detail] Found by direct txHash: ${id}`);
+      }
+    }
+
+    if (!alert) {
+      console.warn(`[Alert Detail] Alert not found for ID: ${id}, total alerts: ${allAlerts.length}`);
       return NextResponse.json(
-        { error: 'Alert not found' },
+        { error: 'Alert not found', id, totalAlerts: allAlerts.length },
         { status: 404 }
       );
     }

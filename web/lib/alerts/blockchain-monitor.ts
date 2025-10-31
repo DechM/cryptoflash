@@ -81,7 +81,7 @@ export async function fetchLargeEthereumTransactions(
     }
 
     const blockNumberResponse = await fetch(
-      `https://api.etherscan.com/api?module=proxy&action=eth_blockNumber&apikey=${apiKey}`,
+      `https://api.etherscan.io/v2/api?chainid=1&module=proxy&action=eth_blockNumber&apikey=${apiKey}`,
       { next: { revalidate: 15 } }
     );
 
@@ -130,7 +130,7 @@ export async function fetchLargeEthereumTransactions(
       try {
         const blockHex = '0x' + blockNumber.toString(16);
         const blockResponse = await fetch(
-          `https://api.etherscan.com/api?module=proxy&action=eth_getBlockByNumber&tag=${blockHex}&boolean=true&apikey=${apiKey}`,
+          `https://api.etherscan.io/v2/api?chainid=1&module=proxy&action=eth_getBlockByNumber&tag=${blockHex}&boolean=true&apikey=${apiKey}`,
           { next: { revalidate: 60 } } // Cache blocks for 60s
         );
 
@@ -188,7 +188,7 @@ export async function fetchLargeEthereumTransactions(
             const toLabel = getLabelForAddress('ethereum', tx.to);
 
             alerts.push({
-              id: `ethereum-${tx.hash}-${blockTimestamp}`,
+              id: `ethereum-${tx.hash}`, // Stable ID: only hash, no timestamp
               blockchain: 'ethereum',
               txHash: tx.hash, // REAL txHash from blockchain!
               timestamp: blockTimestamp,
@@ -259,7 +259,7 @@ export async function fetchLargeEthereumTransactions(
 
       try {
         const txResponse = await fetch(
-          `https://api.etherscan.com/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=desc&page=1&offset=20&apikey=${apiKey}`,
+          `https://api.etherscan.io/v2/api?chainid=1&module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=desc&page=1&offset=20&apikey=${apiKey}`,
           { next: { revalidate: 30 } }
         );
 
@@ -269,9 +269,20 @@ export async function fetchLargeEthereumTransactions(
         }
         
         const txData = await txResponse.json();
-        if (txData.status !== '1' || !Array.isArray(txData.result) || txData.result.length === 0) {
-          if (txData.status !== '1') {
-            console.warn(`[Etherscan] Whale address ${address.substring(0,10)}... API error: ${txData.message || 'Unknown'}`);
+        
+        // Debug: Log full response for troubleshooting
+        console.log(`[Etherscan] Whale address ${address.substring(0,10)}... response:`, {
+          status: txData.status,
+          message: txData.message,
+          resultType: typeof txData.result,
+          resultLength: Array.isArray(txData.result) ? txData.result.length : 'not array'
+        });
+        
+        // Etherscan sometimes returns status "0" but still has data
+        // Check if result is an array with data, even if status is not "1"
+        if (!Array.isArray(txData.result) || txData.result.length === 0) {
+          if (txData.status !== '1' && txData.message) {
+            console.warn(`[Etherscan] Whale address ${address.substring(0,10)}... API error: ${txData.message}`);
           }
           continue;
         }
@@ -308,7 +319,7 @@ export async function fetchLargeEthereumTransactions(
             const toLabel = getLabelForAddress('ethereum', tx.to);
 
             alerts.push({
-              id: `ethereum-${tx.hash}-${txTime}`,
+              id: `ethereum-${tx.hash}`, // Stable ID: only hash, no timestamp
               blockchain: 'ethereum',
               txHash: tx.hash, // REAL txHash from Etherscan API!
               timestamp: txTime,
