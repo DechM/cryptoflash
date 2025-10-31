@@ -10,7 +10,6 @@ function getLabelForAddress(blockchain: string, address: string): KnownLabel | u
   const lowerAddress = address.toLowerCase();
   return exchanges[lowerAddress] || undefined;
 }
-import { detectAlertType, determineSeverity, formatTimeAgo } from './blockchain-monitor';
 
 // Rate limiter (same as blockchain-monitor.ts)
 class RateLimiter {
