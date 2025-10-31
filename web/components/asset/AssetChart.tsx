@@ -82,12 +82,12 @@ export function AssetChart({ data, livePrice }: Props) {
       
       // Update last candle or add new one
       seriesRef.current.update({
-        time: lastCandle.time === now ? lastCandle.time : now,
+        time: (lastCandle.time === now ? lastCandle.time : now) as any,
         open: lastCandle.close,
         high: Math.max(lastCandle.high, livePrice),
         low: Math.min(lastCandle.low, livePrice),
         close: livePrice,
-      });
+      } as any);
     }
   }, [livePrice, data]);
 
