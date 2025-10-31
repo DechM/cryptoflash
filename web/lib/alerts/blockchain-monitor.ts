@@ -86,21 +86,22 @@ export async function fetchLargeEthereumTransactions(
         
         txData = await txResponse.json();
         
-        // If API key fails, try without it (some endpoints work without key for limited calls)
-        if (txData.status !== '1' && txData.message?.includes('Invalid API Key')) {
-          console.log(`[Etherscan] API key issue, trying without key for ${address}`);
-          // For now, skip if API key is required - user needs to set ETHERSCAN_API_KEY
-          console.log(`[Etherscan] Please set ETHERSCAN_API_KEY environment variable`);
-          continue;
-        }
-        
+        // Check if API key is invalid or missing
         if (txData.status !== '1') {
-          console.log(`[Etherscan] API error for ${address}:`, txData.message || 'Unknown', txData.result || '');
+          const errorMsg = txData.message || 'Unknown error';
+          
+          // If it's an API key issue, log clearly
+          if (errorMsg.includes('Invalid API Key') || errorMsg.includes('NOTOK') || errorMsg.includes('Query Timeout')) {
+            console.warn(`[Etherscan] API key issue or rate limit for ${address}: ${errorMsg}`);
+            console.warn(`[Etherscan] To fix: Get free API key from https://etherscan.io/apis and set ETHERSCAN_API_KEY env variable`);
+          } else {
+            console.log(`[Etherscan] API error for ${address}:`, errorMsg);
+          }
           continue;
         }
         
         if (!Array.isArray(txData.result) || txData.result.length === 0) {
-          console.log(`[Etherscan] No transactions for ${address} in blocks ${Math.max(0, latestBlock - 1000)} - ${latestBlock}`);
+          console.log(`[Etherscan] No transactions found for ${address}`);
           continue;
         }
 
