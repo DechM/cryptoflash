@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { formatUSD, formatPercent, formatCompactUSD } from '@/lib/format';
 import { SparklineChart } from './SparklineChart';
+import { LivePriceCell } from './LivePriceCell';
 import { ArrowUp, ArrowDown, Search, TrendingUp, TrendingDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import type { MarketCoin } from '@/lib/market';
@@ -20,6 +21,18 @@ export function MarketTable({ data }: Props) {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState<SortField>('market_cap');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  
+  // Track previous prices to show price change animation
+  const [previousPrices, setPreviousPrices] = useState<Map<string, number>>(new Map());
+  
+  // Update previous prices when data changes
+  React.useEffect(() => {
+    const newPrices = new Map<string, number>();
+    data.forEach((coin) => {
+      newPrices.set(coin.id, coin.current_price);
+    });
+    setPreviousPrices(newPrices);
+  }, [data]);
 
   const filteredData = useMemo(() => {
     let filtered = [...data];
@@ -214,7 +227,7 @@ function MarketTableRow({ coin }: { coin: MarketCoin }) {
         </Link>
       </td>
       <td className="px-4 py-4 text-right">
-        <div className="font-medium">{formatUSD(coin.current_price)}</div>
+        <LivePriceCell price={coin.current_price} coinId={coin.id} />
       </td>
       <td className="px-4 py-4 text-right">
         <span
