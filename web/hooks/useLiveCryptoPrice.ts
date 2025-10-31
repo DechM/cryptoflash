@@ -17,11 +17,9 @@ export function useLiveCryptoPrice({ coinId, fallbackPrice, fallbackChange24h }:
   const unsubRef = useRef<() => void>();
   const wsRef = useRef<ReturnType<typeof getBinanceWebSocket>>();
 
-  // Fallback to CoinGecko API polling if WebSocket fails or coin not on Binance
-  const { data: coingeckoData } = useSWR(
-    !livePrice && fallbackPrice
-      ? `https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd&include_24hr_change=true`
-      : null,
+  // Fallback to our API route (no CORS issues) if WebSocket fails or coin not on Binance
+  const { data: coingeckoData } = useSWR<{ price: number; change24h: number }>(
+    !livePrice && fallbackPrice ? `/api/market/live/${coinId}` : null,
     fetcher,
     {
       refreshInterval: 30000, // Poll every 30s as fallback
@@ -44,13 +42,10 @@ export function useLiveCryptoPrice({ coinId, fallbackPrice, fallbackChange24h }:
 
   // Get price from WebSocket or fallback
   const price =
-    livePrice?.price ?? coingeckoData?.[coinId]?.usd ?? fallbackPrice ?? 0;
+    livePrice?.price ?? coingeckoData?.price ?? fallbackPrice ?? 0;
   
   const change24h =
-    livePrice?.change24h ??
-    (coingeckoData?.[coinId]?.usd_24h_change
-      ? coingeckoData[coinId].usd_24h_change / 100
-      : fallbackChange24h ?? 0);
+    livePrice?.change24h ?? coingeckoData?.change24h ?? fallbackChange24h ?? 0;
 
   const hasWebSocket = !!livePrice;
 

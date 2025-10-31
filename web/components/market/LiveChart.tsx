@@ -101,6 +101,7 @@ export function LiveChart({ data, currentPrice, coinSymbol }: Props) {
           ? 'rgba(34, 197, 94, 0.01)'
           : 'rgba(239, 68, 68, 0.01)';
 
+        // Use addAreaSeries with type assertion (method exists at runtime)
         const areaSeries = (chart as any).addAreaSeries({
           lineColor: lineColor,
           topColor: topColor,
