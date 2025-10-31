@@ -49,21 +49,54 @@ export async function fetchLargeEthereumTransactions(
   try {
     const apiKey = process.env.ETHERSCAN_API_KEY || 'YourApiKeyToken';
     
+    // Check if API key is set
+    if (apiKey === 'YourApiKeyToken') {
+      console.warn('[Etherscan] ⚠️ ETHERSCAN_API_KEY не е зададен! API calls няма да работят.');
+    }
+    
     // No need to get latest block - we'll use startblock=0 which gets all recent transactions
     const alerts: CryptoFlashAlert[] = [];
     
+    // Fetch ETH price ONCE before processing (save API calls)
+    let ethPriceUsd = 3000; // Fallback price
+    try {
+      const priceResponse = await fetch(
+        'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd',
+        { next: { revalidate: 60 } }
+      );
+      if (priceResponse.ok) {
+        const priceData = await priceResponse.json();
+        ethPriceUsd = priceData.ethereum?.usd || 3000;
+        console.log(`[Etherscan] ETH price: $${ethPriceUsd}`);
+      }
+    } catch (e) {
+      console.error('[Etherscan] Failed to fetch ETH price:', e);
+    }
+    
     // Known whale/exchange addresses to monitor (these generate real transactions)
+    // Limit to 4 addresses to stay under 5 calls/sec limit (4 address calls + 1 price call = 5 total)
     const knownWhaleAddresses = [
       '0x3f5ce5fbfe3e9af3971dd833d26ba9b5c936f0be', // Binance Hot Wallet
       '0xde0b295669a9fd93d5f28d9ec85e19f4cd77182a', // Coinbase
       '0x742d35cc6634fbc5a2fabb40bb652791bb2a65bc', // Kraken
       '0xbe0eb53f46cd790cd13851d5eff43d12404d33e8', // Vitalik.eth
-      '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045', // Vitalik Buterin
     ];
 
-    // Fetch transactions for ALL known whale addresses to get more data
-    for (const address of knownWhaleAddresses) {
-      if (!etherscanLimiter.canMakeCall('etherscan')) break;
+    // Fetch transactions for whale addresses with rate limiting
+    for (let i = 0; i < knownWhaleAddresses.length; i++) {
+      const address = knownWhaleAddresses[i];
+      
+      // Check rate limit
+      if (!etherscanLimiter.canMakeCall('etherscan')) {
+        console.log(`[Etherscan] Rate limit reached, waiting...`);
+        await new Promise(resolve => setTimeout(resolve, 200)); // Wait 200ms
+        if (!etherscanLimiter.canMakeCall('etherscan')) break;
+      }
+      
+      // Add delay between calls to stay under 5/sec limit (space them out)
+      if (i > 0) {
+        await new Promise(resolve => setTimeout(resolve, 250)); // 250ms delay = max 4 calls/sec
+      }
       
       try {
         // Use Etherscan API - try with API key, fallback to without if needed
@@ -71,9 +104,9 @@ export async function fetchLargeEthereumTransactions(
         let txResponse;
         let txData;
         
-        // Try with API key first
+        // Try with API key first - check more transactions (offset=50)
         txResponse = await fetch(
-          `https://api.etherscan.com/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=desc&page=1&offset=20&apikey=${apiKey}`,
+          `https://api.etherscan.com/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=desc&page=1&offset=50&apikey=${apiKey}`,
           {
             next: { revalidate: 30 },
           }
@@ -107,27 +140,12 @@ export async function fetchLargeEthereumTransactions(
 
         console.log(`[Etherscan] Found ${txData.result.length} transactions for ${address}`);
 
-        // Fetch real-time ETH price ONCE (not in loop) - BEFORE processing transactions
-        let ethPriceUsd = 3000; // Fallback price
-        try {
-          const priceResponse = await fetch(
-            'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd',
-            { next: { revalidate: 60 } }
-          );
-          if (priceResponse.ok) {
-            const priceData = await priceResponse.json();
-            ethPriceUsd = priceData.ethereum?.usd || 3000;
-          }
-        } catch (e) {
-          console.error('Failed to fetch ETH price:', e);
-        }
-
-        // Process transactions
+        // Process transactions - check more transactions (50 instead of 10)
         let processedCount = 0;
-        for (const tx of txData.result.slice(0, 10)) { // Increased to 10 to find more large transactions
-          // Skip if transaction is too old (older than 48 hours) - increased for more data
+        for (const tx of txData.result.slice(0, 50)) {
+          // Skip if transaction is too old (older than 7 days) - increased window for more data
           const txTime = parseInt(tx.timeStamp) * 1000;
-          if (Date.now() - txTime > 48 * 60 * 60 * 1000) {
+          if (Date.now() - txTime > 7 * 24 * 60 * 60 * 1000) {
             processedCount++;
             continue;
           }
@@ -141,6 +159,11 @@ export async function fetchLargeEthereumTransactions(
           const value = BigInt(tx.value || '0');
           const valueEth = Number(value) / 1e18;
           const valueUsd = valueEth * ethPriceUsd;
+
+          // Log transaction for debugging
+          if (processedCount < 5) { // Log first 5 for debugging
+            console.log(`[Etherscan] TX ${tx.hash.substring(0,10)}...: ${valueEth.toFixed(4)} ETH = $${valueUsd.toFixed(0)}, threshold: $${minAmountUsd}, match: ${valueUsd >= minAmountUsd}`);
+          }
 
           if (valueUsd >= minAmountUsd) {
             const fromLabel = getLabelForAddress('ethereum', tx.from);

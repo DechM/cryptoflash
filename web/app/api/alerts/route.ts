@@ -35,8 +35,15 @@ export async function GET(request: Request) {
     }
 
     // Fetch fresh alerts - use lower threshold to get more data
-    const minAmountUsd = filters.minAmountUsd || 50000; // Default $50k threshold (lowered for more alerts)
+    const minAmountUsd = filters.minAmountUsd || 10000; // Default $10k threshold (lowered for more alerts)
     const allAlerts = await getAllAlerts(minAmountUsd);
+    
+    // Force refresh bypasses cache
+    const forceRefresh = searchParams.get('forceRefresh') === 'true';
+    if (forceRefresh) {
+      // Clear cache for this specific filter
+      alertCache.clear();
+    }
     
     // Cache individual alerts by ID so they can be found by detail route
     allAlerts.forEach((alert) => {
