@@ -68,15 +68,15 @@ export function CommandCenter({ signals, wallets, stats }: Props) {
         />
       </div>
 
-      {/* Main Content Grid: Latest Alerts on Left, Signals on Right */}
+      {/* Main Content Grid: Latest Alerts on Left (larger), Signals on Right (smaller) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Latest Alerts Feed - Left Column */}
-        <div className="lg:col-span-1">
+        {/* Latest Alerts Feed - Left Column (larger) */}
+        <div className="lg:col-span-2">
           <LatestAlertsFeed limit={20} minAmountUsd={100000} />
         </div>
 
-        {/* Signals and Activity - Right Columns */}
-        <div className="lg:col-span-2 space-y-6">
+        {/* Signals and Activity - Right Column (smaller) */}
+        <div className="lg:col-span-1 space-y-6">
           {/* Critical Signals */}
           <Card className="border-orange-500/30 bg-orange-500/5">
           <CardHeader>

@@ -1,6 +1,7 @@
 // Blockchain transaction monitoring with FREE APIs only
 import type { CryptoFlashAlert, Blockchain, AlertType, KnownLabel } from './types';
 import { KNOWN_EXCHANGES, ALERT_THRESHOLDS } from './types';
+import { getTokenEmoji } from './token-emoji';
 
 // Rate limiter for API calls
 class RateLimiter {
@@ -167,27 +168,20 @@ function generateSimulatedAlerts(
   blockchain: Blockchain,
   minAmountUsd: number
 ): CryptoFlashAlert[] {
-  const tokenEmojis: Record<string, string> = {
-    BTC: '🪙',
-    ETH: '💎',
-    BNB: '🔶',
-    SOL: '🔵',
-    USDT: '💵',
-    USDC: '💵',
-    DOGE: '🐕',
-    XRP: '💧',
-    ADA: '🔷',
-    MATIC: '🟣',
-  };
-
   const tokens = blockchain === 'bitcoin' 
-    ? [{ symbol: 'BTC', name: 'Bitcoin', decimals: 8, emoji: '🪙' }]
+    ? [{ symbol: 'BTC', name: 'Bitcoin', decimals: 8 }]
     : [
-        { symbol: 'ETH', name: 'Ethereum', decimals: 18, emoji: '💎' },
-        { symbol: 'USDT', name: 'Tether', decimals: 6, emoji: '💵' },
-        { symbol: 'USDC', name: 'USD Coin', decimals: 6, emoji: '💵' },
-        { symbol: 'BNB', name: 'Binance Coin', decimals: 18, emoji: '🔶' },
+        { symbol: 'ETH', name: 'Ethereum', decimals: 18 },
+        { symbol: 'USDT', name: 'Tether', decimals: 6 },
+        { symbol: 'USDC', name: 'USD Coin', decimals: 6 },
+        { symbol: 'BNB', name: 'Binance Coin', decimals: 18 },
       ];
+  
+  // Add emojis using the token-emoji map
+  const tokensWithEmojis = tokens.map(token => ({
+    ...token,
+    emoji: getTokenEmoji(token.symbol),
+  }));
 
   const alerts: CryptoFlashAlert[] = [];
   const now = Date.now();
@@ -196,7 +190,7 @@ function generateSimulatedAlerts(
   const count = Math.floor(Math.random() * 5) + 5;
   
   for (let i = 0; i < count; i++) {
-    const token = tokens[Math.floor(Math.random() * tokens.length)];
+    const token = tokensWithEmojis[Math.floor(Math.random() * tokensWithEmojis.length)];
     const amountUsd = Math.random() * 5000000 + minAmountUsd;
     const amount = (amountUsd / 3000).toFixed(token.decimals); // Approximate price
     

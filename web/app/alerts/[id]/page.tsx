@@ -32,7 +32,7 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export default function AlertDetailPage() {
   const params = useParams();
-  const id = params?.id as string;
+  const id = typeof params?.id === 'string' ? params.id : Array.isArray(params?.id) ? params.id[0] : null;
 
   const { data: alert, error, isLoading } = useSWR<CryptoFlashAlert>(
     id ? `/api/alerts/${id}` : null,
@@ -176,6 +176,19 @@ export default function AlertDetailPage() {
           </div>
         </CardHeader>
         <CardContent>
+          {/* Description */}
+          <div className="mb-4 pb-4 border-b border-border/50">
+            <div className="text-sm text-muted-foreground mb-1">Description</div>
+            <p className="text-sm">
+              Large transfer of {alert.token.symbol} detected on {alert.blockchain.toUpperCase()}. 
+              {alert.alertType === 'exchange_withdrawal' && ' Funds withdrawn from exchange.'}
+              {alert.alertType === 'exchange_deposit' && ' Funds deposited to exchange.'}
+              {alert.alertType === 'whale_buy' && ' Potential whale accumulation detected.'}
+              {alert.alertType === 'whale_sell' && ' Potential whale distribution detected.'}
+              {alert.alertType === 'large_transfer' && ' Large amount transferred between wallets.'}
+            </p>
+          </div>
+          
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <div className="text-sm text-muted-foreground mb-1">Token</div>
@@ -192,7 +205,8 @@ export default function AlertDetailPage() {
             <div>
               <div className="text-sm text-muted-foreground mb-1">Transaction Fee</div>
               <div className="font-semibold">
-                {alert.fee} ({alert.feeUsd ? formatUSD(alert.feeUsd) : 'N/A'})
+                {alert.fee} {alert.blockchain === 'bitcoin' ? 'BTC' : 'ETH'}
+                {alert.feeUsd && ` (${formatUSD(alert.feeUsd)})`}
               </div>
             </div>
           </div>
@@ -384,6 +398,7 @@ function ArrowDown({ className }: { className?: string }) {
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
     >
       <path
         strokeLinecap="round"
