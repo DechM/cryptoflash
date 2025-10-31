@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatUSD, formatPercent, formatCompactUSD } from '@/lib/format';
 import { TrendingUp, TrendingDown, ExternalLink, Globe, BarChart3 } from 'lucide-react';
 import { LivePriceCell } from './LivePriceCell';
+import { useLiveCryptoPrice } from '@/hooks/useLiveCryptoPrice';
 
 type CoinData = {
   id: string;
@@ -36,8 +37,17 @@ type Props = {
 };
 
 export function CoinStats({ data }: Props) {
-  const isPositive24h = data.price_change_percentage_24h >= 0;
-  const isPositive7d = data.price_change_percentage_7d >= 0;
+  // Get live price updates
+  const { price: livePrice, change24h: liveChange24h, hasWebSocket } = useLiveCryptoPrice({
+    coinId: data.id,
+    fallbackPrice: data.current_price,
+    fallbackChange24h: data.price_change_percentage_24h,
+  });
+
+  const currentPrice = livePrice || data.current_price;
+  const change24h = liveChange24h ?? data.price_change_percentage_24h;
+  const isPositive24h = change24h >= 0;
+  const isPositive7d = (data.price_change_percentage_7d ?? 0) >= 0;
 
   return (
     <div className="space-y-6">
@@ -63,7 +73,11 @@ export function CoinStats({ data }: Props) {
             </h1>
             <div className="flex items-center gap-4 mt-2">
               <div className="text-2xl font-semibold">
-                <LivePriceCell price={data.current_price} coinId={data.id} />
+                <LivePriceCell 
+                  price={currentPrice} 
+                  coinId={data.id}
+                  change24h={change24h}
+                />
               </div>
               <Badge
                 variant={isPositive24h ? 'success' : 'destructive'}
@@ -74,7 +88,10 @@ export function CoinStats({ data }: Props) {
                 ) : (
                   <TrendingDown className="h-3 w-3" />
                 )}
-                {formatPercent((data.price_change_percentage_24h ?? 0) / 100)}
+                {formatPercent(change24h)}
+                {hasWebSocket && (
+                  <span className="ml-1 inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                )}
               </Badge>
             </div>
           </div>

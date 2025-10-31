@@ -5,6 +5,7 @@ import { LiveChart } from './LiveChart';
 import { CoinStats } from './CoinStats';
 import useSWR from 'swr';
 import { Loader2 } from 'lucide-react';
+import { useLiveCryptoPrice } from '@/hooks/useLiveCryptoPrice';
 
 type CoinData = {
   id: string;
@@ -45,11 +46,18 @@ export function CoinDetail({ coinId }: Props) {
     `/api/market/${coinId}`,
     fetcher,
     {
-      refreshInterval: 10000, // Update every 10 seconds
+      refreshInterval: 30000, // Update every 30 seconds (WebSocket handles live prices)
       revalidateOnFocus: true,
       revalidateOnReconnect: true,
     }
   );
+
+  // Get live price from WebSocket
+  const { price: livePrice } = useLiveCryptoPrice({
+    coinId,
+    fallbackPrice: data?.current_price,
+    fallbackChange24h: data?.price_change_percentage_24h,
+  });
 
   if (isLoading) {
     return (
@@ -92,7 +100,7 @@ export function CoinDetail({ coinId }: Props) {
           {data.chart_data && data.chart_data.length > 0 ? (
             <LiveChart
               data={data.chart_data}
-              currentPrice={data.current_price}
+              currentPrice={livePrice || data.current_price}
               coinSymbol={data.symbol}
             />
           ) : (

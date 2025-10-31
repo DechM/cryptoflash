@@ -2,8 +2,9 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { formatUSD, formatPercent, formatCompactUSD } from '@/lib/format';
-import { SparklineChart } from './SparklineChart';
+import { LiveSparklineChart } from './LiveSparklineChart';
 import { LivePriceCell } from './LivePriceCell';
+import { LiveChangeCell } from './LiveChangeCell';
 import { ArrowUp, ArrowDown, Search, TrendingUp, TrendingDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import type { MarketCoin } from '@/lib/market';
@@ -230,18 +231,10 @@ function MarketTableRow({ coin }: { coin: MarketCoin }) {
         <LivePriceCell price={coin.current_price} coinId={coin.id} />
       </td>
       <td className="px-4 py-4 text-right">
-        <span
-          className={`flex items-center justify-end gap-1 font-medium ${
-            isPositive24h ? 'text-emerald-400' : 'text-red-400'
-          }`}
-        >
-          {isPositive24h ? (
-            <TrendingUp className="h-3 w-3" />
-          ) : (
-            <TrendingDown className="h-3 w-3" />
-          )}
-          {formatPercent(coin.price_change_percentage_24h / 100)}
-        </span>
+        <LiveChangeCell 
+          change24h={coin.price_change_percentage_24h}
+          coinId={coin.id}
+        />
       </td>
       <td className="px-4 py-4 text-right">
         <span
@@ -265,10 +258,11 @@ function MarketTableRow({ coin }: { coin: MarketCoin }) {
       </td>
       <td className="px-4 py-4">
         <div className="h-10 w-24 ml-auto">
-          {coin.sparkline_in_7d?.price ? (
-            <SparklineChart
+          {coin.sparkline_in_7d?.price && coin.sparkline_in_7d.price.length > 0 ? (
+            <LiveSparklineChart
               data={coin.sparkline_in_7d.price}
-              isPositive={coin.price_change_percentage_7d >= 0}
+              isPositive={(coin.price_change_percentage_7d ?? 0) >= 0}
+              coinId={coin.id}
             />
           ) : (
             <div className="text-xs text-muted-foreground">No data</div>
@@ -315,22 +309,18 @@ function MarketCard({ coin }: { coin: MarketCoin }) {
         <div className="grid grid-cols-2 gap-4 mb-3">
           <div>
             <div className="text-xs text-muted-foreground mb-1">Price</div>
-            <div className="font-semibold">{formatUSD(coin.current_price)}</div>
+            <LivePriceCell 
+              price={coin.current_price} 
+              coinId={coin.id}
+              change24h={coin.price_change_percentage_24h}
+            />
           </div>
           <div>
             <div className="text-xs text-muted-foreground mb-1">24h Change</div>
-            <span
-              className={`flex items-center gap-1 font-semibold ${
-                isPositive24h ? 'text-emerald-400' : 'text-red-400'
-              }`}
-            >
-              {isPositive24h ? (
-                <TrendingUp className="h-3 w-3" />
-              ) : (
-                <TrendingDown className="h-3 w-3" />
-              )}
-              {formatPercent((coin.price_change_percentage_24h ?? 0) / 100)}
-            </span>
+            <LiveChangeCell 
+              change24h={coin.price_change_percentage_24h}
+              coinId={coin.id}
+            />
           </div>
           <div>
             <div className="text-xs text-muted-foreground mb-1">Market Cap</div>
@@ -342,11 +332,12 @@ function MarketCard({ coin }: { coin: MarketCoin }) {
           </div>
         </div>
 
-        {coin.sparkline_in_7d?.price && (
+        {coin.sparkline_in_7d?.price && coin.sparkline_in_7d.price.length > 0 && (
           <div className="h-12 w-full">
-            <SparklineChart
+            <LiveSparklineChart
               data={coin.sparkline_in_7d.price}
               isPositive={isPositive7d}
+              coinId={coin.id}
             />
           </div>
         )}
