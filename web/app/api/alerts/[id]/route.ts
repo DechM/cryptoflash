@@ -18,7 +18,7 @@ export async function GET(
     }
 
     // Check cache first
-    const cacheKey = CACHE_KEYS.transaction(id);
+    const cacheKey = CACHE_KEYS.alertById(id);
     const cached = alertCache.get<CryptoFlashAlert>(cacheKey);
 
     if (cached) {
@@ -32,7 +32,15 @@ export async function GET(
     }
 
     // Fetch all alerts and find the one matching the ID
+    // Note: We need to fetch fresh alerts since IDs are generated dynamically
     const allAlerts = await getAllAlerts(0); // Get all alerts
+    
+    // Cache individual alerts by ID so they can be found later
+    allAlerts.forEach((a) => {
+      const alertCacheKey = CACHE_KEYS.alertById(a.id);
+      alertCache.set(alertCacheKey, a, CACHE_TTL.transaction);
+    });
+    
     let alert = allAlerts.find((a) => a.id === id);
 
     if (!alert) {

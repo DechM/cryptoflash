@@ -76,6 +76,7 @@ export const alertCache = new AlertCache();
 export const CACHE_KEYS = {
   alerts: (blockchain: string) => `alerts:${blockchain}`,
   transaction: (txHash: string) => `tx:${txHash}`,
+  alertById: (id: string) => `alert:${id}`, // Cache by alert ID
   addressLabel: (address: string) => `label:${address}`,
   walletBalance: (address: string) => `balance:${address}`,
 } as const;

@@ -107,27 +107,27 @@ function AlertCard({ alert }: { alert: CryptoFlashAlert }) {
         <div className="flex items-start justify-between gap-3 mb-2">
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <span className="text-2xl shrink-0">
-              {getTokenEmoji(alert.token.symbol) || '🪙'}
+              {getTokenEmoji(alert?.token?.symbol || 'BTC') || '🪙'}
             </span>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-sm truncate">
-                  {formatCompactUSD(alert.token.amountUsd)}
+                  {formatCompactUSD(alert?.token?.amountUsd || 0)}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  {alert.token.symbol}
+                  {alert?.token?.symbol || 'UNKNOWN'}
                 </span>
               </div>
               <div className="text-xs text-muted-foreground mt-0.5">
-                {alert.blockchain.toUpperCase()}
+                {alert?.blockchain?.toUpperCase() || 'UNKNOWN'}
               </div>
             </div>
           </div>
           <Badge
             variant="outline"
-            className={`text-xs shrink-0 ${severityColors[alert.severity]}`}
+            className={`text-xs shrink-0 ${severityColors[alert?.severity || 'low']}`}
           >
-            {alert.severity}
+            {alert?.severity || 'low'}
           </Badge>
         </div>
 
@@ -140,8 +140,8 @@ function AlertCard({ alert }: { alert: CryptoFlashAlert }) {
               <TrendingDown className="h-3 w-3 text-red-400" />
             )}
             <span className="truncate">
-              {alert.from.label || 'Unknown'} →{' '}
-              {alert.to[0]?.label || 'Unknown'}
+              {alert?.from?.label || 'Unknown'} →{' '}
+              {alert?.to?.[0]?.label || 'Unknown'}
             </span>
           </div>
           <div className="flex items-center justify-between">

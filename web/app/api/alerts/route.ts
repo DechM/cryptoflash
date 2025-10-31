@@ -38,6 +38,12 @@ export async function GET(request: Request) {
     const minAmountUsd = filters.minAmountUsd || 100000; // Default $100k threshold
     const allAlerts = await getAllAlerts(minAmountUsd);
     
+    // Cache individual alerts by ID so they can be found by detail route
+    allAlerts.forEach((alert) => {
+      const alertCacheKey = CACHE_KEYS.alertById(alert.id);
+      alertCache.set(alertCacheKey, alert, CACHE_TTL.transaction);
+    });
+    
     // Apply filters
     const filteredAlerts = filterAlerts(allAlerts, filters);
 
