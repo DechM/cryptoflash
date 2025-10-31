@@ -6,6 +6,7 @@ import { Activity, TrendingUp, Zap, AlertTriangle, Radio } from 'lucide-react';
 import type { WhaleSignal, TrackedWallet } from '@/lib/whales/types';
 import { formatUSD, formatPercent } from '@/lib/format';
 import { LatestAlertsFeed } from '@/components/alerts/LatestAlertsFeed';
+import { ALERT_THRESHOLDS } from '@/lib/alerts/types';
 import Link from 'next/link';
 
 type Props = {
