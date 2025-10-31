@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Activity, TrendingUp, Zap, AlertTriangle, Radio } from 'lucide-react';
 import type { WhaleSignal, TrackedWallet } from '@/lib/whales/types';
 import { formatUSD, formatPercent } from '@/lib/format';
+import { LatestAlertsFeed } from '@/components/alerts/LatestAlertsFeed';
 import Link from 'next/link';
 
 type Props = {
@@ -67,9 +68,17 @@ export function CommandCenter({ signals, wallets, stats }: Props) {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Critical Signals */}
-        <Card className="border-orange-500/30 bg-orange-500/5">
+      {/* Main Content Grid: Latest Alerts on Left, Signals on Right */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Latest Alerts Feed - Left Column */}
+        <div className="lg:col-span-1">
+          <LatestAlertsFeed limit={20} minAmountUsd={100000} />
+        </div>
+
+        {/* Signals and Activity - Right Columns */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Critical Signals */}
+          <Card className="border-orange-500/30 bg-orange-500/5">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-orange-500" />
@@ -105,6 +114,7 @@ export function CommandCenter({ signals, wallets, stats }: Props) {
             )}
           </CardContent>
         </Card>
+        </div>
       </div>
 
       {/* Quick Actions */}
