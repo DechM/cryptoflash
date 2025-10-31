@@ -16,23 +16,23 @@ const navItems = [
 
 export function Header() {
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto flex h-14 items-center justify-between px-4">
-        <Logo />
-        <nav className="hidden items-center gap-6 md:flex">
-          {navItems.map((item) => (
-            <Link key={item.href} href={item.href} className={cn('text-sm text-muted-foreground transition-colors hover:text-foreground')}>
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-        <div className="flex items-center gap-2">
-          <Button asChild variant="secondary">
-            <a href="https://x.com" target="_blank" rel="noreferrer">Follow on X</a>
-          </Button>
-        </div>
-      </div>
-    </header>
+    <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur">
+  <div className="mx-auto flex h-14 max-w-7xl items-center px-3 sm:px-4">
+    {/* Лого вляво */}
+    <Logo className="hidden md:flex" withText imgSize={30} />
+    <Logo className="md:hidden" withText={false} imgSize={26} />
+
+    {/* Навигация вдясно */}
+    <nav className="ml-auto flex items-center gap-3 sm:gap-5">
+      <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Home</Link>
+      <Link href="/signals" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Market Signals</Link>
+      <Link href="/predictions" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Prediction Signals</Link>
+      <Link href="/briefs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">AI Crypto Briefs</Link>
+      <Link href="/subscribe" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Subscribe</Link>
+      <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">About</Link>
+    </nav>
+  </div>
+</header>
   );
 }
 

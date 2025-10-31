@@ -1,26 +1,30 @@
-import Link from 'next/link';
-import Image from 'next/image';
-import { cn } from '@/lib/utils';
+import Image from "next/image";
+import Link from "next/link";
 
 type LogoProps = {
-  className?: string;
   withText?: boolean;
+  className?: string;
+  imgSize?: number; // px
 };
 
-export function Logo({ className, withText = true }: LogoProps) {
+export default function Logo({ withText = true, className = "", imgSize = 28 }: LogoProps) {
   return (
-    <Link href="/" aria-label="CryptoFlash Home" className={cn('inline-flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-sm', className)}>
+    <Link
+      href="/"
+      aria-label="CryptoFlash Home"
+      className={`flex items-center gap-2 hover:opacity-90 transition-opacity ${className}`}
+    >
       <Image
         src="/branding/cryptoflash-logo.png"
         alt="CryptoFlash"
-        width={32}
-        height={32}
-        className="h-6 w-6 sm:h-6 sm:w-6 md:h-8 md:w-8"
+        width={imgSize}
+        height={imgSize}
+        className="h-7 w-auto sm:h-8"
         priority
       />
       {withText && (
-        <span className="hidden md:inline-block font-semibold tracking-tight text-foreground">
-          CryptoFlash
+        <span className="hidden sm:inline-block font-semibold tracking-tight">
+          Crypto<span className="text-primary">Flash</span>
         </span>
       )}
     </Link>

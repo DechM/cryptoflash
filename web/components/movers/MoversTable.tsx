@@ -94,16 +94,21 @@ function MoversTableView({ data }: MoversTableViewProps) {
               const isPositive = coin.change24h > 0;
               const badgeVariant = isPositive ? 'success' : 'destructive';
               return (
-                <TableRow key={coin.id} className="hover:bg-muted/10 hover:shadow-[0_1px_0_rgba(255,255,255,0.06)] transition-all">
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <TokenIcon symbol={coin.symbol} size="sm" className="text-muted-foreground" />
-                      <div>
-                        <div className="font-medium">{coin.name}</div>
-                        <div className="text-xs text-muted-foreground uppercase">{coin.symbol}</div>
+                <TableRow
+                  key={coin.id}
+                  className="hover:bg-muted/10 hover:shadow-[0_1px_0_rgba(255,255,255,0.06)] transition-all"
+                >
+                  {/* >>> Обновената Name клетка */}
+                  <TableCell className="py-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <TokenIcon symbol={coin.symbol} size={20} />
+                      <div className="min-w-0">
+                        <div className="truncate">{coin.name}</div>
+                        <div className="text-xs text-muted-foreground">{coin.symbol.toUpperCase()}</div>
                       </div>
                     </div>
                   </TableCell>
+
                   <TableCell className="text-right font-medium">{formatUSD(coin.price)}</TableCell>
                   <TableCell className="text-right">
                     <Badge variant={badgeVariant} className="gap-1" aria-label="24h change">
@@ -127,15 +132,17 @@ function MoversTableView({ data }: MoversTableViewProps) {
           const badgeVariant = isPositive ? 'success' : 'destructive';
           return (
             <div key={coin.id} className="border rounded-lg p-4 space-y-2 hover:bg-muted/10 transition-colors">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <TokenIcon symbol={coin.symbol} size="sm" className="text-muted-foreground" />
-                  <div>
-                    <div className="font-medium">{coin.name}</div>
-                    <div className="text-xs text-muted-foreground uppercase">{coin.symbol}</div>
+              <div className="flex items-center justify-between gap-3">
+                {/* >>> Обновената шапка в мобилен изглед */}
+                <div className="flex items-center gap-2 min-w-0">
+                  <TokenIcon symbol={coin.symbol} size={18} />
+                  <div className="min-w-0">
+                    <div className="truncate">{coin.name}</div>
+                    <div className="text-xs text-muted-foreground">{coin.symbol.toUpperCase()}</div>
                   </div>
                 </div>
-                <Badge variant={badgeVariant} className="gap-1" aria-label="24h change">
+
+                <Badge variant={badgeVariant} className="gap-1 shrink-0" aria-label="24h change">
                   {isPositive ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
                   {formatPercent(coin.change24h)}
                 </Badge>
