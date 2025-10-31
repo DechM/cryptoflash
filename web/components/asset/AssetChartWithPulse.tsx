@@ -92,21 +92,6 @@ export function AssetChartWithPulse({ data, livePrice, tokenSymbol }: Props) {
     candlestickSeries.setData(formattedData as any);
     chart.timeScale().fitContent();
 
-    // Add whale markers
-    const markers = whaleMarkers.map((marker) => ({
-      time: marker.time as any,
-      position: 'aboveBar' as const,
-      color: marker.type === 'buy' ? '#22c55e' : '#ef4444',
-      shape: marker.type === 'buy' ? 'arrowUp' as const : 'arrowDown' as const,
-      size: Math.min(Math.floor(marker.intensity / 10) + 1, 3),
-      text: marker.type === 'buy' ? '🐋' : '🐋',
-    }));
-
-    if (markers.length > 0) {
-      candlestickSeries.setMarkers(markers as any);
-      markersRef.current = markers;
-    }
-
     const handleResize = () => {
       if (chartContainerRef.current) {
         chart.applyOptions({ width: chartContainerRef.current.clientWidth });
@@ -119,7 +104,25 @@ export function AssetChartWithPulse({ data, livePrice, tokenSymbol }: Props) {
       window.removeEventListener('resize', handleResize);
       chart.remove();
     };
-  }, [data, whaleMarkers]);
+  }, [data]);
+
+  // Add whale markers when they're available
+  useEffect(() => {
+    if (!chartRef.current || !seriesRef.current || whaleMarkers.length === 0) return;
+
+    const markers = whaleMarkers.map((marker) => ({
+      time: marker.time as any,
+      position: 'aboveBar' as const,
+      color: marker.type === 'buy' ? '#22c55e' : '#ef4444',
+      shape: marker.type === 'buy' ? 'arrowUp' as const : 'arrowDown' as const,
+      size: Math.min(Math.floor(marker.intensity / 10) + 1, 3),
+      text: marker.type === 'buy' ? '🐋' : '🐋',
+    }));
+
+    // Use type assertion to access setMarkers
+    (seriesRef.current as any).setMarkers(markers);
+    markersRef.current = markers;
+  }, [whaleMarkers]);
 
   // Update with live price
   useEffect(() => {
