@@ -10,6 +10,7 @@ import { Menu, X } from 'lucide-react';
 
 const navItems = [
   { href: '/', label: 'Command Center' },
+  { href: '/market', label: 'Market' },
   { href: '/wallets', label: 'Whale Wallets' },
   { href: '/signals', label: 'Live Signals' },
   { href: '/leaderboard', label: 'Leaderboard' },
@@ -21,7 +22,7 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur">
+    <header className="sticky top-0 z-40 w-full border-b border-border/50 bg-background/70 backdrop-blur-xl glass-card">
       <div className="mx-auto flex h-14 max-w-7xl items-center px-3 sm:px-4">
         <Logo className="hidden md:flex" withText imgSize={30} />
         <Logo className="md:hidden" withText={false} imgSize={26} />

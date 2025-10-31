@@ -22,6 +22,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1,
     },
     {
+      url: `${baseUrl}/market`,
+      lastModified: new Date(),
+      changeFrequency: 'always',
+      priority: 0.95,
+    },
+    {
       url: `${baseUrl}/wallets`,
       lastModified: new Date(),
       changeFrequency: 'always',
