@@ -3,10 +3,13 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TickerCard } from '@/components/metrics/TickerCard';
 import { RefreshButton } from '@/components/RefreshButton';
+import { MoversTable } from '@/components/movers/MoversTable';
 import { getTickers } from '@/lib/crypto';
+import { getMovers } from '@/lib/movers';
 
 export default async function HomePage() {
   const tickers = await getTickers();
+  const movers = await getMovers();
 
   const btcTicker = tickers.find((t) => t.id === 'bitcoin');
   const ethTicker = tickers.find((t) => t.id === 'ethereum');
@@ -57,6 +60,22 @@ export default async function HomePage() {
           </Card>
         </section>
       )}
+      <section className="mt-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Trending Movers (24h)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {movers.length === 0 ? (
+              <Alert variant="default">
+                <AlertDescription>Movers temporarily unavailable.</AlertDescription>
+              </Alert>
+            ) : (
+              <MoversTable data={movers} updatedAt={Date.now()} />
+            )}
+          </CardContent>
+        </Card>
+      </section>
     </div>
   );
 }
