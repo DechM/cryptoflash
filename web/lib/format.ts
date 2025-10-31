@@ -1,5 +1,5 @@
 export function formatUSD(n: number): string {
-  if (typeof n !== 'number' || isNaN(n) || !isFinite(n) || n === 0) {
+  if (typeof n !== 'number' || isNaN(n) || !isFinite(n)) {
     return '$0.00';
   }
   return new Intl.NumberFormat('en-US', {
@@ -11,7 +11,10 @@ export function formatUSD(n: number): string {
 }
 
 export function formatCompactUSD(n: number): string {
-  if (typeof n !== 'number' || isNaN(n) || !isFinite(n) || n === 0) {
+  if (typeof n !== 'number' || isNaN(n) || !isFinite(n)) {
+    return '$0.00';
+  }
+  if (n === 0) {
     return '$0.00';
   }
   if (n >= 1e9) {
