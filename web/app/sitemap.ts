@@ -25,13 +25,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     {
       url: `${baseUrl}/pulse`,
       lastModified: new Date(),
-      changeFrequency: 'minutely',
+      changeFrequency: 'always',
       priority: 0.95,
     },
     {
       url: `${baseUrl}/radar`,
       lastModified: new Date(),
-      changeFrequency: 'minutely',
+      changeFrequency: 'always',
       priority: 0.95,
     },
     {

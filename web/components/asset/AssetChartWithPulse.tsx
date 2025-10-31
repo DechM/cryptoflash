@@ -36,10 +36,11 @@ export function AssetChartWithPulse({ data, livePrice, tokenSymbol }: Props) {
       );
 
       const markers: WhaleMarker[] = tokenFlows
+        .filter((flow) => flow.type === 'buy' || flow.type === 'sell') // Only buy/sell, no transfers
         .slice(0, 10) // Limit to 10 markers
         .map((flow) => ({
           time: Math.floor(flow.timestamp / 1000),
-          type: flow.type,
+          type: flow.type as 'buy' | 'sell',
           amountUsd: flow.amountUsd,
           intensity: flow.radarIntensity,
         }));
