@@ -1,60 +1,79 @@
-import { notFound } from 'next/navigation';
-import type { Metadata } from 'next';
+'use client';
+
+import { useParams } from 'next/navigation';
 import { WalletDetail } from '@/components/whales/WalletDetail';
-import { getTrackedWallets, getWalletTransactions, getWalletPositions } from '@/lib/whales/tracker';
-import { getSignalsForWallet } from '@/lib/whales/signals';
+import useSWR from 'swr';
+import type { TrackedWallet } from '@/lib/whales/types';
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ address: string }>;
-}): Promise<Metadata> {
-  const { address: addressParam } = await params;
-  const address = decodeURIComponent(addressParam);
-  const wallets = await getTrackedWallets();
-  const wallet = wallets.find((w) => w.address.toLowerCase() === address.toLowerCase());
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-  if (!wallet) {
-    return {
-      title: 'Wallet Not Found — CryptoFlash Hub',
-    };
+export default function WalletDetailPage() {
+  const params = useParams();
+  const addressParam = typeof params?.address === 'string' 
+    ? params.address 
+    : Array.isArray(params?.address) 
+    ? params.address[0] 
+    : null;
+
+  const address = addressParam ? decodeURIComponent(addressParam) : null;
+
+  const { data: walletData, error, isLoading } = useSWR<TrackedWallet & { transactions: any[]; signals: any[] }>(
+    address ? `/api/wallet/${encodeURIComponent(address)}` : null,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+      refreshInterval: 30000, // Refresh every 30 seconds
+    }
+  );
+
+  if (!address) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center py-12">
+          <h1 className="text-2xl font-bold mb-2">Invalid Wallet Address</h1>
+          <p className="text-muted-foreground">Please provide a valid wallet address.</p>
+        </div>
+      </div>
+    );
   }
 
-  return {
-    title: `${wallet.label} — CryptoFlash Hub`,
-    description: `Track ${wallet.label} wallet activity, positions, P&L, and trading signals.`,
-    alternates: {
-      canonical: `https://cryptoflash.app/wallet/${address}`,
-    },
-  };
-}
-
-export default async function WalletDetailPage({
-  params,
-}: {
-  params: Promise<{ address: string }>;
-}) {
-  const { address: addressParam } = await params;
-  // Decode address in case it was URL encoded
-  const address = decodeURIComponent(addressParam);
-  const wallets = await getTrackedWallets();
-  const wallet = wallets.find((w) => w.address.toLowerCase() === address.toLowerCase());
-
-  if (!wallet) {
-    notFound();
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center py-12">
+          <h1 className="text-2xl font-bold mb-2">Wallet Not Found</h1>
+          <p className="text-muted-foreground">
+            {error?.error || 'Failed to load wallet data. Please try again.'}
+          </p>
+        </div>
+      </div>
+    );
   }
 
-  const [transactions, positions, signals] = await Promise.all([
-    getWalletTransactions(address, 50),
-    getWalletPositions(address),
-    getSignalsForWallet(address, 20),
-  ]);
+  if (isLoading || !walletData) {
+    return (
+      <div className="space-y-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-muted rounded w-64 mb-4" />
+          <div className="h-6 bg-muted rounded w-96 mb-8" />
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-24 bg-muted rounded" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const { transactions, signals, ...wallet } = walletData;
 
   return (
     <WalletDetail
-      wallet={{ ...wallet, positions }}
-      transactions={transactions}
-      signals={signals}
+      wallet={{ ...wallet, positions: wallet.positions || [] }}
+      transactions={transactions || []}
+      signals={signals || []}
     />
   );
 }
