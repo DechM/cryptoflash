@@ -71,3 +71,29 @@ export function formatTimeAgo(timestamp: Date | number | string): string {
 export function formatDecimal(price: number): string {
   return (price * 100).toFixed(1) + '%';
 }
+
+/**
+ * Format token amount with symbol: "1,090 #BTC"
+ * Example: formatTokenAmount(1090, 'BTC') => "1,090 #BTC"
+ */
+export function formatTokenAmount(amount: number | string, symbol: string): string {
+  let numAmount: number;
+  
+  if (typeof amount === 'string') {
+    numAmount = parseFloat(amount);
+  } else {
+    numAmount = amount;
+  }
+  
+  if (isNaN(numAmount) || !isFinite(numAmount) || numAmount === 0) {
+    return `0 #${symbol}`;
+  }
+  
+  // Format with commas, no decimals if whole number, max 2 decimals
+  const formatted = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(numAmount);
+  
+  return `${formatted} #${symbol}`;
+}

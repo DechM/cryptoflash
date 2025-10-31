@@ -19,12 +19,17 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage() {
-  const wallets = await getTrackedWallets();
+  const allWallets = await getTrackedWallets();
+  // Filter out wallets with $0 totalProfitUsd and 0 trades
+  const wallets = allWallets.filter(w => w.totalProfitUsd > 0 || w.totalTrades > 0);
   const signals = await generateSignals(wallets);
+  
+  // Filter out signals with $0 amount
+  const validSignals = signals.filter(s => s.transaction.amountUsd > 0);
 
   // Calculate stats
   const stats = {
-    totalSignals24h: signals.filter(
+    totalSignals24h: validSignals.filter(
       (s) => s.timestamp > Date.now() - 24 * 60 * 60 * 1000
     ).length,
     topPerformer: wallets.length > 0
@@ -32,7 +37,7 @@ export default async function HomePage() {
           curr.totalProfitUsd > prev.totalProfitUsd ? curr : prev
         )
       : null,
-    totalVolume24h: signals
+    totalVolume24h: validSignals
       .filter((s) => s.timestamp > Date.now() - 24 * 60 * 60 * 1000)
       .reduce((sum, s) => sum + s.transaction.amountUsd, 0),
     activeWallets: wallets.filter(
@@ -40,5 +45,5 @@ export default async function HomePage() {
     ).length,
   };
 
-  return <CommandCenter signals={signals} wallets={wallets} stats={stats} />;
+  return <CommandCenter signals={validSignals} wallets={wallets} stats={stats} />;
 }

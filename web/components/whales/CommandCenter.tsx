@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Activity, TrendingUp, Zap, AlertTriangle, Radio } from 'lucide-react';
 import type { WhaleSignal, TrackedWallet } from '@/lib/whales/types';
-import { formatUSD, formatPercent } from '@/lib/format';
+import { formatUSD, formatPercent, formatTokenAmount } from '@/lib/format';
 import { LatestAlertsFeed } from '@/components/alerts/LatestAlertsFeed';
 import { ALERT_THRESHOLDS } from '@/lib/alerts/types';
 import Link from 'next/link';
@@ -87,12 +87,14 @@ export function CommandCenter({ signals, wallets, stats }: Props) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {criticalSignals.length === 0 ? (
+            {criticalSignals.filter(s => s.transaction.amountUsd > 0).length === 0 ? (
               <p className="text-sm text-muted-foreground">No critical signals at the moment.</p>
             ) : (
-              criticalSignals.map((signal) => (
-                <SignalCard key={signal.id} signal={signal} compact />
-              ))
+              criticalSignals
+                .filter(s => s.transaction.amountUsd > 0)
+                .map((signal) => (
+                  <SignalCard key={signal.id} signal={signal} compact />
+                ))
             )}
           </CardContent>
         </Card>
@@ -106,12 +108,14 @@ export function CommandCenter({ signals, wallets, stats }: Props) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {recentSignals.length === 0 ? (
+            {recentSignals.filter(s => s.transaction.amountUsd > 0).length === 0 ? (
               <p className="text-sm text-muted-foreground">No recent activity.</p>
             ) : (
-              recentSignals.map((signal) => (
-                <SignalCard key={signal.id} signal={signal} compact />
-              ))
+              recentSignals
+                .filter(s => s.transaction.amountUsd > 0)
+                .map((signal) => (
+                  <SignalCard key={signal.id} signal={signal} compact />
+                ))
             )}
           </CardContent>
         </Card>
@@ -213,13 +217,29 @@ function SignalCard({
     low: 'text-blue-500 bg-blue-500/10 border-blue-500/30',
   };
 
+  // Skip if amount is 0
+  if (signal.transaction.amountUsd === 0 || !signal.transaction.amountUsd) {
+    return null;
+  }
+
+  // Calculate token amount from raw amount string (includes decimals)
+  const token = signal.transaction.token;
+  const decimals = token?.decimals ?? 18;
+  const rawAmount = BigInt(signal.transaction.amount || '0');
+  const tokenAmount = Number(rawAmount) / Math.pow(10, decimals);
+  const tokenSymbol = token?.symbol || 'UNKNOWN';
+  const usdValue = signal.transaction.amountUsd || 0;
+  
+  // Format title like: "1,090 #BTC (119,158,105 USD)"
+  const title = `${formatTokenAmount(tokenAmount, tokenSymbol)} (${formatUSD(usdValue)})`;
+
   return (
     <Link href={`/wallet/${encodeURIComponent(signal.wallet.address)}`}>
       <div className="p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer">
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <span className="font-medium text-sm truncate">{signal.wallet.label}</span>
+              <span className="font-medium text-sm truncate">{title}</span>
               <Badge variant="outline" className={severityColors[signal.severity]}>
                 {signal.severity}
               </Badge>
@@ -229,7 +249,7 @@ function SignalCard({
         </div>
         <div className="flex items-center justify-between text-xs">
           <span className="text-muted-foreground">
-            {signal.transaction.token.symbol} • {formatUSD(signal.transaction.amountUsd)}
+            {signal.transaction.type.toUpperCase()}
           </span>
           <Badge variant="outline" className="font-mono">
             {signal.confidence}%

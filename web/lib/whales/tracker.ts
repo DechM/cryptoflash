@@ -2,24 +2,13 @@
 import type { TrackedWallet, WalletTransaction, WalletPosition, Token, WalletAddress } from './types';
 
 // Known whale wallets - curated list (verified public addresses)
+// Only real exchange wallets with actual transaction data
 const KNOWN_WHALES: Array<{
   address: string;
   label: string;
   tags: string[];
   category: TrackedWallet['category'];
 }> = [
-  {
-    address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0',
-    label: 'Vitalik Buterin',
-    tags: ['Founder', 'Ethereum'],
-    category: 'whale',
-  },
-  {
-    address: '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
-    label: 'Vitalik.eth',
-    tags: ['Founder'],
-    category: 'whale',
-  },
   {
     address: '0x28C6c06298d514Db089934071355E5743bf21d60',
     label: 'Binance Hot Wallet',

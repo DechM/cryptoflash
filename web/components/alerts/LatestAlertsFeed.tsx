@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { formatCompactUSD } from '@/lib/format';
+import { formatCompactUSD, formatTokenAmount, formatUSD } from '@/lib/format';
 import { getTokenEmoji } from '@/lib/alerts/token-emoji';
 import { ALERT_THRESHOLDS } from '@/lib/alerts/types';
 import type { CryptoFlashAlert } from '@/lib/alerts/types';
@@ -29,7 +29,8 @@ export function LatestAlertsFeed({ limit = 20, minAmountUsd = ALERT_THRESHOLDS.l
     }
   );
 
-  const displayedAlerts = alerts?.slice(0, limit) || [];
+  // Filter out alerts with $0 amount
+  const displayedAlerts = (alerts?.filter(a => a.token?.amountUsd > 0) || []).slice(0, limit);
 
   if (error) {
     return (
@@ -96,6 +97,22 @@ function AlertCard({ alert }: { alert: CryptoFlashAlert }) {
     critical: 'bg-red-500/20 text-red-400 border-red-500/30',
   };
 
+  // Skip if amount is 0
+  if (!alert?.token?.amountUsd || alert.token.amountUsd === 0) {
+    return null;
+  }
+
+  // Calculate token amount from token.amount string (raw amount with decimals)
+  const token = alert.token;
+  const decimals = token?.decimals ?? 18;
+  const rawAmount = BigInt(token.amount || '0');
+  const tokenAmount = Number(rawAmount) / Math.pow(10, decimals);
+  const tokenSymbol = token?.symbol || 'UNKNOWN';
+  const usdValue = token.amountUsd || 0;
+  
+  // Format title like: "1,090 #BTC (119,158,105 USD)"
+  const title = `${formatTokenAmount(tokenAmount, tokenSymbol)} (${formatUSD(usdValue)})`;
+
   return (
     <Link
       href={`/alerts/${alert.id}`}
@@ -108,15 +125,12 @@ function AlertCard({ alert }: { alert: CryptoFlashAlert }) {
         <div className="flex items-start justify-between gap-3 mb-2">
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <span className="text-2xl shrink-0">
-              {getTokenEmoji(alert?.token?.symbol || 'BTC') || '🪙'}
+              {getTokenEmoji(tokenSymbol) || '🪙'}
             </span>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-sm truncate">
-                  {formatCompactUSD(alert?.token?.amountUsd || 0)}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {alert?.token?.symbol || 'UNKNOWN'}
+                  {title}
                 </span>
               </div>
               <div className="text-xs text-muted-foreground mt-0.5">

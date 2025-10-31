@@ -96,12 +96,13 @@ export default function AlertDetailPage() {
       };
     }
     
+    // Ensure symbol is always a string (never undefined)
     return {
-      symbol: token.symbol || 'UNKNOWN',
-      name: token.name || 'Unknown Token',
-      decimals: token.decimals ?? 18,
-      amount: token.amount || '0',
-      amountUsd: token.amountUsd ?? 0,
+      symbol: (token.symbol && typeof token.symbol === 'string') ? token.symbol : 'UNKNOWN',
+      name: (token.name && typeof token.name === 'string') ? token.name : 'Unknown Token',
+      decimals: (typeof token.decimals === 'number') ? token.decimals : 18,
+      amount: (token.amount && typeof token.amount === 'string') ? token.amount : '0',
+      amountUsd: (typeof token.amountUsd === 'number' && !isNaN(token.amountUsd)) ? token.amountUsd : 0,
     };
   }, [alert?.token]);
 
