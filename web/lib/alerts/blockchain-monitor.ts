@@ -143,6 +143,15 @@ export async function fetchLargeEthereumTransactions(
 
         const transactions = blockData.result.transactions;
         
+        if (!Array.isArray(transactions) || transactions.length === 0) {
+          continue;
+        }
+        
+        // Log progress every 20 blocks
+        if (i % 20 === 0) {
+          console.log(`[Etherscan] Scanned ${i} blocks, found ${alerts.length} alerts so far`);
+        }
+        
         // Process transactions in this block
         for (const tx of transactions) {
           // Skip if already processed (duplicate check)
