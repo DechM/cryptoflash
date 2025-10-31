@@ -36,11 +36,11 @@ const blockstreamLimiter = new RateLimiter(1, 1000); // 1 call per second (conse
 
 /**
  * Fetch large Ethereum transactions from Etherscan (FREE API)
- * NEW APPROACH: Scans recent blocks instead of specific addresses
- * Gets latest blocks and filters for large transactions
+ * COMBINED APPROACH: Block scanning + Whale addresses for maximum coverage
+ * Gets latest blocks AND checks known whale addresses
  */
 export async function fetchLargeEthereumTransactions(
-  minAmountUsd: number = ALERT_THRESHOLDS.medium
+  minAmountUsd: number = 0  // Default $0 to get all transactions
 ): Promise<CryptoFlashAlert[]> {
   if (!etherscanLimiter.canMakeCall('etherscan')) {
     console.log('Rate limited: Etherscan');
@@ -53,6 +53,7 @@ export async function fetchLargeEthereumTransactions(
     // Check if API key is set
     if (apiKey === 'YourApiKeyToken') {
       console.warn('[Etherscan] ⚠️ ETHERSCAN_API_KEY не е зададен! API calls няма да работят.');
+      return []; // Return early if no API key
     }
     
     const alerts: CryptoFlashAlert[] = [];
@@ -165,8 +166,9 @@ export async function fetchLargeEthereumTransactions(
           const valueEth = Number(value) / 1e18;
           const valueUsd = valueEth * ethPriceUsd;
 
-          // Check if meets threshold
-          if (valueUsd >= minAmountUsd) {
+          // With $0 threshold, accept all transactions (but filter dust < $0.10)
+          const effectiveThreshold = Math.max(minAmountUsd, 0.1); // Minimum $0.10 to filter dust
+          if (valueUsd >= effectiveThreshold) {
             // Get block timestamp (if available) or use current time
             const blockTimestamp = blockData.result.timestamp 
               ? parseInt(blockData.result.timestamp, 16) * 1000 
@@ -225,9 +227,119 @@ export async function fetchLargeEthereumTransactions(
       }
     }
 
+    console.log(`[Etherscan] Block scanning found ${alerts.length} alerts`);
+
+    // APPROACH 2: Fallback - always check known whale addresses for more data
+    // These addresses have guaranteed activity
+    const knownWhaleAddresses = [
+      '0x3f5ce5fbfe3e9af3971dd833d26ba9b5c936f0be', // Binance Hot Wallet (most active)
+      '0x28C6c06298d514Db089934071355E5743bf21d60', // Binance 2
+      '0xd551234Ae421e3BCBA99A0Da6d736074f22192FF', // Binance 3
+      '0xde0b295669a9fd93d5f28d9ec85e19f4cd77182a', // Coinbase
+    ];
+
+    // Check whale addresses for additional transactions (complements block scanning)
+    for (const address of knownWhaleAddresses) {
+      if (alerts.length >= 50 || !etherscanLimiter.canMakeCall('etherscan')) break;
+      
+      // Add delay to respect rate limits
+      if (knownWhaleAddresses.indexOf(address) > 0) {
+        await new Promise(resolve => setTimeout(resolve, 250));
+      }
+
+      try {
+        const txResponse = await fetch(
+          `https://api.etherscan.com/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=desc&page=1&offset=20&apikey=${apiKey}`,
+          { next: { revalidate: 30 } }
+        );
+
+        if (!txResponse.ok) continue;
+        
+        const txData = await txResponse.json();
+        if (txData.status !== '1' || !Array.isArray(txData.result) || txData.result.length === 0) {
+          continue;
+        }
+
+        console.log(`[Etherscan] Whale address ${address.substring(0,10)}... returned ${txData.result.length} transactions`);
+
+        for (const tx of txData.result.slice(0, 20)) {
+          // Skip duplicates
+          if (uniqueTxHashes.has(tx.hash)) continue;
+          uniqueTxHashes.add(tx.hash);
+
+          // Skip if too old (last 7 days only)
+          const txTime = parseInt(tx.timeStamp) * 1000;
+          if (Date.now() - txTime > 7 * 24 * 60 * 60 * 1000) continue;
+          
+          // Skip contract calls (only native ETH transfers)
+          if (!tx.to || tx.to === '' || tx.value === '0' || !tx.value) continue;
+
+          const value = BigInt(tx.value || '0');
+          if (value === 0n) continue;
+
+          const valueEth = Number(value) / 1e18;
+          const valueUsd = valueEth * ethPriceUsd;
+
+          // With $0 threshold, we accept ALL transactions, but filter very small ones (dust)
+          if (valueUsd >= 0.1) { // At least $0.10 to filter dust
+            const fromLabel = getLabelForAddress('ethereum', tx.from);
+            const toLabel = getLabelForAddress('ethereum', tx.to);
+
+            alerts.push({
+              id: `ethereum-${tx.hash}-${txTime}`,
+              blockchain: 'ethereum',
+              txHash: tx.hash, // REAL txHash from Etherscan API!
+              timestamp: txTime,
+              blockNumber: parseInt(tx.blockNumber),
+              fee: (parseInt(tx.gasUsed || '0') * parseInt(tx.gasPrice || '0') / 1e18).toFixed(6),
+              feeUsd: (parseInt(tx.gasUsed || '0') * parseInt(tx.gasPrice || '0') / 1e18) * ethPriceUsd,
+              cryptoPriceAtTx: ethPriceUsd,
+              token: {
+                symbol: 'ETH',
+                name: 'Ethereum',
+                decimals: 18,
+                amount: valueEth.toFixed(6),
+                amountUsd: valueUsd,
+              },
+              from: {
+                address: tx.from,
+                label: fromLabel || 'Unknown Wallet',
+                amount: valueEth.toFixed(6),
+                amountUsd: valueUsd,
+              },
+              to: [{
+                address: tx.to,
+                label: toLabel || 'Unknown Wallet',
+                amount: valueEth.toFixed(6),
+                amountUsd: valueUsd,
+              }],
+              alertType: detectAlertType(fromLabel, toLabel, valueUsd),
+              severity: determineSeverity(valueUsd),
+              timeAgo: formatTimeAgo(txTime),
+              isNew: (Date.now() - txTime) < 60000,
+            });
+
+            if (alerts.length >= 50) break;
+          }
+        }
+      } catch (error) {
+        console.error(`[Etherscan] Error fetching from whale address ${address}:`, error);
+        continue;
+      }
+
+      if (alerts.length >= 50) break;
+    }
+
     // Return ONLY real alerts - NO simulated data!
     const sortedAlerts = alerts.sort((a, b) => b.timestamp - a.timestamp).slice(0, 50);
-    console.log(`[Etherscan] Returning ${sortedAlerts.length} total alerts from block scanning`);
+    console.log(`[Etherscan] Total alerts after both approaches: ${sortedAlerts.length} (block scanning + whale addresses)`);
+    
+    // Validate all txHash are real and valid format
+    const invalidHashes = sortedAlerts.filter(a => !a.txHash || !a.txHash.startsWith('0x') || a.txHash.length !== 66);
+    if (invalidHashes.length > 0) {
+      console.error(`[Etherscan] WARNING: ${invalidHashes.length} alerts with invalid txHash format!`);
+    }
+    
     return sortedAlerts;
   } catch (error) {
     console.error('[Etherscan] Failed to fetch Ethereum transactions:', error);

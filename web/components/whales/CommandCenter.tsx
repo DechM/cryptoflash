@@ -72,7 +72,7 @@ export function CommandCenter({ signals, wallets, stats }: Props) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Latest Alerts Feed - Left Column (larger) */}
         <div className="lg:col-span-2">
-          <LatestAlertsFeed limit={20} minAmountUsd={100000} />
+          <LatestAlertsFeed limit={20} minAmountUsd={0} />
         </div>
 
         {/* Signals and Activity - Right Column (smaller) */}

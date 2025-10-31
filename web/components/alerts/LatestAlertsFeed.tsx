@@ -17,7 +17,7 @@ type Props = {
   minAmountUsd?: number;
 };
 
-export function LatestAlertsFeed({ limit = 20, minAmountUsd = 100000 }: Props) {
+export function LatestAlertsFeed({ limit = 20, minAmountUsd = 0 }: Props) {
   const { data: alerts, error, isLoading } = useSWR<CryptoFlashAlert[]>(
     `/api/alerts?minAmountUsd=${minAmountUsd}`,
     fetcher,

@@ -34,8 +34,8 @@ export async function GET(request: Request) {
       });
     }
 
-    // Fetch fresh alerts - use lower threshold to get more data
-    const minAmountUsd = filters.minAmountUsd || 10000; // Default $10k threshold (lowered for more alerts)
+    // Fetch fresh alerts - $0 threshold to get ALL transactions
+    const minAmountUsd = filters.minAmountUsd ?? 0; // Default $0 to get all transactions
     const allAlerts = await getAllAlerts(minAmountUsd);
     
     // Force refresh bypasses cache
