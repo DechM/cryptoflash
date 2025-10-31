@@ -1,7 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TickerCard } from '@/components/metrics/TickerCard';
+import TickerCard from '@/components/metrics/TickerCard';
 import { RefreshButton } from '@/components/RefreshButton';
 import { MoversTable } from '@/components/movers/MoversTable';
 import { getTickers } from '@/lib/crypto';
