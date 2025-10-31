@@ -1,36 +1,35 @@
-// web/components/icons/TokenIcon.tsx
 import Image from "next/image";
 
 type Props = {
   symbol: string;
   size?: number;
   className?: string;
+  imageUrl?: string; // <-- ново
 };
 
-// Познати икони (по желание добавяй още SVG/PNG в /public/tokens/)
+// локален map (можеш да добавяш)
+// остави само най-важните – останалото идва от CoinGecko image
 const KNOWN_ICONS: Record<string, string> = {
   BTC: "/tokens/btc.svg",
   ETH: "/tokens/eth.svg",
   USDT: "/tokens/usdt.svg",
   USDC: "/tokens/usdc.svg",
-  SOL: "/tokens/sol.svg",
-  BNB: "/tokens/bnb.svg",
-  XRP: "/tokens/xrp.svg",
-  ADA: "/tokens/ada.svg",
-  DOGE: "/tokens/doge.svg",
-  AVAX: "/tokens/avax.svg",
-  MATIC: "/tokens/matic.svg",
-  LINK: "/tokens/link.svg",
   DAI: "/tokens/dai.svg",
   PAXG: "/tokens/paxg.svg",
   XAUT: "/tokens/xaut.svg",
 };
 
-export function TokenIcon({ symbol, size = 20, className = "" }: Props) {
+export function TokenIcon({ symbol, size = 20, className = "", imageUrl }: Props) {
   const sym = (symbol || "").toUpperCase();
-  const src = KNOWN_ICONS[sym];
 
-  // Ако имаме файл за иконата → показваме изображение
+  // 1) ако имаме URL от CoinGecko → ползваме него
+  const firstSrc = imageUrl;
+
+  // 2) иначе – локална иконка ако я има
+  const fallbackLocal = KNOWN_ICONS[sym];
+
+  const src = firstSrc ?? fallbackLocal;
+
   if (src) {
     return (
       <Image
@@ -44,7 +43,7 @@ export function TokenIcon({ symbol, size = 20, className = "" }: Props) {
     );
   }
 
-  // Fallback: кръг с инициалите (НЕ показваме отделен текст извън иконата)
+  // 3) накрая – инициали, без да “счупваме” layout
   const initials = sym.slice(0, 3);
   return (
     <span

@@ -20,11 +20,12 @@ export function TickerCard({ name, symbol, price, change24h, volume24h, updatedA
     return (
       <Card className="animate-pulse bg-gradient-to-br from-card to-card/50">
         <CardHeader>
-          <div className="flex items-center gap-2">
-            <div className="h-6 w-6 bg-muted rounded" />
-            <div className="h-5 w-32 bg-muted rounded" />
-          </div>
+          <CardTitle className="flex items-center gap-2">
+            <TokenIcon symbol={symbol} size={18} className="text-muted-foreground" />
+            <span className="uppercase">{displayName}</span>
+          </CardTitle>
         </CardHeader>
+
         <CardContent className="space-y-3">
           <div className="h-9 md:h-11 w-40 bg-muted rounded" />
           <div className="h-4 w-24 bg-muted rounded" />

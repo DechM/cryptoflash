@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Logo } from '@/components/brand/Logo';
+import Logo from "@/components/brand/Logo";
+
 import { cn } from '@/lib/utils';
 
 const navItems = [
