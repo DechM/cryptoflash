@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { useMemo, useState } from 'react';
+import Image from 'next/image';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { TokenIcon } from '@/components/icons/TokenIcon';
-import { formatUSD, formatPercent, formatCompactUSD } from '@/lib/format';
-import { ArrowUp, ArrowDown, Share2 } from 'lucide-react';
+import { formatCompactUSD, formatPercent, formatUSD } from '@/lib/format';
+import { ArrowDown, ArrowUp, Share2 } from 'lucide-react';
 import type { MoverData } from '@/lib/movers';
 
 type MoversTableProps = {
@@ -35,26 +36,34 @@ export function MoversTable({ data, updatedAt }: MoversTableProps) {
   const activeData = activeTab === 'gainers' ? topGainers : topLosers;
 
   const handleShare = () => {
-    const movers = activeData.slice(0, 5).map((coin) => `${coin.symbol.toUpperCase()} ${formatPercent(coin.change24h)}`);
+    const movers = activeData
+      .slice(0, 5)
+      .map((c) => `${c.symbol.toUpperCase()} ${formatPercent(c.change24h)}`);
     const text = `Top Crypto Movers (24h): ${movers.join(', ')} via CryptoFlash`;
-    const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent('https://cryptoflash.app')}`;
+    const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(
+      'https://cryptoflash.app'
+    )}`;
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-xs text-muted-foreground">Data refreshes every ~2 minutes</p>
+        <p className="text-xs text-muted-foreground">
+          Data refreshes every ~2 minutes{updatedAt ? ` • Updated: ${new Date(updatedAt).toLocaleTimeString()}` : ''}
+        </p>
         <Button variant="outline" size="sm" onClick={handleShare} className="gap-2">
           <Share2 className="h-4 w-4" />
           Share
         </Button>
       </div>
+
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'gainers' | 'losers')}>
         <TabsList>
           <TabsTrigger value="gainers">Top Gainers</TabsTrigger>
           <TabsTrigger value="losers">Top Losers</TabsTrigger>
         </TabsList>
+
         <TabsContent value="gainers" className="mt-4">
           <MoversTableView data={topGainers} />
         </TabsContent>
@@ -77,7 +86,7 @@ function MoversTableView({ data }: MoversTableViewProps) {
 
   return (
     <>
-      {/* Desktop table view (md+) */}
+      {/* Desktop (md+) */}
       <div className="hidden md:block overflow-x-auto">
         <Table>
           <TableHeader>
@@ -98,27 +107,41 @@ function MoversTableView({ data }: MoversTableViewProps) {
                   key={coin.id}
                   className="hover:bg-muted/10 hover:shadow-[0_1px_0_rgba(255,255,255,0.06)] transition-all"
                 >
-                  {/* >>> Обновената Name клетка */}
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <TokenIcon symbol={coin.symbol} imageUrl={coin.image} size={20} className="text-muted-foreground" />
-                      <div>
-                        <div className="font-medium">{coin.name}</div>
+                    <div className="flex items-center gap-2 min-w-0">
+                      {coin.image ? (
+                        <Image
+                          src={coin.image}
+                          alt={`${coin.symbol.toUpperCase()} icon`}
+                          width={20}
+                          height={20}
+                          className="rounded-full"
+                        />
+                      ) : (
+                        <TokenIcon symbol={coin.symbol} size={20} />
+                      )}
+                      <div className="min-w-0">
+                        <div className="truncate">{coin.name}</div>
                         <div className="text-xs text-muted-foreground uppercase">{coin.symbol}</div>
                       </div>
                     </div>
                   </TableCell>
 
-
                   <TableCell className="text-right font-medium">{formatUSD(coin.price)}</TableCell>
+
                   <TableCell className="text-right">
                     <Badge variant={badgeVariant} className="gap-1" aria-label="24h change">
                       {isPositive ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
                       {formatPercent(coin.change24h)}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right text-muted-foreground">{formatCompactUSD(coin.volume24h)}</TableCell>
-                  <TableCell className="text-right text-muted-foreground">{formatCompactUSD(coin.marketCap)}</TableCell>
+
+                  <TableCell className="text-right text-muted-foreground">
+                    {formatCompactUSD(coin.volume24h)}
+                  </TableCell>
+                  <TableCell className="text-right text-muted-foreground">
+                    {formatCompactUSD(coin.marketCap)}
+                  </TableCell>
                 </TableRow>
               );
             })}
@@ -126,29 +149,39 @@ function MoversTableView({ data }: MoversTableViewProps) {
         </Table>
       </div>
 
-      {/* Mobile stacked view */}
+      {/* Mobile (stacked cards) */}
       <div className="md:hidden space-y-3">
         {data.map((coin) => {
           const isPositive = coin.change24h > 0;
           const badgeVariant = isPositive ? 'success' : 'destructive';
+
           return (
             <div key={coin.id} className="border rounded-lg p-4 space-y-2 hover:bg-muted/10 transition-colors">
               <div className="flex items-center justify-between gap-3">
-                {/* >>> Обновената шапка в мобилен изглед */}
-                <div className="flex items-center gap-2">
-                  <TokenIcon symbol={coin.symbol} imageUrl={coin.image} size={20} className="text-muted-foreground" />
-                  <div>
-                    <div className="font-medium">{coin.name}</div>
+                <div className="flex items-center gap-2 min-w-0">
+                  {coin.image ? (
+                    <Image
+                      src={coin.image}
+                      alt={`${coin.symbol.toUpperCase()} icon`}
+                      width={20}
+                      height={20}
+                      className="rounded-full"
+                    />
+                  ) : (
+                    <TokenIcon symbol={coin.symbol} size={20} />
+                  )}
+                  <div className="min-w-0">
+                    <div className="font-medium truncate">{coin.name}</div>
                     <div className="text-xs text-muted-foreground uppercase">{coin.symbol}</div>
                   </div>
                 </div>
-
 
                 <Badge variant={badgeVariant} className="gap-1 shrink-0" aria-label="24h change">
                   {isPositive ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
                   {formatPercent(coin.change24h)}
                 </Badge>
               </div>
+
               <dl className="grid grid-cols-2 gap-2 text-sm">
                 <div>
                   <dt className="text-muted-foreground">Price</dt>
