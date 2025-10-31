@@ -76,8 +76,10 @@ class BinanceWebSocket {
   private listeners = new Map<string, Set<Listener>>();
   private subscriptions = new Set<string>();
   private reconnectTimer?: NodeJS.Timeout;
+  private connectTimer?: NodeJS.Timeout;
   private reconnectDelay = 1500;
   private isConnected = false;
+  private isConnecting = false;
   private priceCache = new Map<string, BinancePriceUpdate>();
 
   constructor() {
@@ -87,36 +89,61 @@ class BinanceWebSocket {
   }
 
   private connect() {
-    if (this.isConnected && this.ws?.readyState === WebSocket.OPEN) return;
+    // If already connected or connecting, skip
+    if (this.isConnected && this.ws?.readyState === WebSocket.OPEN) {
+      return;
+    }
+
+    if (this.isConnecting) {
+      return; // Already connecting, wait for it to complete
+    }
 
     try {
       // Binance combined stream for mini ticker (all symbols at once)
-      // This gives us price updates for all symbols efficiently
-      const streams = Array.from(this.subscriptions)
+      // Binance has a limit of 200 streams per connection
+      const subscriptionsArray = Array.from(this.subscriptions)
         .filter((symbol) => symbol && typeof symbol === 'string')
+        .slice(0, 200); // Limit to 200 streams max
+
+      if (subscriptionsArray.length === 0) {
+        return; // No subscriptions, don't connect
+      }
+
+      const streams = subscriptionsArray
         .map((symbol) => `${symbol.toLowerCase()}@miniTicker`)
         .join('/');
 
       if (streams.length === 0) {
-        return; // No subscriptions, don't connect
+        return; // No valid streams
       }
 
       const url = `wss://stream.binance.com:9443/stream?streams=${streams}`;
 
+      // Close existing connection first if it exists
       if (this.ws) {
         try {
+          this.ws.onclose = null; // Remove old handler to prevent reconnect loop
+          this.ws.onerror = null;
           this.ws.close();
         } catch {
           // Ignore
         }
+        this.ws = null;
+        this.isConnected = false;
       }
 
+      this.isConnecting = true;
       this.ws = new WebSocket(url);
 
       this.ws.onopen = () => {
         this.isConnected = true;
+        this.isConnecting = false;
         this.reconnectDelay = 1500;
-        console.log('Binance WebSocket connected');
+        if (this.reconnectTimer) {
+          clearTimeout(this.reconnectTimer);
+          this.reconnectTimer = undefined;
+        }
+        console.log(`Binance WebSocket connected with ${subscriptionsArray.length} streams`);
       };
 
       this.ws.onmessage = (event) => {
@@ -147,14 +174,16 @@ class BinanceWebSocket {
 
       this.ws.onclose = (event) => {
         this.isConnected = false;
+        this.isConnecting = false;
         // Only log if not a clean close (code 1000) or intentional shutdown
-        if (event.code !== 1000) {
-          console.log('Binance WebSocket disconnected', event.code, event.reason);
+        if (event.code !== 1000 && this.subscriptions.size > 0) {
+          // Only reconnect if we still have subscriptions
           this.scheduleReconnect();
         }
       };
 
       this.ws.onerror = (error) => {
+        this.isConnecting = false;
         // Suppress excessive error logging in production
         if (process.env.NODE_ENV === 'development') {
           console.error('Binance WebSocket error:', error);
@@ -163,6 +192,7 @@ class BinanceWebSocket {
         // Don't close immediately, let onclose handle it
       };
     } catch (error) {
+      this.isConnecting = false;
       console.error('Failed to establish Binance WebSocket:', error);
       this.scheduleReconnect();
     }
@@ -202,7 +232,14 @@ class BinanceWebSocket {
 
     if (!this.subscriptions.has(symbol)) {
       this.subscriptions.add(symbol);
-      this.connect();
+      // Debounce connection attempts - wait a bit if multiple subscriptions come in quickly
+      if (this.connectTimer) {
+        clearTimeout(this.connectTimer);
+      }
+      this.connectTimer = setTimeout(() => {
+        this.connectTimer = undefined;
+        this.connect();
+      }, 100); // Wait 100ms for more subscriptions to batch together
     }
 
     return () => {
