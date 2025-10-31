@@ -1,24 +1,33 @@
 import type { Metadata } from 'next';
-import { Button } from '@/components/ui/button';
 
-export const metadata: Metadata = {
-  title: 'Subscribe — CryptoFlash',
-  description: 'Get CryptoFlash AI briefs and signals in your inbox.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: 'Subscribe — CryptoFlash',
+    description: 'Get CryptoFlash AI briefs and signals delivered to your inbox.',
+    alternates: {
+      canonical: 'https://cryptoflash.app/subscribe',
+    },
+    openGraph: {
+      title: 'Subscribe — CryptoFlash',
+      description: 'Get CryptoFlash AI briefs and signals delivered to your inbox.',
+      url: 'https://cryptoflash.app/subscribe',
+    },
+  };
+}
 
 export default function SubscribePage() {
   return (
-    <div className="mx-auto max-w-xl space-y-4">
-      <h1 className="text-2xl font-semibold">Subscribe</h1>
-      <p className="text-muted-foreground">Join the early access list for signals and research.</p>
-      <form className="flex gap-2">
-        <input
-          type="email"
-          placeholder="you@example.com"
-          className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
-        />
-        <Button type="submit">Join</Button>
-      </form>
+    <div className="mx-auto max-w-xl space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold mb-2">Subscribe</h1>
+        <p className="text-muted-foreground">
+          Join the early access list to receive signals, predictions, and AI briefs directly in your inbox.
+        </p>
+      </div>
+      <div className="rounded-lg border p-8 text-center text-muted-foreground">
+        <p>Subscription form will appear here.</p>
+        <p className="text-sm mt-2">Coming soon...</p>
+      </div>
     </div>
   );
 }

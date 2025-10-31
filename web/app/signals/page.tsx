@@ -1,32 +1,33 @@
 import type { Metadata } from 'next';
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
-export const metadata: Metadata = {
-  title: 'Market Signals — CryptoFlash',
-  description: 'Real-time AI-driven market signals.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: 'Market Signals — CryptoFlash',
+    description: 'Real-time DEX signals and on-chain activity from Dexscreener.',
+    alternates: {
+      canonical: 'https://cryptoflash.app/signals',
+    },
+    openGraph: {
+      title: 'Market Signals — CryptoFlash',
+      description: 'Real-time DEX signals and on-chain activity.',
+      url: 'https://cryptoflash.app/signals',
+    },
+  };
+}
 
 export default function SignalsPage() {
   return (
-    <div className="container-grid">
-      <h1 className="text-2xl font-semibold">Market Signals</h1>
-      <Table>
-        <TableCaption>Signals update every few minutes.</TableCaption>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Asset</TableHead>
-            <TableHead>Signal</TableHead>
-            <TableHead>Confidence</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          <TableRow>
-            <TableCell>BTC</TableCell>
-            <TableCell>—</TableCell>
-            <TableCell>—</TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold mb-2">Market Signals</h1>
+        <p className="text-muted-foreground">
+          Real-time DEX signals including volume spikes, new pairs, and whale trades from Dexscreener.
+        </p>
+      </div>
+      <div className="rounded-lg border p-8 text-center text-muted-foreground">
+        <p>Signals data will appear here.</p>
+        <p className="text-sm mt-2">Coming soon...</p>
+      </div>
     </div>
   );
 }
