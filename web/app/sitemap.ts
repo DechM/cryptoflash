@@ -1,17 +1,16 @@
 import { MetadataRoute } from 'next';
-import { getMovers } from '@/lib/movers';
+import { getTrackedWallets } from '@/lib/whales/tracker';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://cryptoflash.app';
 
-  // Get top assets from movers for dynamic asset pages
-  let assetIds: string[] = [];
+  // Get tracked wallets for dynamic wallet pages
+  let walletAddresses: string[] = [];
   try {
-    const movers = await getMovers();
-    // Take top 200 coins for sitemap
-    assetIds = movers.slice(0, 200).map((m) => m.id);
+    const wallets = await getTrackedWallets();
+    walletAddresses = wallets.map((w) => w.address);
   } catch (error) {
-    console.error('Failed to fetch movers for sitemap:', error);
+    console.error('Failed to fetch wallets for sitemap:', error);
   }
 
   // Static pages
@@ -23,43 +22,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1,
     },
     {
-      url: `${baseUrl}/pulse`,
+      url: `${baseUrl}/wallets`,
       lastModified: new Date(),
       changeFrequency: 'always',
       priority: 0.95,
-    },
-    {
-      url: `${baseUrl}/radar`,
-      lastModified: new Date(),
-      changeFrequency: 'always',
-      priority: 0.95,
-    },
-    {
-      url: `${baseUrl}/alpha`,
-      lastModified: new Date(),
-      changeFrequency: 'hourly',
-      priority: 0.95,
-    },
-    {
-      url: `${baseUrl}/hunter`,
-      lastModified: new Date(),
-      changeFrequency: 'hourly',
-      priority: 0.9,
     },
     {
       url: `${baseUrl}/signals`,
       lastModified: new Date(),
-      changeFrequency: 'hourly',
-      priority: 0.9,
+      changeFrequency: 'always',
+      priority: 0.95,
     },
     {
-      url: `${baseUrl}/predictions`,
-      lastModified: new Date(),
-      changeFrequency: 'hourly',
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/news`,
+      url: `${baseUrl}/leaderboard`,
       lastModified: new Date(),
       changeFrequency: 'hourly',
       priority: 0.9,
@@ -70,21 +45,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'monthly',
       priority: 0.8,
     },
-    {
-      url: `${baseUrl}/about`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.7,
-    },
   ];
 
-  // Dynamic asset pages
-  const assetPages: MetadataRoute.Sitemap = assetIds.map((id) => ({
-    url: `${baseUrl}/asset/${id}`,
+  // Dynamic wallet pages
+  const walletPages: MetadataRoute.Sitemap = walletAddresses.map((address) => ({
+    url: `${baseUrl}/wallet/${address}`,
     lastModified: new Date(),
-    changeFrequency: 'hourly',
-    priority: 0.8,
+    changeFrequency: 'always',
+    priority: 0.85,
   }));
 
-  return [...staticPages, ...assetPages];
+  return [...staticPages, ...walletPages];
 }

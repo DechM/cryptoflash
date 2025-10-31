@@ -5,8 +5,8 @@ import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 
 export const metadata: Metadata = {
-  title: 'CryptoFlash — Real-time Crypto Signals',
-  description: 'Market signals, prediction odds, AI briefs — fast.',
+  title: 'CryptoFlash Hub — Whale Signal Command Center',
+  description: 'Real-time whale intelligence & signal tracking. Monitor smart money moves, track wallet positions, and get AI-powered trading signals.',
   metadataBase: new URL('https://cryptoflash.app'),
   icons: {
     icon: [
@@ -19,15 +19,15 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: 'website',
-    siteName: 'CryptoFlash',
-    title: 'CryptoFlash — Real-time Crypto Signals',
-    description: 'Market signals, prediction odds, AI briefs — fast.',
+    siteName: 'CryptoFlash Hub',
+    title: 'CryptoFlash Hub — Whale Signal Command Center',
+    description: 'Real-time whale intelligence & signal tracking. Monitor smart money moves, track wallet positions, and get AI-powered trading signals.',
     images: [
       {
         url: '/branding/crypto-flash-x-profile-picture.png',
         width: 1200,
         height: 630,
-        alt: 'CryptoFlash',
+        alt: 'CryptoFlash Hub',
       },
     ],
     url: 'https://cryptoflash.app',
@@ -35,8 +35,8 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     creator: '@CryptoFlashGuru',
-    title: 'CryptoFlash — Real-time Crypto Signals',
-    description: 'Market signals, prediction odds, AI briefs — fast.',
+    title: 'CryptoFlash Hub — Whale Signal Command Center',
+    description: 'Real-time whale intelligence & signal tracking.',
     images: ['/branding/crypto-flash-x-profile-picture.png'],
   },
   alternates: {

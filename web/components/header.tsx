@@ -9,16 +9,11 @@ import { cn } from '@/lib/utils';
 import { Menu, X } from 'lucide-react';
 
 const navItems = [
-  { href: '/', label: 'Home' },
-  { href: '/pulse', label: 'Pulse Stream' },
-  { href: '/radar', label: 'Money Flow' },
-  { href: '/alpha', label: 'Alpha Signals' },
-  { href: '/hunter', label: 'Signal Hunter' },
-  { href: '/signals', label: 'Market Signals' },
-  { href: '/predictions', label: 'Predictions' },
-  { href: '/news', label: 'News' },
+  { href: '/', label: 'Command Center' },
+  { href: '/wallets', label: 'Whale Wallets' },
+  { href: '/signals', label: 'Live Signals' },
+  { href: '/leaderboard', label: 'Leaderboard' },
   { href: '/subscribe', label: 'Subscribe' },
-  { href: '/about', label: 'About' },
 ];
 
 export function Header() {

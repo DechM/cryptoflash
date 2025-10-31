@@ -1,32 +1,32 @@
 import type { Metadata } from 'next';
-import { SignalsTable } from '@/components/signals/SignalsTable';
+import { SignalFeed } from '@/components/whales/SignalFeed';
+import { getTrackedWallets } from '@/lib/whales/tracker';
+import { generateSignals } from '@/lib/whales/signals';
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: 'Market Signals — CryptoFlash',
-    description: 'Real-time DEX signals and on-chain activity from Dexscreener.',
+    title: 'Live Signals — CryptoFlash Hub',
+    description: 'Real-time whale trading signals with AI-powered confidence scores and severity ratings.',
     alternates: {
       canonical: 'https://cryptoflash.app/signals',
-    },
-    openGraph: {
-      title: 'Market Signals — CryptoFlash',
-      description: 'Real-time DEX signals and on-chain activity.',
-      url: 'https://cryptoflash.app/signals',
     },
   };
 }
 
-export default function SignalsPage() {
+export default async function SignalsPage() {
+  const wallets = await getTrackedWallets();
+  const signals = await generateSignals(wallets);
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold mb-2">Market Signals</h1>
-        <p className="text-muted-foreground">
-          Real-time DEX signals including volume spikes, new pairs, and whale trades from Dexscreener.
+        <h1 className="text-3xl font-bold tracking-tight">Live Signals</h1>
+        <p className="text-muted-foreground mt-1">
+          Real-time whale trading signals with AI-powered scoring
         </p>
       </div>
-
-      <SignalsTable />
+      <SignalFeed signals={signals} />
     </div>
   );
 }
+
