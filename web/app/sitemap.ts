@@ -23,6 +23,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1,
     },
     {
+      url: `${baseUrl}/pulse`,
+      lastModified: new Date(),
+      changeFrequency: 'minutely',
+      priority: 0.95,
+    },
+    {
+      url: `${baseUrl}/radar`,
+      lastModified: new Date(),
+      changeFrequency: 'minutely',
+      priority: 0.95,
+    },
+    {
+      url: `${baseUrl}/alpha`,
+      lastModified: new Date(),
+      changeFrequency: 'hourly',
+      priority: 0.95,
+    },
+    {
+      url: `${baseUrl}/hunter`,
+      lastModified: new Date(),
+      changeFrequency: 'hourly',
+      priority: 0.9,
+    },
+    {
       url: `${baseUrl}/signals`,
       lastModified: new Date(),
       changeFrequency: 'hourly',
