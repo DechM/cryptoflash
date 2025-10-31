@@ -65,6 +65,19 @@ export default function AlertDetailPage() {
     return notFound();
   }
 
+  // Safe access helpers
+  if (!alert?.token || !alert?.from || !alert?.to) {
+    return (
+      <div className="space-y-6">
+        <Card className="glass-card border-border/50">
+          <CardContent className="p-6 text-center">
+            <p className="text-muted-foreground">Loading alert details...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const copyToClipboard = async (text: string, field: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -94,12 +107,12 @@ export default function AlertDetailPage() {
   };
 
   const blockchainExplorers: Record<string, string> = {
-    ethereum: `https://etherscan.io/tx/${alert.txHash}`,
-    bitcoin: `https://blockstream.info/tx/${alert.txHash}`,
-    bsc: `https://bscscan.com/tx/${alert.txHash}`,
-    solana: `https://solscan.io/tx/${alert.txHash}`,
-    polygon: `https://polygonscan.com/tx/${alert.txHash}`,
-    arbitrum: `https://arbiscan.io/tx/${alert.txHash}`,
+    ethereum: `https://etherscan.io/tx/${alert?.txHash || ''}`,
+    bitcoin: `https://blockstream.info/tx/${alert?.txHash || ''}`,
+    bsc: `https://bscscan.com/tx/${alert?.txHash || ''}`,
+    solana: `https://solscan.io/tx/${alert?.txHash || ''}`,
+    polygon: `https://polygonscan.com/tx/${alert?.txHash || ''}`,
+    arbitrum: `https://arbiscan.io/tx/${alert?.txHash || ''}`,
   };
 
   return (
@@ -118,24 +131,24 @@ export default function AlertDetailPage() {
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-4 flex-1">
               <span className="text-5xl">
-                {alert.token.emoji || getTokenEmoji(alert.token.symbol)}
+                {alert.token?.emoji || getTokenEmoji(alert.token?.symbol || 'BTC')}
               </span>
               <div>
                 <CardTitle className="text-3xl mb-2">
-                  {formatCompactUSD(alert.token.amountUsd)} {alert.token.symbol}
+                  {formatCompactUSD(alert.token?.amountUsd || 0)} {alert.token?.symbol || 'UNKNOWN'}
                 </CardTitle>
                 <div className="flex items-center gap-2 flex-wrap">
                   <Badge
                     variant="outline"
-                    className={severityColors[alert.severity]}
+                    className={severityColors[alert.severity || 'low']}
                   >
-                    {alert.severity}
+                    {alert.severity || 'low'}
                   </Badge>
                   <Badge variant="outline">
-                    {alertTypeLabels[alert.alertType]}
+                    {alertTypeLabels[alert.alertType || 'large_transfer']}
                   </Badge>
                   <Badge variant="outline" className="uppercase">
-                    {alert.blockchain}
+                    {alert.blockchain || 'ethereum'}
                   </Badge>
                 </div>
               </div>
@@ -180,7 +193,7 @@ export default function AlertDetailPage() {
           <div className="mb-4 pb-4 border-b border-border/50">
             <div className="text-sm text-muted-foreground mb-1">Description</div>
             <p className="text-sm">
-              Large transfer of {alert.token.symbol} detected on {alert.blockchain.toUpperCase()}. 
+              Large transfer of {alert.token?.symbol || 'cryptocurrency'} detected on {(alert.blockchain || 'ethereum').toUpperCase()}. 
               {alert.alertType === 'exchange_withdrawal' && ' Funds withdrawn from exchange.'}
               {alert.alertType === 'exchange_deposit' && ' Funds deposited to exchange.'}
               {alert.alertType === 'whale_buy' && ' Potential whale accumulation detected.'}
@@ -193,19 +206,19 @@ export default function AlertDetailPage() {
             <div>
               <div className="text-sm text-muted-foreground mb-1">Token</div>
               <div className="font-semibold">
-                {alert.token.name} ({alert.token.symbol})
+                {alert.token?.name || 'Unknown'} ({alert.token?.symbol || 'UNKNOWN'})
               </div>
             </div>
             <div>
               <div className="text-sm text-muted-foreground mb-1">Price at TX</div>
               <div className="font-semibold">
-                {formatUSD(alert.cryptoPriceAtTx)}
+                {formatUSD(alert.cryptoPriceAtTx || 0)}
               </div>
             </div>
             <div>
               <div className="text-sm text-muted-foreground mb-1">Transaction Fee</div>
               <div className="font-semibold">
-                {alert.fee} {alert.blockchain === 'bitcoin' ? 'BTC' : 'ETH'}
+                {alert.fee || '0'} {(alert.blockchain || 'ethereum') === 'bitcoin' ? 'BTC' : 'ETH'}
                 {alert.feeUsd && ` (${formatUSD(alert.feeUsd)})`}
               </div>
             </div>
@@ -227,7 +240,7 @@ export default function AlertDetailPage() {
               <div className="text-sm text-muted-foreground mb-1">Transaction Hash</div>
               <div className="flex items-center gap-2">
                 <code className="text-xs font-mono bg-muted/30 px-2 py-1 rounded flex-1 truncate">
-                  {alert.txHash}
+                  {alert.txHash || 'N/A'}
                 </code>
                 <Button
                   variant="ghost"
@@ -277,7 +290,7 @@ export default function AlertDetailPage() {
             </div>
             <div>
               <div className="text-sm text-muted-foreground mb-1">Blockchain</div>
-              <div className="uppercase font-semibold">{alert.blockchain}</div>
+              <div className="uppercase font-semibold">{alert.blockchain || 'ethereum'}</div>
             </div>
           </div>
         </CardContent>
@@ -303,30 +316,32 @@ export default function AlertDetailPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="font-semibold mb-1">
-                    {alert.from.label || 'Unknown Wallet'}
+                    {alert.from?.label || 'Unknown Wallet'}
                   </div>
                   <div className="flex items-center gap-2">
                     <code className="text-xs font-mono text-muted-foreground truncate flex-1">
-                      {alert.from.address}
+                      {alert.from?.address || 'N/A'}
                     </code>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="shrink-0"
-                      onClick={() => copyToClipboard(alert.from.address, 'from')}
-                    >
-                      {copiedField === 'from' ? (
-                        <Check className="h-4 w-4 text-emerald-400" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                    </Button>
+                    {alert.from?.address && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="shrink-0"
+                        onClick={() => copyToClipboard(alert.from.address, 'from')}
+                      >
+                        {copiedField === 'from' ? (
+                          <Check className="h-4 w-4 text-emerald-400" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </Button>
+                    )}
                   </div>
                 </div>
                 <div className="text-right">
                   <div className="text-sm text-muted-foreground">Amount</div>
                   <div className="font-semibold">
-                    {formatCompactUSD(alert.from.amountUsd)}
+                    {formatCompactUSD(alert.from?.amountUsd || 0)}
                   </div>
                 </div>
               </div>
@@ -346,7 +361,7 @@ export default function AlertDetailPage() {
           <div>
             <div className="text-sm text-muted-foreground mb-2">To</div>
             <div className="space-y-3">
-              {alert.to.map((recipient, index) => (
+              {(alert.to || []).map((recipient, index) => (
                 <div
                   key={index}
                   className="bg-muted/30 rounded-lg p-4 space-y-2"
@@ -354,30 +369,32 @@ export default function AlertDetailPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold mb-1">
-                        {recipient.label || 'Unknown Wallet'}
+                        {recipient?.label || 'Unknown Wallet'}
                       </div>
                       <div className="flex items-center gap-2">
                         <code className="text-xs font-mono text-muted-foreground truncate flex-1">
-                          {recipient.address}
+                          {recipient?.address || 'N/A'}
                         </code>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="shrink-0"
-                          onClick={() => copyToClipboard(recipient.address, `to-${index}`)}
-                        >
-                          {copiedField === `to-${index}` ? (
-                            <Check className="h-4 w-4 text-emerald-400" />
-                          ) : (
-                            <Copy className="h-4 w-4" />
-                          )}
-                        </Button>
+                        {recipient?.address && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="shrink-0"
+                            onClick={() => copyToClipboard(recipient.address, `to-${index}`)}
+                          >
+                            {copiedField === `to-${index}` ? (
+                              <Check className="h-4 w-4 text-emerald-400" />
+                            ) : (
+                              <Copy className="h-4 w-4" />
+                            )}
+                          </Button>
+                        )}
                       </div>
                     </div>
                     <div className="text-right ml-4">
                       <div className="text-sm text-muted-foreground">Amount</div>
                       <div className="font-semibold">
-                        {formatCompactUSD(recipient.amountUsd)}
+                        {formatCompactUSD(recipient?.amountUsd || 0)}
                       </div>
                     </div>
                   </div>
