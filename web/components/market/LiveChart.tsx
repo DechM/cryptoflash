@@ -19,12 +19,13 @@ export function LiveChart({ data, currentPrice, coinSymbol }: Props) {
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Area'> | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
 
+  // Main initialization effect
   useEffect(() => {
-    if (!chartContainerRef.current || isInitialized) return;
+    const container = chartContainerRef.current;
+    if (!container) return;
 
-    // Only initialize if we have valid data
+    // Filter valid data
     const validData = data.filter(
       (d) =>
         d &&
@@ -35,147 +36,152 @@ export function LiveChart({ data, currentPrice, coinSymbol }: Props) {
     );
 
     if (validData.length === 0) {
-      console.warn('LiveChart: No valid data to display');
+      console.warn('LiveChart: No valid data', { dataLength: data.length });
       return;
     }
 
-    const container = chartContainerRef.current;
-    const containerWidth = container.clientWidth || 1200;
-
-    try {
-      const chart = createChart(container, {
-        layout: {
-          background: { type: ColorType.Solid, color: 'transparent' },
-          textColor: '#9ca3af',
-          fontSize: 12,
-        },
-        grid: {
-          vertLines: {
-            color: 'rgba(255, 255, 255, 0.08)',
-            visible: true,
-          },
-          horzLines: {
-            color: 'rgba(255, 255, 255, 0.08)',
-            visible: true,
-          },
-        },
-        width: containerWidth,
-        height: 600, // Increased height like CoinMarketCap
-        timeScale: {
-          timeVisible: true,
-          secondsVisible: false,
-          borderColor: 'rgba(255, 255, 255, 0.1)',
-          fixLeftEdge: false,
-          fixRightEdge: false,
-        },
-        rightPriceScale: {
-          borderColor: 'rgba(255, 255, 255, 0.1)',
-          scaleMargins: {
-            top: 0.1,
-            bottom: 0.1,
-          },
-          entireTextOnly: false,
-        },
-        crosshair: {
-          mode: 0, // Normal mode
-          vertLine: {
-            color: '#6b7280',
-            width: 1,
-            style: 0, // Solid
-          },
-          horzLine: {
-            color: '#6b7280',
-            width: 1,
-            style: 0, // Solid
-          },
-        },
-        handleScroll: {
-          mouseWheel: true,
-          pressedMouseMove: true,
-        },
-        handleScale: {
-          axisPressedMouseMove: true,
-          axisDoubleClickReset: true,
-          mouseWheel: true,
-          pinch: true,
-        },
-      });
-
-      chartRef.current = chart;
-
-      // Determine if trend is positive or negative
-      const firstPrice = validData[0]?.value || 0;
-      const lastPrice = validData[validData.length - 1]?.value || 0;
-      const isPositive = lastPrice >= firstPrice;
-
-      // Use green for positive, red for negative (like CoinMarketCap)
-      const lineColor = isPositive ? '#22c55e' : '#ef4444';
-      const topColor = isPositive
-        ? 'rgba(34, 197, 94, 0.2)'
-        : 'rgba(239, 68, 68, 0.2)';
-      const bottomColor = isPositive
-        ? 'rgba(34, 197, 94, 0.01)'
-        : 'rgba(239, 68, 68, 0.01)';
-
-      const areaSeries = (chart as any).addAreaSeries({
-        lineColor: lineColor,
-        topColor: topColor,
-        bottomColor: bottomColor,
-        lineWidth: 2.5,
-        priceLineVisible: true,
-        lastValueVisible: true,
-        crosshairMarkerVisible: true,
-        crosshairMarkerRadius: 5,
-      }) as ISeriesApi<'Area'>;
-
-      seriesRef.current = areaSeries;
-
-      // Format data for lightweight-charts
-      const formattedData = validData.map((d) => ({
-        time: d.time as Time,
-        value: d.value,
-      }));
-
-      if (formattedData.length > 0) {
-        areaSeries.setData(formattedData);
-        chart.timeScale().fitContent();
-        setIsInitialized(true);
+    // Initialize chart
+    const initChart = () => {
+      if (chartRef.current) {
+        chartRef.current.remove();
+        chartRef.current = null;
+        seriesRef.current = null;
       }
 
-      const handleResize = () => {
-        if (container && chart) {
-          const newWidth = container.clientWidth || 1200;
-          chart.applyOptions({ width: newWidth });
+      const width = container.clientWidth || container.offsetWidth || 1200;
+      
+      if (width === 0) {
+        // Retry after a short delay if width is 0
+        setTimeout(initChart, 100);
+        return;
+      }
+
+      try {
+        const chart = createChart(container, {
+          layout: {
+            background: { type: ColorType.Solid, color: 'transparent' },
+            textColor: '#9ca3af',
+            fontSize: 12,
+          },
+          grid: {
+            vertLines: {
+              color: 'rgba(255, 255, 255, 0.08)',
+              visible: true,
+            },
+            horzLines: {
+              color: 'rgba(255, 255, 255, 0.08)',
+              visible: true,
+            },
+          },
+          width: width,
+          height: 600,
+          timeScale: {
+            timeVisible: true,
+            secondsVisible: false,
+            borderColor: 'rgba(255, 255, 255, 0.1)',
+          },
+          rightPriceScale: {
+            borderColor: 'rgba(255, 255, 255, 0.1)',
+          },
+        });
+
+        chartRef.current = chart;
+
+        // Determine trend
+        const firstPrice = validData[0]?.value || 0;
+        const lastPrice = validData[validData.length - 1]?.value || 0;
+        const isPositive = lastPrice >= firstPrice;
+
+        // Colors based on trend
+        const lineColor = isPositive ? '#22c55e' : '#ef4444';
+        const topColor = isPositive
+          ? 'rgba(34, 197, 94, 0.2)'
+          : 'rgba(239, 68, 68, 0.2)';
+        const bottomColor = isPositive
+          ? 'rgba(34, 197, 94, 0.01)'
+          : 'rgba(239, 68, 68, 0.01)';
+
+        const areaSeries = (chart as any).addAreaSeries({
+          lineColor: lineColor,
+          topColor: topColor,
+          bottomColor: bottomColor,
+          lineWidth: 2.5,
+          priceLineVisible: true,
+          lastValueVisible: true,
+          crosshairMarkerVisible: true,
+          crosshairMarkerRadius: 5,
+        }) as ISeriesApi<'Area'>;
+
+        seriesRef.current = areaSeries;
+
+        // Format and set data
+        const formattedData = validData.map((d) => ({
+          time: d.time as Time,
+          value: d.value,
+        }));
+
+        areaSeries.setData(formattedData);
+        chart.timeScale().fitContent();
+
+        // Handle resize
+        const handleResize = () => {
+          if (container && chart) {
+            const newWidth = container.clientWidth || container.offsetWidth || 1200;
+            if (newWidth > 0) {
+              chart.applyOptions({ width: newWidth });
+            }
+          }
+        };
+
+        window.addEventListener('resize', handleResize);
+
+        // Cleanup
+        return () => {
+          window.removeEventListener('resize', handleResize);
+          if (chart) {
+            chart.remove();
+          }
+        };
+      } catch (error) {
+        console.error('Error initializing chart:', error);
+      }
+    };
+
+    // Use IntersectionObserver to ensure container is visible
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          initChart();
+          observer.disconnect();
         }
-      };
+      },
+      { threshold: 0.1 }
+    );
 
-      window.addEventListener('resize', handleResize);
+    observer.observe(container);
 
-      return () => {
-        window.removeEventListener('resize', handleResize);
-        if (chart) {
-          chart.remove();
-        }
-        setIsInitialized(false);
-      };
-    } catch (error) {
-      console.error('Error initializing chart:', error);
-    }
-  }, [data, isInitialized]);
+    // Fallback: initialize after a delay if observer doesn't fire
+    const timeoutId = setTimeout(() => {
+      if (!chartRef.current) {
+        initChart();
+      }
+      observer.disconnect();
+    }, 500);
 
-  // Update chart with new price
+    return () => {
+      observer.disconnect();
+      clearTimeout(timeoutId);
+      if (chartRef.current) {
+        chartRef.current.remove();
+        chartRef.current = null;
+        seriesRef.current = null;
+      }
+    };
+  }, [data]);
+
+  // Update chart with live price
   useEffect(() => {
-    if (
-      !seriesRef.current ||
-      !chartRef.current ||
-      !isInitialized ||
-      data.length === 0 ||
-      !currentPrice ||
-      isNaN(currentPrice)
-    )
-      return;
-
-    setIsUpdating(true);
+    if (!seriesRef.current || !chartRef.current || !currentPrice || isNaN(currentPrice)) return;
 
     const validData = data.filter(
       (d) => d && typeof d.value === 'number' && !isNaN(d.value) && d.value > 0
@@ -183,26 +189,24 @@ export function LiveChart({ data, currentPrice, coinSymbol }: Props) {
 
     if (validData.length === 0) return;
 
+    setIsUpdating(true);
+
     try {
       const lastDataPoint = validData[validData.length - 1];
       const now = Math.floor(Date.now() / 1000);
 
-      // Update the latest point with current price
       seriesRef.current.update({
-        time: (lastDataPoint.time === now
-          ? lastDataPoint.time
-          : now) as Time,
+        time: (lastDataPoint.time === now ? lastDataPoint.time : now) as Time,
         value: currentPrice,
       });
 
-      // Auto-scroll to show the latest point
       chartRef.current.timeScale().scrollToPosition(-1, false);
     } catch (error) {
       console.error('Error updating chart:', error);
     }
 
     setTimeout(() => setIsUpdating(false), 300);
-  }, [currentPrice, data, isInitialized]);
+  }, [currentPrice, data]);
 
   if (!data || data.length === 0) {
     return (
@@ -226,9 +230,8 @@ export function LiveChart({ data, currentPrice, coinSymbol }: Props) {
       <div
         ref={chartContainerRef}
         className="w-full rounded-lg overflow-hidden"
-        style={{ minHeight: '600px', height: '600px' }}
+        style={{ minHeight: '600px', height: '600px', width: '100%' }}
       />
     </div>
   );
 }
-
