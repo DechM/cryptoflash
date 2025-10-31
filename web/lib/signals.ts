@@ -77,12 +77,6 @@ export async function getSignals(): Promise<Signal[]> {
       const signals: Signal[] = [];
       const seenPairs = new Set<string>();
 
-      // If no pairs, try a fallback: fetch specific trending tokens
-      if (!data.pairs || data.pairs.length === 0) {
-        // Return empty for now - in production, you could fetch specific token pairs
-        return [];
-      }
-
       for (const pair of data.pairs.slice(0, 50)) {
         // Dedupe by pair address
         if (seenPairs.has(pair.pairAddress)) continue;

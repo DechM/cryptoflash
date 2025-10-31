@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,6 +7,21 @@ import { RefreshButton } from '@/components/RefreshButton';
 import { MoversTable } from '@/components/movers/MoversTable';
 import { getTickers } from '@/lib/crypto';
 import { getMovers } from '@/lib/movers';
+
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: 'CryptoFlash — Real-time Crypto Signals',
+    description: 'Market signals, prediction odds, AI briefs — fast.',
+    alternates: {
+      canonical: 'https://cryptoflash.app',
+    },
+    openGraph: {
+      title: 'CryptoFlash — Real-time Crypto Signals',
+      description: 'Market signals, prediction odds, AI briefs — fast.',
+      url: 'https://cryptoflash.app',
+    },
+  };
+}
 
 export default async function HomePage() {
   const tickers = await getTickers();

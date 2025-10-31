@@ -17,36 +17,26 @@ export function SubscribeForm() {
     setMessage('');
 
     try {
-      // Try Brevo API first if available
-      if (process.env.NEXT_PUBLIC_BREVO_API_KEY) {
-        const response = await fetch('/api/subscribe', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ name, email, agreeToEmails }),
-        });
+      // Use API route which handles Brevo or fallback
+      const response = await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, email, agreeToEmails }),
+      });
 
-        const data = await response.json();
+      const data = await response.json();
 
-        if (response.ok) {
-          setStatus('success');
-          setMessage('Successfully subscribed! Check your inbox.');
-          setName('');
-          setEmail('');
-          setAgreeToEmails(false);
-        } else {
-          setStatus('error');
-          setMessage(data.error || 'Subscription failed. Please try again.');
-        }
-      } else {
-        // Fallback to Substack (server-side form submission)
-        // For now, show a message to use Substack directly
+      if (response.ok) {
         setStatus('success');
-        setMessage(
-          'Thank you! Please visit our Substack to complete your subscription.'
-        );
-        // In production, you'd redirect to Substack or use their embed form
+        setMessage(data.message || 'Successfully subscribed! Check your inbox.');
+        setName('');
+        setEmail('');
+        setAgreeToEmails(false);
+      } else {
+        setStatus('error');
+        setMessage(data.error || 'Subscription failed. Please try again.');
       }
     } catch (error) {
       setStatus('error');
