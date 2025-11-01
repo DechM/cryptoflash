@@ -31,41 +31,41 @@ export async function POST(request: Request) {
     // Determine price and product info based on tier
     const pricing = {
       pro: {
-        unit_amount: 499, // $4.99
-        name: 'PumpKing Pro',
+        priceId: process.env.STRIPE_PRICE_PRO,
+        name: 'CryptoFlash Pro',
         description: 'Early alerts, 10 token tracking, advanced features'
       },
       ultimate: {
-        unit_amount: 1999, // $19.99
-        name: 'PumpKing Ultimate',
+        priceId: process.env.STRIPE_PRICE_ULTIMATE,
+        name: 'CryptoFlash Ultimate',
         description: 'Earliest alerts, unlimited tracking, API access, priority support'
       }
     }
 
     const plan = pricing[tier as 'pro' | 'ultimate'] || pricing.pro
 
+    if (!plan.priceId) {
+      return NextResponse.json(
+        { 
+          error: 'Price ID not configured',
+          details: `STRIPE_PRICE_${tier.toUpperCase()} environment variable is missing`
+        },
+        { status: 500 }
+      )
+    }
+
     // Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
         {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: plan.name,
-              description: plan.description,
-            },
-            unit_amount: plan.unit_amount,
-            recurring: {
-              interval: 'month'
-            }
-          },
+          price: plan.priceId,
           quantity: 1
         }
       ],
       mode: 'subscription',
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/premium/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/premium?canceled=true`,
+      success_url: `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/premium/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/premium?canceled=true`,
       client_reference_id: userId,
       customer_email: email,
       metadata: {

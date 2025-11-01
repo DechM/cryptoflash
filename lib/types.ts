@@ -22,6 +22,7 @@ export interface Token {
   liquidity: number
   volume24h?: number
   volumeChange24h?: number
+  curveSpeed?: number // Bonding curve speed (progress change per hour, 0-10 scale)
   score: number // AI Snipe Score 0-100
   whaleCount: number
   whaleInflows: number

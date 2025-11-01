@@ -65,22 +65,44 @@ export async function GET() {
       )
     ])
 
-    // Calculate scores and enrich tokens
-    const enrichedTokens: Token[] = kothCandidates
+    // Calculate scores and enrich tokens (async map for rug risk calculation)
+    const enrichedTokensPromises = kothCandidates
       .filter(token => token.tokenAddress) // Filter out tokens without address
-      .map((token, index) => {
+      .map(async (token, index) => {
         const dexData = dexscreenerData.get(token.tokenAddress!) || {}
         const whaleInfo = whaleData[index] || { whaleCount: 0, whaleInflows: 0, totalVolume: 0 }
         
-        // Calculate volume jump (simplified - compare with average)
+        // Calculate volume jump (percentage change in 24h)
         const volumeJump = dexData.priceChange24h || 0
 
-        // Calculate score
+        // Calculate curve speed (0-10 scale)
+        // Speed is based on volume relative to liquidity + progress momentum
+        // Higher volume/liquidity ratio = faster curve progression
+        const liquidityInSOL = token.liquidity || 0
+        const priceUsd = Math.max(token.priceUsd || dexData.priceUsd || 0.000001, 0.000001)
+        const volumeInSOL = (dexData.volume24h || 0) / priceUsd // Approximate SOL volume
+        const volumeToLiquidityRatio = liquidityInSOL > 0 ? volumeInSOL / liquidityInSOL : 0
+        // Normalize to 0-10: higher ratio = faster speed
+        // Also factor in progress - tokens closer to 100% tend to have faster speed
+        const progressMultiplier = 1 + (token.progress || 0) / 100
+        const curveSpeed = Math.min(Math.max(volumeToLiquidityRatio * 5 * progressMultiplier, 0), 10)
+
+        // Calculate rug risk (async - may take time)
+        let rugRisk = 50 // Default medium risk
+        try {
+          rugRisk = await calculateRugRisk(token.tokenAddress!)
+        } catch (error) {
+          // Use default if calculation fails
+          console.warn(`Failed to calculate rug risk for ${token.tokenAddress}:`, error)
+        }
+
+        // Calculate score using the new formula
         const score = calculateTokenScore({
           ...token,
+          curveSpeed,
           volumeChange24h: volumeJump,
           whaleInflows: whaleInfo.whaleInflows,
-          rugRisk: 50 // Default, will be calculated properly later
+          rugRisk
         })
 
         return {
@@ -93,16 +115,20 @@ export async function GET() {
           liquidity: token.liquidity || 0,
           volume24h: dexData.volume24h,
           volumeChange24h: volumeJump,
+          curveSpeed,
           score,
           whaleCount: whaleInfo.whaleCount,
           whaleInflows: whaleInfo.whaleInflows,
           hypeScore: undefined, // Not using Grok for MVP
-          rugRisk: 50, // Default medium risk
+          rugRisk,
           fullyDilutedValuation: token.fullyDilutedValuation,
           marketCap: dexData.fdv,
           createdAt: new Date().toISOString()
         }
       })
+    
+    // Wait for all async operations to complete
+    const enrichedTokens: Token[] = await Promise.all(enrichedTokensPromises)
 
     // Sort by score (highest first)
     enrichedTokens.sort((a, b) => b.score - a.score)

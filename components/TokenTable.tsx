@@ -112,7 +112,7 @@ export function TokenTable({ tokens, refreshInterval = 60000 }: TokenTableProps)
                 </td>
                 <td className="py-4 px-4 text-center">
                   <a
-                    href={getPumpFunUrl(token.tokenAddress, 'pumpkingsniper')}
+                    href={getPumpFunUrl(token.tokenAddress, 'cryptoflash')}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => {

@@ -186,7 +186,7 @@ export default function AlertsPage() {
                 required
               />
               <p className="mt-2 text-xs text-[#6b7280]">
-                Send /start to @PumpKingBot to enable alerts
+                Send /start to @CryptoFlashBot to enable alerts
               </p>
             </div>
 

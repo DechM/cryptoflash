@@ -20,7 +20,7 @@ export function Navbar() {
         <div className="flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
             <Zap className="h-6 w-6 text-[#00ff88]" />
-            <span className="text-xl font-bold gradient-text">PumpKing Sniper</span>
+            <span className="text-xl font-bold gradient-text">CryptoFlash</span>
           </Link>
 
           <div className="hidden md:flex items-center space-x-2">

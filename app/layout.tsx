@@ -7,18 +7,21 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
+const siteName = process.env.NEXT_PUBLIC_SITE_NAME || "CryptoFlash"
+
 export const metadata: Metadata = {
-  title: "PumpKing Sniper | Free KOTH Tracker - Snipe Pump.fun Winners Early!",
+  title: "CryptoFlash | Real-time KOTH Tracker - Snipe Pump.fun Winners Early!",
   description: "Real-time KOTH tracker for Pump.fun memecoins. Get early alerts, track bonding curve progress, and snipe winners before they moon!",
   keywords: "pump.fun, KOTH, memecoin, Solana, bonding curve, crypto sniper, pump tracker",
   openGraph: {
-    title: "PumpKing Sniper - Free KOTH Tracker",
+    title: "CryptoFlash - Real-time KOTH Tracker",
     description: "Snipe Pump.fun winners early with real-time alerts",
     type: "website",
+    siteName: siteName,
   },
   twitter: {
     card: "summary_large_image",
-    title: "PumpKing Sniper",
+    title: "CryptoFlash",
     description: "Real-time KOTH tracker for Pump.fun",
   },
 };

@@ -49,7 +49,7 @@ export function formatKOTHAlert(token: {
   progress: number
   priceUsd?: number
 }): string {
-  const buyUrl = `https://pump.fun/${token.address}?ref=pumpkingsniper`
+  const buyUrl = `https://pump.fun/coin/${token.address}?ref=cryptoflash`
   
   return `🚨 <b>KOTH Alert!</b>
 

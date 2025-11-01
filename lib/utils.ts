@@ -23,9 +23,10 @@ export function copyToClipboard(text: string): Promise<void> {
 }
 
 export function getPumpFunUrl(tokenAddress: string, referral?: string): string {
-  const baseUrl = `https://pump.fun/${tokenAddress}`
+  // Always use mint address directly - pump.fun format: https://pump.fun/coin/{mintAddress}
+  const baseUrl = `https://pump.fun/coin/${tokenAddress}`
   if (referral) {
-    return `${baseUrl}?ref=${referral}`
+    return `${baseUrl}?ref=${referral || 'cryptoflash'}`
   }
   return baseUrl
 }

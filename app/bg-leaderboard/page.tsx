@@ -3,22 +3,31 @@
 import { Navbar } from '@/components/Navbar'
 import { Trophy, Medal, Award, TrendingUp } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { useEffect, useState } from 'react'
+import useSWR from 'swr'
 
-// Mock data - in production, fetch from API with Bulgarian wallet filtering
-const mockLeaderboard = [
-  { rank: 1, wallet: '8k3j...x9p2', snipes: 42, profit: '$125,420', success: 92 },
-  { rank: 2, wallet: '2m7n...q5w8', snipes: 38, profit: '$98,320', success: 87 },
-  { rank: 3, wallet: '9h4k...r6t1', snipes: 35, profit: '$87,150', success: 85 },
-  { rank: 4, wallet: '5v8b...s3n7', snipes: 31, profit: '$76,890', success: 82 },
-  { rank: 5, wallet: '1c6d...m9p4', snipes: 28, profit: '$65,420', success: 79 },
-  { rank: 6, wallet: '7x2z...k8h3', snipes: 25, profit: '$54,210', success: 76 },
-  { rank: 7, wallet: '3n9m...j5f2', snipes: 22, profit: '$48,750', success: 73 },
-  { rank: 8, wallet: '6p8q...g7w1', snipes: 19, profit: '$42,380', success: 70 },
-  { rank: 9, wallet: '4r5t...v6y9', snipes: 16, profit: '$36,920', success: 68 },
-  { rank: 10, wallet: '1a2s...d3f4', snipes: 14, profit: '$31,450', success: 65 },
-]
+interface LeaderboardEntry {
+  rank: number
+  wallet: string
+  snipes: number
+  profit: string
+  success: number
+  avgScore?: number
+}
+
+const fetcher = (url: string) => fetch(url).then(r => r.json())
 
 export default function BGLeaderboardPage() {
+  const { data, error, isLoading } = useSWR<{ leaderboard: LeaderboardEntry[] }>(
+    '/api/leaderboard/bg',
+    fetcher,
+    {
+      refreshInterval: 5 * 60 * 1000, // Refresh every 5 minutes
+      revalidateOnFocus: true
+    }
+  )
+
+  const leaderboard = data?.leaderboard || []
   const getRankIcon = (rank: number) => {
     if (rank === 1) return <Trophy className="h-6 w-6 text-[#ffd700]" />
     if (rank === 2) return <Medal className="h-6 w-6 text-[#c0c0c0]" />
@@ -69,7 +78,14 @@ export default function BGLeaderboardPage() {
               </tr>
             </thead>
             <tbody>
-              {mockLeaderboard.map((entry, index) => (
+              {leaderboard.length === 0 && !isLoading && !error && (
+                <tr>
+                  <td colSpan={5} className="py-8 text-center text-[#6b7280]">
+                    No leaderboard data available yet. Check back soon!
+                  </td>
+                </tr>
+              )}
+              {leaderboard.map((entry, index) => (
                 <motion.tr
                   key={entry.wallet}
                   initial={{ opacity: 0, x: -20 }}

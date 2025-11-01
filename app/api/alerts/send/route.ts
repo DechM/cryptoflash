@@ -9,8 +9,13 @@ import { sendTelegramMessage, formatKOTHAlert } from '@/lib/api/telegram'
  */
 export async function POST(request: Request) {
   try {
-    // Get latest KOTH tokens
-    const kothResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/koth-data`)
+    // Get latest KOTH tokens from internal API
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const kothResponse = await fetch(`${baseUrl}/api/koth-data`, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
     const { tokens } = await kothResponse.json()
 
     if (!tokens || tokens.length === 0) {

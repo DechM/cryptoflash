@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { supabaseAdmin } from '@/lib/supabase'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder')
+const stripeKey = process.env.STRIPE_SECRET_KEY || ''
+const stripe = stripeKey ? new Stripe(stripeKey) : null as any // Type assertion for webhook handler
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || ''
 
@@ -12,6 +13,14 @@ export async function POST(request: Request) {
     const signature = request.headers.get('stripe-signature')!
 
     let event: Stripe.Event
+
+    if (!stripe) {
+      console.error('Stripe not configured - webhook cannot process')
+      return NextResponse.json(
+        { error: 'Stripe not configured' },
+        { status: 500 }
+      )
+    }
 
     try {
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
@@ -33,24 +42,50 @@ export async function POST(request: Request) {
           const subscriptionId = session.subscription as string
 
           if (userId && subscriptionId) {
-            // Get tier from metadata or determine from price
+            // Get tier from metadata
             const tier = session.metadata?.tier || 'pro'
-            // If no tier in metadata, determine from amount
-            const subscriptionTier = tier === 'ultimate' ? 'ultimate' : 'pro'
+            // Validate tier
+            const subscriptionTier = (tier === 'ultimate' ? 'ultimate' : 'pro') as 'pro' | 'ultimate'
             
-            // Calculate expiration (30 days from now for monthly subscription)
-            const expiresAt = new Date()
-            expiresAt.setDate(expiresAt.getDate() + 30)
-            
-            await supabaseAdmin
-              .from('users')
-              .update({
-                subscription_status: subscriptionTier,
-                stripe_customer_id: session.customer as string,
-                stripe_subscription_id: subscriptionId,
-                subscription_expires_at: expiresAt.toISOString()
-              })
-              .eq('id', userId)
+            // Get subscription details to determine actual tier from price
+            try {
+              const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+              const priceId = subscription.items.data[0]?.price?.id
+              
+              // Check if priceId matches Ultimate tier
+              const isUltimate = priceId === process.env.STRIPE_PRICE_ULTIMATE
+              const finalTier = isUltimate ? 'ultimate' : 'pro'
+              
+              // Calculate expiration from subscription period
+              const subscriptionAny = subscription as any
+              const currentPeriodEnd = subscriptionAny.current_period_end
+              const expiresAt = new Date(typeof currentPeriodEnd === 'number' ? currentPeriodEnd * 1000 : Date.now() + 30 * 24 * 60 * 60 * 1000)
+              
+              await supabaseAdmin
+                .from('users')
+                .update({
+                  subscription_status: finalTier,
+                  stripe_customer_id: session.customer as string,
+                  stripe_subscription_id: subscriptionId,
+                  subscription_expires_at: expiresAt.toISOString()
+                })
+                .eq('id', userId)
+            } catch (err) {
+              // Fallback: use metadata tier
+              console.error('Error retrieving subscription:', err)
+              const expiresAt = new Date()
+              expiresAt.setDate(expiresAt.getDate() + 30)
+              
+              await supabaseAdmin
+                .from('users')
+                .update({
+                  subscription_status: subscriptionTier,
+                  stripe_customer_id: session.customer as string,
+                  stripe_subscription_id: subscriptionId,
+                  subscription_expires_at: expiresAt.toISOString()
+                })
+                .eq('id', userId)
+            }
           }
         }
         break
@@ -71,14 +106,19 @@ export async function POST(request: Request) {
           const userId = users[0].id
 
           if (subscription.status === 'active' || subscription.status === 'trialing') {
-            // Update expiration date (30 days from now for monthly)
-            const expiresAt = new Date()
-            expiresAt.setDate(expiresAt.getDate() + 30)
+            // Determine tier from subscription price
+            const priceId = subscription.items.data[0]?.price?.id
+            const tier = priceId === process.env.STRIPE_PRICE_ULTIMATE ? 'ultimate' : 'pro'
+            
+            // Update expiration from subscription period
+            const subscriptionAny = subscription as any
+            const currentPeriodEnd = subscriptionAny.current_period_end
+            const expiresAt = new Date(typeof currentPeriodEnd === 'number' ? currentPeriodEnd * 1000 : Date.now() + 30 * 24 * 60 * 60 * 1000)
             
             await supabaseAdmin
               .from('users')
               .update({
-                subscription_status: 'pro',
+                subscription_status: tier,
                 subscription_expires_at: expiresAt.toISOString()
               })
               .eq('id', userId)
@@ -114,16 +154,37 @@ export async function POST(request: Request) {
             .limit(1)
 
           if (users && users.length > 0) {
-            const expiresAt = new Date()
-            expiresAt.setDate(expiresAt.getDate() + 30)
-            
-            await supabaseAdmin
-              .from('users')
-              .update({
-                subscription_status: 'pro',
-                subscription_expires_at: expiresAt.toISOString()
-              })
-              .eq('id', users[0].id)
+            // Get subscription to determine tier and expiration
+            try {
+              const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+              const priceId = subscription.items.data[0]?.price?.id
+              const tier = priceId === process.env.STRIPE_PRICE_ULTIMATE ? 'ultimate' : 'pro'
+              
+              const subscriptionAny = subscription as any
+              const currentPeriodEnd = subscriptionAny.current_period_end
+              const expiresAt = new Date(typeof currentPeriodEnd === 'number' ? currentPeriodEnd * 1000 : Date.now() + 30 * 24 * 60 * 60 * 1000)
+              
+              await supabaseAdmin
+                .from('users')
+                .update({
+                  subscription_status: tier,
+                  subscription_expires_at: expiresAt.toISOString()
+                })
+                .eq('id', users[0].id)
+            } catch (err) {
+              console.error('Error retrieving subscription for invoice:', err)
+              // Fallback: use default pro with 30 days
+              const expiresAt = new Date()
+              expiresAt.setDate(expiresAt.getDate() + 30)
+              
+              await supabaseAdmin
+                .from('users')
+                .update({
+                  subscription_status: 'pro',
+                  subscription_expires_at: expiresAt.toISOString()
+                })
+                .eq('id', users[0].id)
+            }
           }
         }
         break

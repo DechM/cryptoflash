@@ -2,52 +2,56 @@ import { Token } from './types'
 
 export interface ScoreCalculationData {
   curveProgress: number
+  curveSpeed: number // 0-10 scale (speed of bonding curve progression)
   whaleInflows: number
-  volumeJump: number
-  rugRisk: number
-  hypeScore?: number
+  volumeJump: number // Percentage change in 24h volume
+  rugRisk: number // 0-100, where 100 = safe, 0 = high risk
 }
 
 /**
  * Calculate AI Snipe Score (0-100) based on multiple factors
  * Higher score = better snipe opportunity
+ * 
+ * Formula (as per requirements):
+ * - Curve Progress: 40%
+ * - Curve Speed: 20%
+ * - Whale Inflows: 15%
+ * - Volume Jump: 15%
+ * - Rug Risk penalty: -10 (max)
  */
 export function calculateScore(data: ScoreCalculationData): number {
   const {
     curveProgress,
+    curveSpeed = 0,
     whaleInflows,
     volumeJump,
-    rugRisk,
-    hypeScore = 50 // Default neutral if not available
+    rugRisk = 50 // Default medium risk
   } = data
 
-  // Weight distribution:
-  // - Curve Progress: 40% (most important - closer to KOTH = higher score)
-  // - Whale Inflows: 30% (whale activity indicates confidence)
-  // - Hype Score: 20% (social sentiment)
-  // - Volume Jump: 10% (momentum indicator)
-  // - Rug Risk: -10% (penalty for high risk)
-
+  // Curve Progress: 40% (0-40 points)
   const progressScore = Math.min(curveProgress, 100) * 0.4
   
-  // Whale inflows: normalize to 0-100 scale
-  // 10+ whale buys = max score, scale linearly
-  const whaleScore = Math.min((whaleInflows / 10) * 100, 100) * 0.3
+  // Curve Speed: 20% (0-20 points)
+  // Normalize curve speed (0-10 scale) to 0-20 points
+  const speedScore = Math.min(curveSpeed, 10) * 2
   
-  // Hype score: already 0-100 scale
-  const hypeScoreWeighted = hypeScore * 0.2
+  // Whale Inflows: 15% (0-15 points)
+  // Normalize: 10+ SOL whale inflows = max (15 points)
+  const whaleScore = Math.min((whaleInflows / 10) * 15, 15)
   
-  // Volume jump: positive jumps increase score
-  // Normalize: +100% jump = max (10 points)
-  const volumeScore = Math.min(Math.max(volumeJump, 0), 100) * 0.1
+  // Volume Jump: 15% (0-15 points)
+  // Normalize: +100% jump = max (15 points), negative jumps = 0
+  const volumeScore = Math.min(Math.max(volumeJump, 0), 100) * 0.15
   
-  // Rug risk: subtract penalty (0-100, where 100 = safe, 0 = rug risk)
-  const rugPenalty = (100 - rugRisk) * 0.1
+  // Rug Risk penalty: -10 (max)
+  // rugRisk is 0-100, where 100 = safe, 0 = high risk
+  // Penalty: (100 - rugRisk) / 100 * 10
+  const rugPenalty = Math.min(((100 - rugRisk) / 100) * 10, 10)
 
   const totalScore = Math.min(100, Math.max(0,
     progressScore +
+    speedScore +
     whaleScore +
-    hypeScoreWeighted +
     volumeScore -
     rugPenalty
   ))
@@ -61,10 +65,10 @@ export function calculateScore(data: ScoreCalculationData): number {
 export function calculateTokenScore(token: Partial<Token>): number {
   return calculateScore({
     curveProgress: token.progress || 0,
+    curveSpeed: token.curveSpeed || 0,
     whaleInflows: token.whaleInflows || 0,
     volumeJump: token.volumeChange24h || 0,
-    rugRisk: token.rugRisk || 50, // Default medium risk
-    hypeScore: token.hypeScore
+    rugRisk: token.rugRisk || 50 // Default medium risk
   })
 }
 

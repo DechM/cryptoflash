@@ -41,7 +41,7 @@ export default function PremiumSuccessPage() {
             transition={{ delay: 0.3 }}
             className="text-4xl md:text-5xl font-bold gradient-text mb-4"
           >
-            Welcome to PumpKing Pro!
+            Welcome to CryptoFlash Pro!
           </motion.h1>
 
           <motion.p

@@ -39,6 +39,7 @@ export function generateMockTokens(): Token[] {
       score: Math.round(score * 10) / 10,
       whaleCount,
       whaleInflows: whaleCount * (0.5 + Math.random() * 2),
+      curveSpeed: Math.random() * 10, // 0-10 scale
       rugRisk: 50 + Math.random() * 50,
       fullyDilutedValuation: 100000 + Math.random() * 900000,
       marketCap: 50000 + Math.random() * 450000,
@@ -54,10 +55,21 @@ export function generateMockTokens(): Token[] {
 
 /**
  * Check if we should use mock data
- * Returns true if API keys are missing or if explicitly requested
+ * Returns true ONLY if API keys are missing
+ * PRODUCTION: Must have real API keys configured
  */
 export function shouldUseMockData(): boolean {
-  const hasMoralisKey = !!process.env.MORALIS_API_KEY && process.env.MORALIS_API_KEY !== ''
+  const hasMoralisKey = !!process.env.MORALIS_API_KEY && process.env.MORALIS_API_KEY !== '' && process.env.MORALIS_API_KEY !== 'placeholder'
+  const hasDexscreener = true // Dexscreener is public API, no key needed
+  const hasHeliusKey = !!process.env.HELIUS_API_KEY && process.env.HELIUS_API_KEY !== '' && process.env.HELIUS_API_KEY !== 'placeholder'
+  
+  // Only use mock if Moralis is missing (primary data source)
+  // In production, Moralis key is REQUIRED
+  if (process.env.NODE_ENV === 'production') {
+    return !hasMoralisKey
+  }
+  
+  // Development: allow mock if keys are missing
   return !hasMoralisKey
 }
 
