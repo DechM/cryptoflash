@@ -108,10 +108,10 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a0e27] via-[#1a1f3a] to-[#0a0e27]">
+    <div className="min-h-screen bg-gradient-to-br from-[#0a0e27] via-[#1a1f3a] to-[#0a0e27] w-full">
       <Navbar />
       
-      <main className="container mx-auto px-4 py-8 max-w-7xl">
+      <main className="w-full max-w-7xl mx-auto px-4 py-8 flex flex-col items-center">
         {/* Header - Centered */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -119,7 +119,7 @@ export default function DashboardPage() {
           className="mb-8 text-center"
         >
           <div className="flex flex-col items-center justify-center mb-4">
-            <div className="w-full max-w-4xl">
+            <div className="w-full max-w-4xl mx-auto">
               <h1 className="text-3xl md:text-4xl font-bold gradient-text mb-2">
                 KOTH Tracker
               </h1>
@@ -157,7 +157,7 @@ export default function DashboardPage() {
         </motion.div>
 
         {/* Stats Cards - Centered */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 max-w-5xl mx-auto">
+        <div className="w-full grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 max-w-5xl">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}

@@ -30,8 +30,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.variable} font-sans antialiased`}>
-        {children}
+      <body className={`${inter.variable} font-sans antialiased w-full`}>
+        <div className="w-full flex flex-col items-center">
+          {children}
+        </div>
       </body>
     </html>
   );

@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder')
+const stripeKey = process.env.STRIPE_SECRET_KEY || ''
+const stripe = stripeKey ? new Stripe(stripeKey) : null
 
 export async function POST(request: Request) {
   try {
@@ -12,6 +13,18 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: 'User ID required' },
         { status: 400 }
+      )
+    }
+
+    // Check if Stripe is configured
+    if (!stripe || !stripeKey || stripeKey === 'sk_test_placeholder') {
+      console.error('Stripe not configured - STRIPE_SECRET_KEY missing or invalid')
+      return NextResponse.json(
+        { 
+          error: 'Payment system not configured',
+          details: 'STRIPE_SECRET_KEY environment variable is missing. Please configure Stripe in your environment variables.'
+        },
+        { status: 500 }
       )
     }
 
@@ -67,8 +80,20 @@ export async function POST(request: Request) {
     })
   } catch (error: any) {
     console.error('Error creating checkout session:', error)
+    
+    // More detailed error message
+    let errorMessage = 'Failed to create checkout session'
+    if (error.type === 'StripeInvalidRequestError') {
+      errorMessage = `Stripe error: ${error.message}`
+    } else if (error.message) {
+      errorMessage = error.message
+    }
+    
     return NextResponse.json(
-      { error: 'Failed to create checkout session' },
+      { 
+        error: errorMessage,
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      },
       { status: 500 }
     )
   }

@@ -22,7 +22,7 @@ export function TokenTable({ tokens, refreshInterval = 60000 }: TokenTableProps)
   }
 
   return (
-    <div className="glass rounded-xl p-4 md:p-6 overflow-x-auto">
+    <div className="w-full glass rounded-xl p-4 md:p-6 overflow-x-auto">
       <div className="min-w-full">
         <table className="w-full">
           <thead>
@@ -116,12 +116,14 @@ export function TokenTable({ tokens, refreshInterval = 60000 }: TokenTableProps)
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => {
-                      // Validate address before navigating
+                      // Validate address before navigating - Solana addresses are 32-44 chars
                       if (!token.tokenAddress || token.tokenAddress.length < 32) {
                         e.preventDefault()
-                        alert('Invalid token address. This is mock data - real addresses will work in production.')
-                        return false
+                        // Try to open anyway - might be valid, just log warning
+                        console.warn('Short token address detected:', token.tokenAddress)
+                        // Don't prevent default - let it try to open
                       }
+                      // Always allow navigation - let pump.fun handle invalid addresses
                     }}
                     className="inline-flex items-center space-x-2 px-4 py-2 rounded-lg bg-gradient-to-r from-[#00ff88] to-[#00d9ff] text-black font-semibold hover:opacity-90 transition-opacity glow-green shadow-lg hover:shadow-[#00ff88]/50"
                   >
