@@ -37,7 +37,7 @@ export default function BGLeaderboardPage() {
     <div className="min-h-screen bg-gradient-to-br from-[#0a0e27] via-[#1a1f3a] to-[#0a0e27] w-full">
       <Navbar />
 
-      <main className="w-full max-w-6xl mx-auto px-4 py-8 flex flex-col items-center">
+      <main className="w-full px-4 sm:px-6 lg:px-8 py-8">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}

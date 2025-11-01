@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 
 interface AdvancedFiltersProps {
   onFilterChange: (filters: FilterState) => void
-  userTier: 'free' | 'pro' | 'ultimate'
+  userTier: 'free' | 'pro' | 'ultimate' | string
 }
 
 export interface FilterState {

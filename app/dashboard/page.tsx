@@ -7,16 +7,21 @@ import { TokenTable } from '@/components/TokenTable'
 import { Heatmap } from '@/components/Heatmap'
 import { AdvancedFilters, FilterState } from '@/components/AdvancedFilters'
 import { exportToCSV } from '@/lib/utils'
+import { useFeature } from '@/hooks/useFeature'
 import { RefreshCw, Zap, Download } from 'lucide-react'
 import { motion } from 'framer-motion'
+import useSWR from 'swr'
+
+const fetcher = (url: string) => fetch(url).then(res => res.json())
 
 export default function DashboardPage() {
   const [tokens, setTokens] = useState<Token[]>([])
   const [filteredTokens, setFilteredTokens] = useState<Token[]>([])
   const [loading, setLoading] = useState(true)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
-  const [refreshInterval, setRefreshInterval] = useState(60000) // Default 60s for free
-  const [userTier, setUserTier] = useState<'free' | 'pro' | 'ultimate'>('free')
+  
+  const { plan, limit, isEnabled } = useFeature()
+  const refreshIntervalMs = limit('refresh.ms') as number
 
   const fetchKOTHData = async () => {
     try {
@@ -34,33 +39,27 @@ export default function DashboardPage() {
     }
   }
 
+  // Fetch data with SWR for auto-refresh based on plan
+  const { data: kothData } = useSWR('/api/koth-data', fetcher, {
+    refreshInterval: refreshIntervalMs,
+    onSuccess: (data) => {
+      if (data.tokens) {
+        setTokens(data.tokens)
+        setLastUpdate(new Date())
+        setLoading(false)
+      }
+    },
+  })
+
   useEffect(() => {
     fetchKOTHData()
-
-    // Set up polling
-    const interval = setInterval(fetchKOTHData, refreshInterval)
-    return () => clearInterval(interval)
-  }, [refreshInterval])
-
-  // Check user tier for refresh interval
-  useEffect(() => {
-    const userId = localStorage.getItem('userId')
-    if (userId) {
-      fetch(`/api/user/tier?userId=${userId}`)
-        .then(res => res.json())
-        .then(data => {
-          const tier = data.tier || 'free'
-          setUserTier(tier)
-          if (tier === 'ultimate') setRefreshInterval(10000)
-          else if (tier === 'pro') setRefreshInterval(15000)
-          else setRefreshInterval(60000)
-        })
-        .catch(() => {
-          setUserTier('free')
-          setRefreshInterval(60000)
-        })
-    }
   }, [])
+
+  useEffect(() => {
+    // Set up polling based on plan refresh interval
+    const interval = setInterval(fetchKOTHData, refreshIntervalMs)
+    return () => clearInterval(interval)
+  }, [refreshIntervalMs])
 
   // Apply filters
   useEffect(() => {
@@ -111,25 +110,21 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gradient-to-br from-[#0a0e27] via-[#1a1f3a] to-[#0a0e27] w-full">
       <Navbar />
       
-      <main className="w-full max-w-7xl mx-auto px-4 py-8 flex flex-col items-center">
-        {/* Header - Centered */}
+      <main className="w-full px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8 text-center"
+          className="mb-8"
         >
-          <div className="flex flex-col items-center justify-center mb-4">
-            <div className="w-full max-w-4xl mx-auto">
-              <h1 className="text-3xl md:text-4xl font-bold gradient-text mb-2">
-                KOTH Tracker
-              </h1>
-              <p className="text-[#b8c5d6]">
-                Real-time tracking of Pump.fun tokens in bonding curve phase
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center justify-center space-x-4 mb-4">
-            {(userTier === 'pro' || userTier === 'ultimate') && (
+          <h1 className="text-3xl md:text-4xl font-bold gradient-text mb-2">
+            KOTH Tracker
+          </h1>
+          <p className="text-[#b8c5d6]">
+            Real-time tracking of Pump.fun tokens in bonding curve phase
+          </p>
+          <div className="flex items-center space-x-4 mb-4 mt-4">
+            {isEnabled('analytics.premium') && (
               <button
                 onClick={handleExport}
                 className="glass px-4 py-2 rounded-lg hover:bg-white/10 transition-colors flex items-center space-x-2"
@@ -156,8 +151,8 @@ export default function DashboardPage() {
           )}
         </motion.div>
 
-        {/* Stats Cards - Centered */}
-        <div className="w-full grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 max-w-5xl">
+        {/* Stats Cards */}
+        <div className="w-full grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -206,14 +201,28 @@ export default function DashboardPage() {
         </div>
 
         {/* Advanced Filters - Pro & Ultimate Only */}
-        {(userTier === 'pro' || userTier === 'ultimate') && (
+        {isEnabled('filters.advanced') ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
             className="mb-8"
           >
-            <AdvancedFilters onFilterChange={handleFilterChange} userTier={userTier} />
+            <AdvancedFilters onFilterChange={handleFilterChange} userTier={plan} />
+          </motion.div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 glass rounded-xl p-6 border border-[#ffd700]/30 text-center"
+          >
+            <p className="text-[#b8c5d6] mb-4">Advanced Filters are a Pro/Ultimate feature</p>
+            <a
+              href="/premium"
+              className="inline-block px-6 py-2 rounded-lg bg-gradient-to-r from-[#ff006e] to-[#ff6b35] text-white font-semibold hover:opacity-90 transition-opacity"
+            >
+              Upgrade to Pro
+            </a>
           </motion.div>
         )}
 
@@ -229,14 +238,14 @@ export default function DashboardPage() {
           </motion.div>
         )}
 
-        {/* Token Table */}
+        {/* Token Table - Full Width */}
         {loading && tokens.length === 0 ? (
-          <div className="glass rounded-xl p-12 text-center">
+          <div className="w-full glass rounded-xl p-12 text-center">
             <RefreshCw className="h-12 w-12 animate-spin mx-auto mb-4 text-[#00ff88]" />
             <p className="text-[#b8c5d6]">Loading KOTH data...</p>
           </div>
         ) : tokens.length === 0 ? (
-          <div className="glass rounded-xl p-12 text-center">
+          <div className="w-full glass rounded-xl p-12 text-center">
             <Zap className="h-12 w-12 mx-auto mb-4 text-[#6b7280]" />
             <p className="text-[#b8c5d6]">No KOTH tokens found</p>
           </div>
@@ -245,8 +254,9 @@ export default function DashboardPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
+            className="w-full"
           >
-            <TokenTable tokens={filteredTokens} refreshInterval={refreshInterval} />
+            <TokenTable tokens={filteredTokens} refreshInterval={refreshIntervalMs} />
           </motion.div>
         )}
       </main>

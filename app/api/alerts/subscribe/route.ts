@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { getUserTier, getMaxActiveAlerts } from '@/lib/subscription'
+import { getLimit } from '@/lib/plan'
+import type { PlanId } from '@/lib/plan'
 
 export async function POST(request: Request) {
   try {
@@ -14,9 +15,24 @@ export async function POST(request: Request) {
       )
     }
 
-    // Check user tier
-    const tier = await getUserTier(userId)
-    const maxAlerts = getMaxActiveAlerts(tier)
+    // Get plan from cookie (prefer new plan system) or fallback to user tier
+    const cookieHeader = request.headers.get('cookie') || ''
+    const planCookie = cookieHeader.split(';').find(s => s.trim().startsWith('cf_plan='))
+    const planFromCookie = planCookie?.split('=')[1] || null
+    
+    // Try to get from old system if no cookie
+    let plan: PlanId = (planFromCookie as PlanId) || 'free'
+    if (!planFromCookie) {
+      try {
+        const { getUserTier } = await import('@/lib/subscription')
+        const oldTier = await getUserTier(userId)
+        plan = oldTier as PlanId
+      } catch {
+        plan = 'free'
+      }
+    }
+    
+    const maxAlerts = getLimit(plan, 'alerts.max_tokens') as number
 
     // Check current active alerts
     const { data: activeAlerts } = await supabaseAdmin
@@ -31,12 +47,12 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error: 'MAX_ALERTS_REACHED',
-          message: tier === 'free' 
+          message: plan === 'free' 
             ? 'Free users can track 1 token. Upgrade to Pro ($4.99) or Ultimate ($19.99) for more alerts!'
-            : tier === 'pro'
+            : plan === 'pro'
             ? 'Pro users can track up to 10 tokens. Upgrade to Ultimate for unlimited!'
             : 'Alert limit reached',
-          upgradeRequired: tier === 'free'
+          upgradeRequired: plan === 'free'
         },
         { status: 403 }
       )
@@ -49,10 +65,7 @@ export async function POST(request: Request) {
         user_id: userId,
         token_address: tokenAddress || null, // null = all tokens
         alert_type: alertType || 'score',
-        threshold_value: thresholdValue || (
-          tier === 'ultimate' ? 80 :
-          tier === 'pro' ? 85 : 95
-        ),
+        threshold_value: thresholdValue || (getLimit(plan, 'alerts.threshold_min') as number),
         is_active: true
       })
       .select()
