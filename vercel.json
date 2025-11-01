@@ -1,5 +1,6 @@
 {
   "framework": "nextjs",
+  "rootDirectory": ".",
   "regions": ["iad1"],
   "crons": [
     {
@@ -8,4 +9,3 @@
     }
   ]
 }
-
