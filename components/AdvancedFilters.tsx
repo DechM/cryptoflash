@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 
 interface AdvancedFiltersProps {
   onFilterChange: (filters: FilterState) => void
-  userTier: 'free' | 'pro'
+  userTier: 'free' | 'pro' | 'ultimate'
 }
 
 export interface FilterState {
@@ -22,7 +22,7 @@ export function AdvancedFilters({ onFilterChange, userTier }: AdvancedFiltersPro
   const [isOpen, setIsOpen] = useState(false)
   const [filters, setFilters] = useState<FilterState>({})
 
-  if (userTier !== 'pro') {
+  if (userTier !== 'pro' && userTier !== 'ultimate') {
     return (
       <div className="glass rounded-xl p-6 border border-[#ffd700]/30">
         <div className="flex items-center space-x-3 mb-3">

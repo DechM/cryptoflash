@@ -32,7 +32,9 @@ export async function POST(request: Request) {
         {
           error: 'MAX_ALERTS_REACHED',
           message: tier === 'free' 
-            ? 'Free users can track 1 token. Upgrade to Pro for unlimited alerts!'
+            ? 'Free users can track 1 token. Upgrade to Pro ($4.99) or Ultimate ($19.99) for more alerts!'
+            : tier === 'pro'
+            ? 'Pro users can track up to 10 tokens. Upgrade to Ultimate for unlimited!'
             : 'Alert limit reached',
           upgradeRequired: tier === 'free'
         },
@@ -47,7 +49,10 @@ export async function POST(request: Request) {
         user_id: userId,
         token_address: tokenAddress || null, // null = all tokens
         alert_type: alertType || 'score',
-        threshold_value: thresholdValue || (tier === 'pro' ? 85 : 95),
+        threshold_value: thresholdValue || (
+          tier === 'ultimate' ? 80 :
+          tier === 'pro' ? 85 : 95
+        ),
         is_active: true
       })
       .select()

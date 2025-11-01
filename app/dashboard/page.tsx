@@ -16,7 +16,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
   const [refreshInterval, setRefreshInterval] = useState(60000) // Default 60s for free
-  const [userTier, setUserTier] = useState<'free' | 'pro'>('free')
+  const [userTier, setUserTier] = useState<'free' | 'pro' | 'ultimate'>('free')
 
   const fetchKOTHData = async () => {
     try {
@@ -51,7 +51,9 @@ export default function DashboardPage() {
         .then(data => {
           const tier = data.tier || 'free'
           setUserTier(tier)
-          setRefreshInterval(tier === 'pro' ? 15000 : 60000)
+          if (tier === 'ultimate') setRefreshInterval(10000)
+          else if (tier === 'pro') setRefreshInterval(15000)
+          else setRefreshInterval(60000)
         })
         .catch(() => {
           setUserTier('free')
@@ -109,15 +111,15 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gradient-to-br from-[#0a0e27] via-[#1a1f3a] to-[#0a0e27]">
       <Navbar />
       
-      <main className="container mx-auto px-4 py-8">
-        {/* Header */}
+      <main className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Header - Centered */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          className="mb-8 text-center"
         >
-          <div className="flex items-center justify-between mb-4">
-            <div>
+          <div className="flex flex-col items-center justify-center mb-4">
+            <div className="w-full max-w-4xl">
               <h1 className="text-3xl md:text-4xl font-bold gradient-text mb-2">
                 KOTH Tracker
               </h1>
@@ -125,26 +127,26 @@ export default function DashboardPage() {
                 Real-time tracking of Pump.fun tokens in bonding curve phase
               </p>
             </div>
-            <div className="flex items-center space-x-2">
-              {userTier === 'pro' && (
-                <button
-                  onClick={handleExport}
-                  className="glass px-4 py-2 rounded-lg hover:bg-white/10 transition-colors flex items-center space-x-2"
-                  title="Export to CSV"
-                >
-                  <Download className="h-4 w-4" />
-                  <span className="hidden md:inline">Export</span>
-                </button>
-              )}
+          </div>
+          <div className="flex items-center justify-center space-x-4 mb-4">
+            {(userTier === 'pro' || userTier === 'ultimate') && (
               <button
-                onClick={fetchKOTHData}
-                disabled={loading}
-                className="glass px-4 py-2 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-50 flex items-center space-x-2"
+                onClick={handleExport}
+                className="glass px-4 py-2 rounded-lg hover:bg-white/10 transition-colors flex items-center space-x-2"
+                title="Export to CSV"
               >
-                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                <span className="hidden md:inline">Refresh</span>
+                <Download className="h-4 w-4" />
+                <span>Export</span>
               </button>
-            </div>
+            )}
+            <button
+              onClick={fetchKOTHData}
+              disabled={loading}
+              className="glass px-4 py-2 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-50 flex items-center space-x-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </button>
           </div>
           
           {lastUpdate && (
@@ -154,8 +156,8 @@ export default function DashboardPage() {
           )}
         </motion.div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        {/* Stats Cards - Centered */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 max-w-5xl mx-auto">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -203,8 +205,8 @@ export default function DashboardPage() {
           </motion.div>
         </div>
 
-        {/* Advanced Filters - Pro Only */}
-        {userTier === 'pro' && (
+        {/* Advanced Filters - Pro & Ultimate Only */}
+        {(userTier === 'pro' || userTier === 'ultimate') && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

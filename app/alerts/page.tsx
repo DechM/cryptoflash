@@ -10,7 +10,7 @@ export default function AlertsPage() {
   const [tokenAddress, setTokenAddress] = useState('')
   const [threshold, setThreshold] = useState(95)
   const [userId, setUserId] = useState<string | null>(null)
-  const [userTier, setUserTier] = useState<'free' | 'pro'>('free')
+  const [userTier, setUserTier] = useState<'free' | 'pro' | 'ultimate'>('free')
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
 
@@ -33,19 +33,44 @@ export default function AlertsPage() {
     setSuccess(false)
 
     try {
+      let currentUserId = userId || localStorage.getItem('userId')
+
       // Create user if doesn't exist
-      if (!userId) {
-        // In production, handle proper auth
-        const newUserId = crypto.randomUUID()
-        localStorage.setItem('userId', newUserId)
-        setUserId(newUserId)
+      if (!currentUserId && telegramUsername) {
+        const userResponse = await fetch('/api/user/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            telegramUsername: telegramUsername.replace('@', ''),
+            email: null
+          })
+        })
+
+        if (userResponse.ok) {
+          const userData = await userResponse.json()
+          currentUserId = userData.userId
+          if (currentUserId) {
+            localStorage.setItem('userId', currentUserId)
+            setUserId(currentUserId)
+          } else {
+            throw new Error('Failed to get user ID')
+          }
+        } else {
+          throw new Error('Failed to create user account')
+        }
+      }
+
+      if (!currentUserId) {
+        alert('Please enter your Telegram username first')
+        setSubmitting(false)
+        return
       }
 
       const response = await fetch('/api/alerts/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: userId || localStorage.getItem('userId'),
+          userId: currentUserId,
           tokenAddress: tokenAddress || null,
           alertType: 'score',
           thresholdValue: threshold
@@ -66,7 +91,10 @@ export default function AlertsPage() {
       setSuccess(true)
       setTelegramUsername('')
       setTokenAddress('')
-      setThreshold(userTier === 'pro' ? 85 : 95)
+      setThreshold(
+        userTier === 'ultimate' ? 80 :
+        userTier === 'pro' ? 85 : 95
+      )
     } catch (error) {
       console.error('Error creating alert:', error)
       alert('Failed to create alert')
@@ -75,14 +103,14 @@ export default function AlertsPage() {
     }
   }
 
-  const maxThreshold = userTier === 'pro' ? 100 : 95
-  const minThreshold = userTier === 'pro' ? 80 : 95
+  const maxThreshold = userTier === 'ultimate' ? 100 : userTier === 'pro' ? 100 : 95
+  const minThreshold = userTier === 'ultimate' ? 70 : userTier === 'pro' ? 80 : 95
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a0e27] via-[#1a1f3a] to-[#0a0e27]">
       <Navbar />
 
-      <main className="container mx-auto px-4 py-8 max-w-2xl">
+      <main className="container mx-auto px-4 py-8 max-w-3xl">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -103,13 +131,13 @@ export default function AlertsPage() {
           className="glass rounded-xl p-6 md:p-8"
         >
           {userTier === 'free' && (
-            <div className="mb-6 p-4 rounded-lg bg-[#ffd700]/10 border border-[#ffd700]/30">
+            <div className="mb-6 p-4 rounded-lg bg-[#ffd700]/10 border border-[#ffd700]/30 text-center">
               <div className="flex items-start space-x-3">
-                <Zap className="h-5 w-5 text-[#ffd700] mt-0.5" />
-                <div>
+                <Zap className="h-5 w-5 text-[#ffd700] mt-0.5 flex-shrink-0" />
+                <div className="text-left">
                   <p className="font-semibold text-[#ffd700] mb-1">Free Plan</p>
                   <p className="text-sm text-[#b8c5d6]">
-                    You can track 1 token with alerts at 95%+ score. Upgrade to Pro for early alerts (85%+) and unlimited tracking!
+                    You can track 1 token with alerts at 95%+ score. Upgrade to Pro ($4.99) for early alerts (85%+) or Ultimate ($19.99) for earliest alerts (80%)!
                   </p>
                 </div>
               </div>
@@ -159,7 +187,9 @@ export default function AlertsPage() {
               <p className="mt-2 text-xs text-[#6b7280]">
                 {userTier === 'free' 
                   ? 'Free users can track 1 specific token' 
-                  : 'Leave empty to track all tokens above threshold'}
+                  : userTier === 'pro'
+                  ? 'Pro users can track up to 10 tokens'
+                  : 'Ultimate users can track unlimited tokens'}
               </p>
             </div>
 
@@ -185,8 +215,10 @@ export default function AlertsPage() {
                 <span>{maxThreshold}%</span>
               </div>
               <p className="mt-2 text-xs text-[#6b7280]">
-                {userTier === 'pro' 
-                  ? 'Pro users can set custom thresholds (80-100%)' 
+                {userTier === 'ultimate' 
+                  ? 'Ultimate users: 70-100%' 
+                  : userTier === 'pro'
+                  ? 'Pro users: 80-100%'
                   : 'Free users: Fixed at 95%'}
               </p>
             </div>
@@ -211,33 +243,51 @@ export default function AlertsPage() {
           </form>
 
           {userTier === 'free' && (
-            <div className="mt-6 p-4 rounded-lg bg-gradient-to-r from-[#ff006e]/10 to-[#ff6b35]/10 border border-[#ff006e]/30">
+            <div className="mt-6 p-4 rounded-lg bg-gradient-to-r from-[#ff006e]/10 to-[#ff6b35]/10 border border-[#ff006e]/30 text-center">
               <p className="text-sm text-[#b8c5d6] mb-3">
-                <strong className="text-white">Upgrade to Pro</strong> for:
+                <strong className="text-white">Upgrade for more power:</strong>
               </p>
-              <ul className="space-y-2 text-sm text-[#b8c5d6]">
-                <li className="flex items-center space-x-2">
-                  <Check className="h-4 w-4 text-[#00ff88]" />
-                  <span>Unlimited token tracking</span>
-                </li>
-                <li className="flex items-center space-x-2">
-                  <Check className="h-4 w-4 text-[#00ff88]" />
-                  <span>Early alerts at 85% (vs 95% for free)</span>
-                </li>
-                <li className="flex items-center space-x-2">
-                  <Check className="h-4 w-4 text-[#00ff88]" />
-                  <span>Custom thresholds (80-100%)</span>
-                </li>
-                <li className="flex items-center space-x-2">
-                  <Check className="h-4 w-4 text-[#00ff88]" />
-                  <span>Alert history & analytics</span>
-                </li>
-              </ul>
+              <div className="grid md:grid-cols-2 gap-4 mb-4">
+                <div className="text-left">
+                  <p className="font-semibold text-white mb-2">Pro - $4.99/mo</p>
+                  <ul className="space-y-1 text-xs text-[#b8c5d6]">
+                    <li className="flex items-center space-x-2">
+                      <Check className="h-3 w-3 text-[#00ff88]" />
+                      <span>10 token tracking</span>
+                    </li>
+                    <li className="flex items-center space-x-2">
+                      <Check className="h-3 w-3 text-[#00ff88]" />
+                      <span>Early alerts at 85%</span>
+                    </li>
+                    <li className="flex items-center space-x-2">
+                      <Check className="h-3 w-3 text-[#00ff88]" />
+                      <span>Custom thresholds (80-100%)</span>
+                    </li>
+                  </ul>
+                </div>
+                <div className="text-left">
+                  <p className="font-semibold text-white mb-2">Ultimate - $19.99/mo</p>
+                  <ul className="space-y-1 text-xs text-[#b8c5d6]">
+                    <li className="flex items-center space-x-2">
+                      <Check className="h-3 w-3 text-[#ff006e]" />
+                      <span>Unlimited tracking</span>
+                    </li>
+                    <li className="flex items-center space-x-2">
+                      <Check className="h-3 w-3 text-[#ff006e]" />
+                      <span>Earliest alerts at 80%</span>
+                    </li>
+                    <li className="flex items-center space-x-2">
+                      <Check className="h-3 w-3 text-[#ff006e]" />
+                      <span>API access + priority</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
               <a
                 href="/premium"
-                className="mt-4 inline-block px-4 py-2 rounded-lg bg-gradient-to-r from-[#ff006e] to-[#ff6b35] text-white font-semibold hover:opacity-90 transition-opacity"
+                className="inline-block px-6 py-2 rounded-lg bg-gradient-to-r from-[#ff006e] to-[#ff6b35] text-white font-semibold hover:opacity-90 transition-opacity"
               >
-                Upgrade Now - $4.99/mo
+                View Plans →
               </a>
             </div>
           )}

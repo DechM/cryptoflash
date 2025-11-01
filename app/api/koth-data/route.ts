@@ -5,6 +5,7 @@ import { fetchWhaleTransactions, calculateRugRisk } from '@/lib/api/helius'
 import { calculateTokenScore } from '@/lib/score'
 import { Token } from '@/lib/types'
 import { supabase } from '@/lib/supabase'
+import { generateMockTokens, shouldUseMockData } from '@/lib/mock-data'
 
 // Cache duration: 30 seconds
 const CACHE_DURATION = 30 * 1000
@@ -23,8 +24,30 @@ export async function GET() {
       return NextResponse.json({ tokens: cache.tokens })
     }
 
+    // Use mock data if API keys are missing
+    if (shouldUseMockData()) {
+      console.log('Using mock data - API keys not configured')
+      const mockTokens = generateMockTokens()
+      cache = {
+        tokens: mockTokens,
+        timestamp: Date.now()
+      }
+      return NextResponse.json({ tokens: mockTokens })
+    }
+
     // Fetch bonding tokens from Moralis
-    const bondingTokens = await fetchBondingTokens()
+    let bondingTokens: Partial<Token>[] = []
+    try {
+      bondingTokens = await fetchBondingTokens()
+    } catch (error: any) {
+      console.error('Moralis API failed, using mock data:', error.message)
+      const mockTokens = generateMockTokens()
+      cache = {
+        tokens: mockTokens,
+        timestamp: Date.now()
+      }
+      return NextResponse.json({ tokens: mockTokens })
+    }
     
     // Filter tokens with progress > 90% (KOTH candidates)
     const kothCandidates = bondingTokens.filter(t => (t.progress || 0) >= 90)

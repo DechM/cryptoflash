@@ -6,7 +6,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder'
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { userId, email } = body
+    const { userId, email, tier = 'pro' } = body
 
     if (!userId) {
       return NextResponse.json(
@@ -14,6 +14,22 @@ export async function POST(request: Request) {
         { status: 400 }
       )
     }
+
+    // Determine price and product info based on tier
+    const pricing = {
+      pro: {
+        unit_amount: 499, // $4.99
+        name: 'PumpKing Pro',
+        description: 'Early alerts, 10 token tracking, advanced features'
+      },
+      ultimate: {
+        unit_amount: 1999, // $19.99
+        name: 'PumpKing Ultimate',
+        description: 'Earliest alerts, unlimited tracking, API access, priority support'
+      }
+    }
+
+    const plan = pricing[tier as 'pro' | 'ultimate'] || pricing.pro
 
     // Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
@@ -23,10 +39,10 @@ export async function POST(request: Request) {
           price_data: {
             currency: 'usd',
             product_data: {
-              name: 'PumpKing Pro',
-              description: 'Unlimited alerts, early signals, and premium features',
+              name: plan.name,
+              description: plan.description,
             },
-            unit_amount: 499, // $4.99
+            unit_amount: plan.unit_amount,
             recurring: {
               interval: 'month'
             }
@@ -40,7 +56,8 @@ export async function POST(request: Request) {
       client_reference_id: userId,
       customer_email: email,
       metadata: {
-        userId
+        userId,
+        tier: tier
       }
     })
 

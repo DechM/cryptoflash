@@ -17,14 +17,14 @@ export async function getUserTier(userId: string): Promise<SubscriptionTier> {
       return 'free'
     }
 
-    // Check if pro and not expired
-    if (user.subscription_status === 'pro') {
+    // Check if pro/ultimate and not expired
+    if (user.subscription_status === 'pro' || user.subscription_status === 'ultimate') {
       if (user.subscription_expires_at) {
         const expiresAt = new Date(user.subscription_expires_at)
         const now = new Date()
 
         if (expiresAt > now) {
-          return 'pro' // Active subscription
+          return user.subscription_status // Active subscription
         } else {
           // Subscription expired, auto-update to free
           await supabaseAdmin
@@ -34,8 +34,8 @@ export async function getUserTier(userId: string): Promise<SubscriptionTier> {
           return 'free'
         }
       }
-      // Pro but no expiry date (shouldn't happen, but handle gracefully)
-      return 'pro'
+      // Subscription but no expiry date (shouldn't happen, but handle gracefully)
+      return user.subscription_status
     }
 
     return user.subscription_status || 'free'
@@ -57,27 +57,51 @@ export async function isProUser(userId: string): Promise<boolean> {
  * Get alert threshold based on user tier
  */
 export function getAlertThreshold(tier: SubscriptionTier): number {
-  return tier === 'pro' ? 85 : 95
+  if (tier === 'ultimate') return 80 // Ultimate gets earliest alerts
+  if (tier === 'pro') return 85
+  return 95 // Free
 }
 
 /**
  * Get max active alerts based on user tier
  */
 export function getMaxActiveAlerts(tier: SubscriptionTier): number {
-  return tier === 'pro' ? Infinity : 1
+  if (tier === 'ultimate') return Infinity
+  if (tier === 'pro') return 10 // Pro can track 10 tokens
+  return 1 // Free: 1 token
 }
 
 /**
  * Get max daily alerts based on user tier
  */
 export function getMaxDailyAlerts(tier: SubscriptionTier): number {
-  return tier === 'pro' ? Infinity : 10
+  if (tier === 'ultimate') return Infinity
+  if (tier === 'pro') return 100
+  return 10 // Free: 10/day
 }
 
 /**
  * Get refresh interval (milliseconds) based on user tier
  */
 export function getRefreshInterval(tier: SubscriptionTier): number {
-  return tier === 'pro' ? 15000 : 60000 // 15s for pro, 60s for free
+  if (tier === 'ultimate') return 10000 // 10s for ultimate
+  if (tier === 'pro') return 15000 // 15s for pro
+  return 60000 // 60s for free
+}
+
+/**
+ * Check if user has Pro or Ultimate subscription
+ */
+export async function isProOrUltimateUser(userId: string): Promise<boolean> {
+  const tier = await getUserTier(userId)
+  return tier === 'pro' || tier === 'ultimate'
+}
+
+/**
+ * Check if user has Ultimate subscription
+ */
+export async function isUltimateUser(userId: string): Promise<boolean> {
+  const tier = await getUserTier(userId)
+  return tier === 'ultimate'
 }
 

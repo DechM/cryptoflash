@@ -33,6 +33,11 @@ export async function POST(request: Request) {
           const subscriptionId = session.subscription as string
 
           if (userId && subscriptionId) {
+            // Get tier from metadata or determine from price
+            const tier = session.metadata?.tier || 'pro'
+            // If no tier in metadata, determine from amount
+            const subscriptionTier = tier === 'ultimate' ? 'ultimate' : 'pro'
+            
             // Calculate expiration (30 days from now for monthly subscription)
             const expiresAt = new Date()
             expiresAt.setDate(expiresAt.getDate() + 30)
@@ -40,7 +45,7 @@ export async function POST(request: Request) {
             await supabaseAdmin
               .from('users')
               .update({
-                subscription_status: 'pro',
+                subscription_status: subscriptionTier,
                 stripe_customer_id: session.customer as string,
                 stripe_subscription_id: subscriptionId,
                 subscription_expires_at: expiresAt.toISOString()

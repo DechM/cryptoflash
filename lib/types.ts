@@ -1,4 +1,4 @@
-export type SubscriptionTier = 'free' | 'pro' | 'expired'
+export type SubscriptionTier = 'free' | 'pro' | 'ultimate' | 'expired'
 
 export interface User {
   id: string

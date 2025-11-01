@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
   email TEXT,
   telegram_username TEXT,
   telegram_chat_id TEXT,
-  subscription_status TEXT DEFAULT 'free' CHECK (subscription_status IN ('free', 'pro', 'expired')),
+  subscription_status TEXT DEFAULT 'free' CHECK (subscription_status IN ('free', 'pro', 'ultimate', 'expired')),
   stripe_customer_id TEXT,
   stripe_subscription_id TEXT,
   subscription_expires_at TIMESTAMPTZ,
