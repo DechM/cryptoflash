@@ -115,7 +115,15 @@ export function TokenTable({ tokens, refreshInterval = 60000 }: TokenTableProps)
                     href={getPumpFunUrl(token.tokenAddress, 'pumpkingsniper')}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center space-x-2 px-4 py-2 rounded-lg bg-gradient-to-r from-[#00ff88] to-[#00d9ff] text-black font-semibold hover:opacity-90 transition-opacity glow-green"
+                    onClick={(e) => {
+                      // Validate address before navigating
+                      if (!token.tokenAddress || token.tokenAddress.length < 32) {
+                        e.preventDefault()
+                        alert('Invalid token address. This is mock data - real addresses will work in production.')
+                        return false
+                      }
+                    }}
+                    className="inline-flex items-center space-x-2 px-4 py-2 rounded-lg bg-gradient-to-r from-[#00ff88] to-[#00d9ff] text-black font-semibold hover:opacity-90 transition-opacity glow-green shadow-lg hover:shadow-[#00ff88]/50"
                   >
                     <span>BUY</span>
                     <ExternalLink className="h-4 w-4" />

@@ -24,8 +24,10 @@ export function generateMockTokens(): Token[] {
     const whaleCount = Math.floor(Math.random() * 15)
     const volume24h = 10000 + Math.random() * 500000
     
+    // Generate valid-looking Solana address (44 chars, starts with So...)
+    const solanaAddress = `So${Array.from({length: 42}, () => 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[Math.floor(Math.random() * 62)]).join('')}`
     mockTokens.push({
-      tokenAddress: `So${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`,
+      tokenAddress: solanaAddress,
       name: names[i % names.length] + (i > 14 ? ` ${Math.floor(i / 15) + 1}` : ''),
       symbol: symbols[i % symbols.length] + (i > 14 ? Math.floor(i / 15) + 1 : ''),
       progress: Math.round(progress * 10) / 10,

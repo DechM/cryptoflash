@@ -22,8 +22,49 @@ export default function PremiumPage() {
   }, [])
 
   const handleSubscribe = async (tier: 'pro' | 'ultimate') => {
-    if (!userId) {
-      alert('Please set up your account first (enter Telegram username on Alerts page)')
+    // Get or create user first
+    let currentUserId = userId
+    if (!currentUserId) {
+      const telegramUsername = prompt('Please enter your Telegram username (without @) to continue:')
+      if (!telegramUsername) {
+        alert('Telegram username is required to subscribe')
+        return
+      }
+
+      try {
+        const userResponse = await fetch('/api/user/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            telegramUsername: telegramUsername.replace('@', ''),
+            email: null
+          })
+        })
+
+        if (userResponse.ok) {
+          const userData = await userResponse.json()
+          currentUserId = userData.userId
+          if (currentUserId) {
+            localStorage.setItem('userId', currentUserId)
+            setUserId(currentUserId)
+          } else {
+            alert('Failed to create user account')
+            return
+          }
+        } else {
+          const errorData = await userResponse.json()
+          alert(errorData.error || 'Failed to create user account')
+          return
+        }
+      } catch (error) {
+        console.error('Error creating user:', error)
+        alert('Failed to create user account')
+        return
+      }
+    }
+
+    if (!currentUserId) {
+      alert('Please set up your account first')
       return
     }
 
@@ -33,22 +74,32 @@ export default function PremiumPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId,
+          userId: currentUserId,
           email: null,
-          tier: tier // Pass tier to determine price
+          tier: tier
         })
       })
 
-      const { sessionId, url } = await response.json()
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create checkout session')
+      }
+
+      const { sessionId, url } = data
 
       if (url) {
         window.location.href = url
       } else if (sessionId) {
-        alert('Redirecting to checkout...')
+        // Fallback: redirect to Stripe checkout manually
+        const stripeUrl = `https://checkout.stripe.com/c/pay/${sessionId}`
+        window.location.href = stripeUrl
+      } else {
+        throw new Error('No checkout URL or session ID received')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating checkout:', error)
-      alert('Failed to start checkout')
+      alert(`Failed to start checkout: ${error.message || 'Unknown error'}. Please check console for details.`)
     } finally {
       setLoading(null)
     }
@@ -89,7 +140,7 @@ export default function PremiumPage() {
     <div className="min-h-screen bg-gradient-to-br from-[#0a0e27] via-[#1a1f3a] to-[#0a0e27]">
       <Navbar />
 
-      <main className="container mx-auto px-4 py-12 max-w-7xl">
+      <main className="container mx-auto px-4 py-12 max-w-7xl w-full">
         {/* Header - Centered */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
