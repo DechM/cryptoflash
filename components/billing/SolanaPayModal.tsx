@@ -164,7 +164,7 @@ export function SolanaPayModal({
             <div className="text-center py-8">
               <Loader2 className="h-12 w-12 mx-auto mb-4 text-[#00ff88] animate-spin" />
               <p className="text-[#b8c5d6]">Confirming payment...</p>
-              <p className="text-sm text-[#6b7280] mt-2">This may take a few seconds</p>
+              <p className="text-sm text-[#6b7280] mt-2">Please wait 5-10 seconds after sending the transaction</p>
             </div>
           )}
 
