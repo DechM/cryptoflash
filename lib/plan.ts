@@ -4,6 +4,7 @@ export type Feature =
   | "alerts.threshold_min"      // минимален праг за аларми (0..100)
   | "alerts.max_tokens"         // колко токъна може да траква
   | "alerts.max_per_day"        // лимит на дневни аларми
+  | "alerts.whale"              // whale alerts (Ultimate only)
   | "refresh.ms"                // честота на обновяване
   | "filters.advanced"          // достъп до advanced филтри
   | "history.days"              // колко дни история
@@ -15,6 +16,7 @@ export const PLAN_LIMITS: Record<PlanId, Record<Feature, number | boolean>> = {
     "alerts.threshold_min": 95,
     "alerts.max_tokens": 1,
     "alerts.max_per_day": 10,
+    "alerts.whale": false,
     "refresh.ms": 30_000,
     "filters.advanced": false,
     "history.days": 0,
@@ -25,6 +27,7 @@ export const PLAN_LIMITS: Record<PlanId, Record<Feature, number | boolean>> = {
     "alerts.threshold_min": 85,
     "alerts.max_tokens": 10,
     "alerts.max_per_day": 100,
+    "alerts.whale": false, // Pro: priority alerts only, no whale alerts
     "refresh.ms": 15_000,
     "filters.advanced": true,
     "history.days": 30,
@@ -33,11 +36,12 @@ export const PLAN_LIMITS: Record<PlanId, Record<Feature, number | boolean>> = {
   },
   ultimate: {
     "alerts.threshold_min": 80,
-    "alerts.max_tokens": 10_000,
-    "alerts.max_per_day": 10_000,
+    "alerts.max_tokens": 10_000, // Unlimited
+    "alerts.max_per_day": 10_000, // Unlimited
+    "alerts.whale": true, // Ultimate: whale alerts enabled
     "refresh.ms": 10_000,
     "filters.advanced": true,
-    "history.days": 3650,
+    "history.days": 365, // 1 year
     "analytics.premium": true,
     "api.enabled": true,
   },

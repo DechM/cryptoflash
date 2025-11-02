@@ -93,12 +93,34 @@ CREATE TABLE IF NOT EXISTS api_calls (
 CREATE INDEX IF NOT EXISTS idx_api_calls_user_id ON api_calls(user_id);
 CREATE INDEX IF NOT EXISTS idx_api_calls_called_at ON api_calls(called_at);
 
+-- Crypto payments table (Solana Pay)
+CREATE TABLE IF NOT EXISTS crypto_payments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  plan TEXT NOT NULL CHECK (plan IN ('pro', 'ultimate')),
+  amount_usdc NUMERIC NOT NULL,
+  session_id TEXT UNIQUE NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'expired', 'failed')),
+  tx_signature TEXT,
+  confirmed_at TIMESTAMPTZ,
+  expires_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Indexes
+CREATE UNIQUE INDEX IF NOT EXISTS idx_crypto_payments_session_id ON crypto_payments(session_id);
+CREATE INDEX IF NOT EXISTS idx_crypto_payments_user_id ON crypto_payments(user_id);
+CREATE INDEX IF NOT EXISTS idx_crypto_payments_status ON crypto_payments(status);
+CREATE INDEX IF NOT EXISTS idx_crypto_payments_tx_signature ON crypto_payments(tx_signature) WHERE tx_signature IS NOT NULL;
+
 -- Enable Row Level Security (RLS)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_alerts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE alert_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_watchlist ENABLE ROW LEVEL SECURITY;
 ALTER TABLE api_calls ENABLE ROW LEVEL SECURITY;
+ALTER TABLE crypto_payments ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies (for now, allow all - adjust based on auth requirements)
 CREATE POLICY "Allow all users" ON users FOR ALL USING (true);
@@ -106,6 +128,7 @@ CREATE POLICY "Allow all alerts" ON user_alerts FOR ALL USING (true);
 CREATE POLICY "Allow all history" ON alert_history FOR ALL USING (true);
 CREATE POLICY "Allow all watchlist" ON user_watchlist FOR ALL USING (true);
 CREATE POLICY "Allow all api_calls" ON api_calls FOR ALL USING (true);
+CREATE POLICY "Allow all crypto_payments" ON crypto_payments FOR ALL USING (true);
 
 -- Functions for updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -121,5 +144,8 @@ CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_user_alerts_updated_at BEFORE UPDATE ON user_alerts
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_crypto_payments_updated_at BEFORE UPDATE ON crypto_payments
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 

@@ -1,11 +1,25 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 
+const PAYMENT_PROVIDER = process.env.PAYMENT_PROVIDER || 'stripe'
+const ENABLE_SOL_PAY = process.env.ENABLE_SOL_PAY === 'true'
+
 const stripeKey = process.env.STRIPE_SECRET_KEY || ''
 const stripe = stripeKey ? new Stripe(stripeKey) : null
 
 export async function POST(request: Request) {
   try {
+    // Check if Solana Pay is enabled - disable Stripe
+    if (PAYMENT_PROVIDER === 'solana' || ENABLE_SOL_PAY) {
+      return NextResponse.json(
+        { 
+          error: 'Stripe is disabled. Please use Solana Pay.',
+          redirect: '/premium'
+        },
+        { status: 400 }
+      )
+    }
+
     const body = await request.json()
     const { userId, email, tier = 'pro' } = body
 

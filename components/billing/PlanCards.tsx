@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { usePlan } from "@/hooks/usePlan";
 import type { PlanId } from "@/lib/plan";
 import { Crown, Zap, Shield, Sparkles, Check } from "lucide-react";
+import { SolanaPayModal } from "./SolanaPayModal";
 
 function Card({
   title,
@@ -53,87 +55,166 @@ function Card({
 
 export default function PlanCards() {
   const { plan, changePlan } = usePlan();
+  const [paymentModal, setPaymentModal] = useState<{
+    isOpen: boolean;
+    solanaPayUrl: string;
+    sessionId: string;
+    plan: 'pro' | 'ultimate';
+    amount: number;
+  } | null>(null);
 
-  const onSelect = (p: PlanId) => () => changePlan(p);
+  const handleSolanaPay = async (selectedPlan: 'pro' | 'ultimate') => {
+    try {
+      const response = await fetch('/api/pay/create-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ plan: selectedPlan })
+      });
+
+      const data = await response.json();
+
+      if (data.error) {
+        alert(data.error);
+        return;
+      }
+
+      setPaymentModal({
+        isOpen: true,
+        solanaPayUrl: data.solanaPayUrl,
+        sessionId: data.sessionId,
+        plan: selectedPlan,
+        amount: data.amount
+      });
+    } catch (error: any) {
+      console.error('Error creating payment session:', error);
+      alert('Failed to create payment session');
+    }
+  };
+
+  const handlePaymentSuccess = async () => {
+    // Refresh plan state
+    await changePlan(paymentModal?.plan || 'free');
+  };
+
+  const onSelect = (p: PlanId) => () => {
+    if (p === 'free') {
+      changePlan('free');
+    } else {
+      // For Pro/Ultimate, use Solana Pay
+      handleSolanaPay(p as 'pro' | 'ultimate');
+    }
+  };
 
   return (
-    <div className="grid md:grid-cols-3 gap-5 w-full">
-      <Card
-        title="Free"
-        price="$0/mo"
-        cta="Choose Free"
-        onClick={onSelect("free")}
-        current={plan === "free"}
-      >
-        <div className="flex items-center space-x-2">
-          <Check className="h-4 w-4 text-[#6b7280]" />
-          <span>Basic Alerts (≥95%)</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Check className="h-4 w-4 text-[#6b7280]" />
-          <span>1 Token Tracking</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Check className="h-4 w-4 text-[#6b7280]" />
-          <span>10 Alerts/Day</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Check className="h-4 w-4 text-[#6b7280]" />
-          <span>Standard Dashboard</span>
-        </div>
-      </Card>
+    <>
+      <div className="grid md:grid-cols-3 gap-5 w-full">
+        <Card
+          title="Free"
+          price="$0/mo"
+          cta="Choose Free"
+          onClick={onSelect("free")}
+          current={plan === "free"}
+        >
+          <div className="flex items-center space-x-2">
+            <Check className="h-4 w-4 text-[#6b7280]" />
+            <span>Basic Alerts (≥95%)</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Check className="h-4 w-4 text-[#6b7280]" />
+            <span>1 Token Tracking</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Check className="h-4 w-4 text-[#6b7280]" />
+            <span>10 Alerts/Day</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Check className="h-4 w-4 text-[#6b7280]" />
+            <span>30s Refresh</span>
+          </div>
+        </Card>
 
-      <Card
-        title="Pro"
-        price="$4.99/mo"
-        cta="Subscribe Now"
-        highlight
-        onClick={onSelect("pro")}
-        current={plan === "pro"}
-      >
-        <div className="flex items-center space-x-2">
-          <Check className="h-4 w-4 text-[#00ff88]" />
-          <span>Early Alerts (≥85%)</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Check className="h-4 w-4 text-[#00ff88]" />
-          <span>10 Token Tracking</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Check className="h-4 w-4 text-[#00ff88]" />
-          <span>Advanced Filters</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Check className="h-4 w-4 text-[#00ff88]" />
-          <span>History 30 days</span>
-        </div>
-      </Card>
+        <Card
+          title="Pro"
+          price="19.99 USDC/mo"
+          cta="Pay with Solana"
+          highlight
+          onClick={onSelect("pro")}
+          current={plan === "pro"}
+        >
+          <div className="flex items-center space-x-2">
+            <Check className="h-4 w-4 text-[#00ff88]" />
+            <span>Early Alerts (≥85%)</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Check className="h-4 w-4 text-[#00ff88]" />
+            <span>10 Token Tracking</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Check className="h-4 w-4 text-[#00ff88]" />
+            <span>Advanced Filters</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Check className="h-4 w-4 text-[#00ff88]" />
+            <span>History 30 days</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Check className="h-4 w-4 text-[#00ff88]" />
+            <span>Priority Alerts</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Check className="h-4 w-4 text-[#00ff88]" />
+            <span>15s Refresh</span>
+          </div>
+        </Card>
 
-      <Card
-        title="Ultimate"
-        price="$19.99/mo"
-        cta="Subscribe Now"
-        onClick={onSelect("ultimate")}
-        current={plan === "ultimate"}
-      >
-        <div className="flex items-center space-x-2">
-          <Sparkles className="h-4 w-4 text-[#ff006e]" />
-          <span>Earliest Alerts (≥80%)</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Sparkles className="h-4 w-4 text-[#ff006e]" />
-          <span>Unlimited Tracking</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Sparkles className="h-4 w-4 text-[#ff006e]" />
-          <span>Premium Analytics</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Sparkles className="h-4 w-4 text-[#ff006e]" />
-          <span>API Access</span>
-        </div>
-      </Card>
-    </div>
+        <Card
+          title="Ultimate"
+          price="39.99 USDC/mo"
+          cta="Pay with Solana"
+          onClick={onSelect("ultimate")}
+          current={plan === "ultimate"}
+        >
+          <div className="flex items-center space-x-2">
+            <Sparkles className="h-4 w-4 text-[#ff006e]" />
+            <span>Earliest Alerts (≥80%)</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Sparkles className="h-4 w-4 text-[#ff006e]" />
+            <span>Unlimited Tracking</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Sparkles className="h-4 w-4 text-[#ff006e]" />
+            <span>Whale Alerts</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Sparkles className="h-4 w-4 text-[#ff006e]" />
+            <span>Premium Analytics</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Sparkles className="h-4 w-4 text-[#ff006e]" />
+            <span>History 365 days</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Sparkles className="h-4 w-4 text-[#ff006e]" />
+            <span>10s Refresh</span>
+          </div>
+        </Card>
+      </div>
+
+      {paymentModal && (
+        <SolanaPayModal
+          isOpen={paymentModal.isOpen}
+          onClose={() => setPaymentModal(null)}
+          solanaPayUrl={paymentModal.solanaPayUrl}
+          sessionId={paymentModal.sessionId}
+          plan={paymentModal.plan}
+          amount={paymentModal.amount}
+          onSuccess={handlePaymentSuccess}
+        />
+      )}
+    </>
   );
 }
 
