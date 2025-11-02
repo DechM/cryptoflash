@@ -61,8 +61,15 @@ export default function TestPaymentsPage() {
         throw new Error('Payment not confirmed')
       }
 
-      // Step 3: Check plan from API
-      await new Promise(resolve => setTimeout(resolve, 1000)) // Wait for cookie update
+      // Step 3: Explicitly set plan via /api/plan POST to ensure cookie is set
+      await fetch('/api/plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: confirmData.plan })
+      })
+
+      // Step 4: Wait a bit and check plan from API
+      await new Promise(resolve => setTimeout(resolve, 500))
 
       const planResponse = await fetch('/api/plan/me')
       const planData = await planResponse.json()

@@ -44,11 +44,21 @@ export async function POST(req: Request) {
 
     // Check if already confirmed
     if (payment.status === 'confirmed') {
-      return NextResponse.json({
+      const res = NextResponse.json({
         confirmed: true,
         plan: payment.plan,
         expiresAt: payment.expires_at
       })
+      
+      // Ensure cookie is set even if already confirmed
+      res.cookies.set('cf_plan', payment.plan, {
+        httpOnly: false,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 365
+      })
+      
+      return res
     }
 
     // Check if expired
@@ -98,13 +108,23 @@ export async function POST(req: Request) {
         // Don't fail - payment is confirmed
       }
 
-      return NextResponse.json({
+      // Set cookie for plan so UI can immediately reflect the change
+      const res = NextResponse.json({
         confirmed: true,
         plan: payment.plan,
         expiresAt: expiresAt.toISOString(),
         txSignature: 'mock-tx-' + sessionId,
         mock: true
       })
+
+      res.cookies.set('cf_plan', payment.plan, {
+        httpOnly: false,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 365 // 1 year
+      })
+
+      return res
     }
 
     // Validate transaction via Helius/Solana RPC
@@ -155,12 +175,22 @@ export async function POST(req: Request) {
       // Don't fail - payment is confirmed
     }
 
-    return NextResponse.json({
+    // Set cookie for plan so UI can immediately reflect the change
+    const res = NextResponse.json({
       confirmed: true,
       plan: payment.plan,
       expiresAt: expiresAt.toISOString(),
       txSignature
     })
+
+    res.cookies.set('cf_plan', payment.plan, {
+      httpOnly: false,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 365 // 1 year
+    })
+
+    return res
   } catch (error: any) {
     console.error('Error in confirm payment:', error)
     return NextResponse.json(
