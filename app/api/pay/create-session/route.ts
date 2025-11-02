@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, isSupabaseConfigured } from '@/lib/supabase'
 
 // Generate UUID without external library
 function generateUUID(): string {
@@ -34,7 +34,26 @@ export async function POST(req: Request) {
 
     if (!MERCHANT_WALLET || !USDC_MINT) {
       return NextResponse.json(
-        { error: 'Solana Pay configuration missing' },
+        { error: 'Solana Pay configuration missing. Please set MERCHANT_WALLET and USDC_MINT environment variables.' },
+        { status: 500 }
+      )
+    }
+
+    // Check Supabase configuration
+    if (!isSupabaseConfigured) {
+      const missing = []
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL === 'https://placeholder.supabase.co') {
+        missing.push('NEXT_PUBLIC_SUPABASE_URL')
+      }
+      if (!process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY === 'placeholder-service-key') {
+        missing.push('SUPABASE_SERVICE_ROLE_KEY')
+      }
+      
+      return NextResponse.json(
+        { 
+          error: 'Database not configured',
+          details: `Please set these environment variables in Vercel: ${missing.join(', ')}`
+        },
         { status: 500 }
       )
     }
@@ -65,9 +84,10 @@ export async function POST(req: Request) {
       finalUserId = userIdCookie?.split('=')[1] || null
     }
 
-    // If no userId, create anonymous user in database
-    if (!finalUserId) {
-      try {
+    // Always create or get user first (required for foreign key)
+    try {
+      if (!finalUserId) {
+        // Create new anonymous user
         const { data: newUser, error: userError } = await supabaseAdmin
           .from('users')
           .insert({
@@ -77,72 +97,95 @@ export async function POST(req: Request) {
           .single()
 
         if (userError) {
-          console.error('Error creating user:', userError)
-          // If database error, allow payment without user (for development)
-          // In production, this should fail
-          if (process.env.NODE_ENV === 'production') {
+          console.error('Error creating user (new):', userError)
+          // Check if it's a connection issue
+          if (userError.message?.includes('Invalid API key') || userError.message?.includes('JWT')) {
             return NextResponse.json(
-              { error: 'Failed to create user account. Please try again.' },
+              { 
+                error: 'Database configuration error. Please check Supabase credentials.',
+                details: process.env.NODE_ENV === 'development' ? userError.message : undefined
+              },
               { status: 500 }
             )
           }
-          // Development: use generated UUID but warn
-          finalUserId = generateUUID()
-          console.warn('Using generated userId without database entry:', finalUserId)
-        } else {
-          finalUserId = newUser.id
-        }
-      } catch (error: any) {
-        console.error('Error creating user:', error)
-        // Fallback for development
-        if (process.env.NODE_ENV === 'production') {
+          // Check if table doesn't exist
+          if (userError.code === '42P01' || userError.message?.includes('does not exist')) {
+            return NextResponse.json(
+              { 
+                error: 'Database not set up. Please run supabase-schema.sql in Supabase SQL Editor.',
+                details: process.env.NODE_ENV === 'development' ? 'users table does not exist' : undefined
+              },
+              { status: 500 }
+            )
+          }
           return NextResponse.json(
-            { error: 'Database error. Please try again.' },
+            { 
+              error: 'Failed to create user account',
+              details: process.env.NODE_ENV === 'development' ? userError.message : undefined
+            },
             { status: 500 }
           )
         }
-        finalUserId = generateUUID()
-      }
-    } else {
-      // Verify user exists in database
-      const { data: existingUser, error: fetchError } = await supabaseAdmin
-        .from('users')
-        .select('id')
-        .eq('id', finalUserId)
-        .single()
-
-      if (fetchError || !existingUser) {
-        // User doesn't exist, create it
-        const { data: newUser, error: createError } = await supabaseAdmin
+        finalUserId = newUser.id
+      } else {
+        // Verify user exists, create if not
+        const { data: existingUser, error: fetchError } = await supabaseAdmin
           .from('users')
-          .insert({
-            id: finalUserId,
-            subscription_status: 'free'
-          })
-          .select()
+          .select('id')
+          .eq('id', finalUserId)
           .single()
 
-        if (createError) {
-          console.error('Error creating user with ID:', createError)
-          // If we can't create with provided ID, generate new one
-          const { data: autoUser } = await supabaseAdmin
+        if (fetchError || !existingUser) {
+          // User doesn't exist, create it
+          const { data: newUser, error: createError } = await supabaseAdmin
             .from('users')
             .insert({
+              id: finalUserId,
               subscription_status: 'free'
             })
             .select()
             .single()
 
-          if (autoUser) {
+          if (createError) {
+            console.error('Error creating user (existing ID):', createError)
+            // Try to create without specifying ID (let DB generate)
+            const { data: autoUser, error: autoError } = await supabaseAdmin
+              .from('users')
+              .insert({
+                subscription_status: 'free'
+              })
+              .select()
+              .single()
+
+            if (autoError || !autoUser) {
+              return NextResponse.json(
+                { 
+                  error: 'Failed to create user account',
+                  details: process.env.NODE_ENV === 'development' ? (autoError?.message || createError.message) : undefined
+                },
+                { status: 500 }
+              )
+            }
             finalUserId = autoUser.id
-          } else {
-            return NextResponse.json(
-              { error: 'Failed to create user account' },
-              { status: 500 }
-            )
           }
         }
       }
+    } catch (error: any) {
+      console.error('Exception creating user:', error)
+      return NextResponse.json(
+        { 
+          error: 'Database error. Please try again.',
+          details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        },
+        { status: 500 }
+      )
+    }
+
+    if (!finalUserId) {
+      return NextResponse.json(
+        { error: 'Failed to get or create user' },
+        { status: 500 }
+      )
     }
 
     // Insert pending payment
@@ -217,7 +260,17 @@ export async function POST(req: Request) {
           { 
             error: 'Payment system not configured. Please run database migrations.',
             details: process.env.NODE_ENV === 'development' 
-              ? `Table 'crypto_payments' does not exist. Please run supabase-schema.sql in your Supabase SQL Editor.`
+              ? `Table 'crypto_payments' does not exist. Please run the crypto_payments table creation SQL from supabase-schema.sql in your Supabase SQL Editor.`
+              : 'Please contact support or check database setup.'
+          },
+          { status: 500 }
+        )
+      } else if (insertError.message?.includes('Invalid API key') || insertError.message?.includes('JWT')) {
+        return NextResponse.json(
+          { 
+            error: 'Database configuration error',
+            details: process.env.NODE_ENV === 'development' 
+              ? 'Invalid Supabase credentials. Please check SUPABASE_SERVICE_ROLE_KEY in environment variables.'
               : undefined
           },
           { status: 500 }
