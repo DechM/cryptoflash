@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { isProUser } from '@/lib/subscription'
+import { getLimit } from '@/lib/plan'
 
 export async function GET(request: Request) {
   try {
@@ -14,27 +14,43 @@ export async function GET(request: Request) {
       )
     }
 
-    // Check if user is Pro
-    const isPro = await isProUser(userId)
-    if (!isPro) {
+    // Get user plan
+    const { data: user, error: userError } = await supabaseAdmin
+      .from('users')
+      .select('subscription_status')
+      .eq('id', userId)
+      .single()
+
+    if (userError || !user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      )
+    }
+
+    const plan = (user.subscription_status || 'free') as 'free' | 'pro' | 'ultimate'
+
+    // Check if user has access to history
+    const historyDays = getLimit(plan, 'history.days') as number
+    if (historyDays === 0) {
       return NextResponse.json(
         { 
-          error: 'PRO_SUBSCRIPTION_REQUIRED',
-          message: 'Alert history is a Pro feature' 
+          error: 'SUBSCRIPTION_REQUIRED',
+          message: 'Alert history requires Pro or Ultimate subscription' 
         },
         { status: 403 }
       )
     }
 
-    // Get history from last 30 days
-    const thirtyDaysAgo = new Date()
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    // Get history based on plan limit
+    const historyStartDate = new Date()
+    historyStartDate.setDate(historyStartDate.getDate() - historyDays)
 
     const { data, error } = await supabaseAdmin
       .from('alert_history')
       .select('*')
       .eq('user_id', userId)
-      .gte('created_at', thirtyDaysAgo.toISOString())
+      .gte('created_at', historyStartDate.toISOString())
       .order('created_at', { ascending: false })
       .limit(100)
 

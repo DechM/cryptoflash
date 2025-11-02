@@ -59,6 +59,54 @@ export async function POST(req: Request) {
       )
     }
 
+    // MOCK PAYMENT MODE (for testing only)
+    const ALLOW_MOCK_PAYMENT = process.env.ALLOW_MOCK_PAYMENT === 'true'
+    if (ALLOW_MOCK_PAYMENT) {
+      const expiresAt = new Date()
+      expiresAt.setDate(expiresAt.getDate() + 30) // 30 days subscription
+
+      // Confirm payment (mock)
+      const { error: updateError } = await supabaseAdmin
+        .from('crypto_payments')
+        .update({
+          status: 'confirmed',
+          tx_signature: 'mock-tx-' + sessionId,
+          confirmed_at: new Date().toISOString(),
+          expires_at: expiresAt.toISOString()
+        })
+        .eq('session_id', sessionId)
+
+      if (updateError) {
+        console.error('Error updating mock payment:', updateError)
+        return NextResponse.json(
+          { error: 'Failed to confirm payment' },
+          { status: 500 }
+        )
+      }
+
+      // Update user subscription
+      const { error: userUpdateError } = await supabaseAdmin
+        .from('users')
+        .update({
+          subscription_status: payment.plan,
+          subscription_expires_at: expiresAt.toISOString()
+        })
+        .eq('id', payment.user_id)
+
+      if (userUpdateError) {
+        console.error('Error updating user subscription:', userUpdateError)
+        // Don't fail - payment is confirmed
+      }
+
+      return NextResponse.json({
+        confirmed: true,
+        plan: payment.plan,
+        expiresAt: expiresAt.toISOString(),
+        txSignature: 'mock-tx-' + sessionId,
+        mock: true
+      })
+    }
+
     // Validate transaction via Helius/Solana RPC
     // Look for transactions to MERCHANT_WALLET with memo = sessionId
     const txSignature = await findTransactionByMemo(sessionId, payment.amount_usdc)
