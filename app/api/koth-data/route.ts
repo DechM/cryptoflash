@@ -60,9 +60,35 @@ export async function GET() {
     // Fetch additional data in parallel
     const [dexscreenerData, whaleData] = await Promise.all([
       fetchTokenData(tokenAddresses),
-      Promise.all(
-        tokenAddresses.map(addr => fetchWhaleTransactions(addr))
-      )
+      // Process whale data in batches to avoid rate limits (429 errors)
+      (async () => {
+        const whaleResults: Array<{ whaleCount: number; whaleInflows: number; totalVolume: number }> = []
+        
+        // Process in batches of 5 to respect Helius rate limits
+        const batchSize = 5
+        for (let i = 0; i < tokenAddresses.length; i += batchSize) {
+          const batch = tokenAddresses.slice(i, i + batchSize)
+          
+          // Fetch batch with Promise.allSettled to handle individual failures gracefully
+          const batchResults = await Promise.allSettled(
+            batch.map(addr => fetchWhaleTransactions(addr))
+          )
+          
+          // Extract results, defaulting to zeros on failure
+          whaleResults.push(...batchResults.map(result => 
+            result.status === 'fulfilled' 
+              ? result.value 
+              : { whaleCount: 0, whaleInflows: 0, totalVolume: 0 }
+          ))
+          
+          // Rate limit: delay between batches (500ms = ~2 req/sec per token, well under limit)
+          if (i + batchSize < tokenAddresses.length) {
+            await new Promise(resolve => setTimeout(resolve, 500))
+          }
+        }
+        
+        return whaleResults
+      })()
     ])
 
     // Calculate scores and enrich tokens (async map for rug risk calculation)

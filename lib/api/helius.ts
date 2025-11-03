@@ -111,8 +111,13 @@ export async function fetchWhaleTransactions(
       totalVolume
     }
   } catch (error: any) {
-    console.error('Error fetching Helius whale data:', error.message)
-    // Return zeros on error - don't fail completely
+    // Handle rate limit errors gracefully (429 = Too Many Requests)
+    if (error.response?.status === 429) {
+      console.warn(`Helius rate limit hit for ${tokenAddress}, returning zeros`)
+    } else {
+      console.error('Error fetching Helius whale data:', error.message)
+    }
+    // Return zeros on error - graceful degradation (app continues working)
     return { whaleCount: 0, whaleInflows: 0, totalVolume: 0 }
   }
 }
