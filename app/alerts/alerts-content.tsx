@@ -26,7 +26,12 @@ export default function AlertsPageContent() {
 
   // Check Telegram link status on mount and poll for updates
   useEffect(() => {
-    if (!user) return
+    if (!user) {
+      setTelegramLinked(false)
+      return
+    }
+    
+    let shouldPoll = true // Flag to stop polling on auth errors
     
     const checkTelegramLink = async () => {
       try {
@@ -37,20 +42,28 @@ export default function AlertsPageContent() {
           if (data.telegram_username) {
             setTelegramUsername(data.telegram_username)
           }
+          shouldPoll = true // Continue polling if not linked
+        } else if (response.status === 401) {
+          // Stop polling if we get 401 (unauthorized)
+          console.warn('Unauthorized - stopping Telegram link polling')
+          setTelegramLinked(false)
+          shouldPoll = false
         } else {
           setTelegramLinked(false)
+          shouldPoll = true // Continue polling on other errors
         }
       } catch (error) {
         console.error('Error checking Telegram link:', error)
         setTelegramLinked(false)
+        shouldPoll = false // Stop on network errors
       }
     }
     
     checkTelegramLink()
     
-    // Poll every 5 seconds to check if user linked Telegram (if not linked)
+    // Poll every 5 seconds ONLY if shouldPoll is true and not linked
     const interval = setInterval(() => {
-      if (telegramLinked === false || telegramLinked === null) {
+      if (shouldPoll && (telegramLinked === false || telegramLinked === null)) {
         checkTelegramLink()
       }
     }, 5000)
@@ -199,7 +212,7 @@ export default function AlertsPageContent() {
                     </p>
                     <div className="flex flex-col sm:flex-row gap-2">
                       <a
-                        href={`https://t.me/${process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'CryptoFlashBot'}`}
+                        href={`https://t.me/${process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'CryptoFlashBot'}?start=email:${encodeURIComponent(user?.email || '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center space-x-2 px-4 py-2 rounded-lg bg-[#0088cc] hover:bg-[#0077b3] text-white font-semibold transition-colors text-sm"
@@ -212,7 +225,18 @@ export default function AlertsPageContent() {
                           setLinkingTelegram(true)
                           try {
                             const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'CryptoFlashBot'
-                            alert(`Please:\n1. Open https://t.me/${botUsername}\n2. Click "Start" or send /start\n3. Come back and create an alert\n\nWe'll automatically link your account when you send /start to the bot.`)
+                            const userEmail = user?.email || 'your-email'
+                            alert(`📱 Link Telegram Account:
+
+1. Click "Open Telegram Bot" button above (opens automatically)
+2. Click "Start" button in Telegram
+3. Your account will be automatically linked!
+
+OR manually:
+- Open: https://t.me/${botUsername}
+- Send: /start email:${userEmail}
+
+💡 We'll automatically detect your email and link your account.`)
                           } catch (error) {
                             console.error('Error:', error)
                           } finally {

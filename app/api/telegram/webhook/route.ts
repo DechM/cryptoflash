@@ -69,6 +69,36 @@ export async function POST(req: Request) {
           }
         }
 
+        // If not found by username, check if user sent /start with a linking code
+        // Format: /start <linking_code> or /start email:<email>
+        if (!foundUser && command.startsWith('/start ')) {
+          const startParam = command.substring(7).trim() // Get part after "/start "
+          
+          // Try to find by email if format is /start email:user@example.com
+          if (startParam.startsWith('email:')) {
+            const email = startParam.substring(6).trim()
+            if (email) {
+              const { data: userByEmail } = await supabaseAdmin
+                .from('users')
+                .select('id, email, telegram_chat_id')
+                .eq('email', email)
+                .single()
+              
+              if (userByEmail && !userByEmail.telegram_chat_id) {
+                foundUser = userByEmail
+                await supabaseAdmin
+                  .from('users')
+                  .update({
+                    telegram_username: username,
+                    telegram_chat_id: chatId.toString(),
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('id', foundUser.id)
+              }
+            }
+          }
+        }
+
         if (!foundUser) {
           // No existing user found - user needs to create account first
           const welcomeMessage = `👋 <b>Welcome to CryptoFlash!</b>
