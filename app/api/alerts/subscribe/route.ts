@@ -1,36 +1,20 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { getLimit } from '@/lib/plan'
+import { getLimit, getUserPlan } from '@/lib/plan'
+import { requireAuth } from '@/lib/auth'
 import type { PlanId } from '@/lib/plan'
 
 export async function POST(request: Request) {
   try {
+    // Require authentication
+    const user = await requireAuth()
+    const userId = user.id
+
     const body = await request.json()
-    const { userId, tokenAddress, alertType, thresholdValue } = body
+    const { tokenAddress, alertType, thresholdValue } = body
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'User ID required' },
-        { status: 400 }
-      )
-    }
-
-    // Get plan from cookie (prefer new plan system) or fallback to user tier
-    const cookieHeader = request.headers.get('cookie') || ''
-    const planCookie = cookieHeader.split(';').find(s => s.trim().startsWith('cf_plan='))
-    const planFromCookie = planCookie?.split('=')[1] || null
-    
-    // Try to get from old system if no cookie
-    let plan: PlanId = (planFromCookie as PlanId) || 'free'
-    if (!planFromCookie) {
-      try {
-        const { getUserTier } = await import('@/lib/subscription')
-        const oldTier = await getUserTier(userId)
-        plan = oldTier as PlanId
-      } catch {
-        plan = 'free'
-      }
-    }
+    // Get plan from database (source of truth)
+    const plan = await getUserPlan(userId)
     
     const maxAlerts = getLimit(plan, 'alerts.max_tokens') as number
 

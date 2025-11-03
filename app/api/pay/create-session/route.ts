@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin, isSupabaseConfigured } from '@/lib/supabase'
+import { requireAuth } from '@/lib/auth'
 
 // Generate UUID without external library
 function generateUUID(): string {
@@ -58,8 +59,12 @@ export async function POST(req: Request) {
       )
     }
 
+    // Require authentication - no anonymous payments
+    const user = await requireAuth()
+    const finalUserId = user.id
+
     const body = await req.json()
-    const { plan, userId } = body
+    const { plan } = body
 
     // Validate plan
     if (plan !== 'pro' && plan !== 'ultimate') {
@@ -75,122 +80,7 @@ export async function POST(req: Request) {
     // Generate session ID
     const sessionId = generateUUID()
 
-    // Get or create user
-    let finalUserId = userId
-    if (!finalUserId) {
-      // Try to get from cookie
-      const cookieHeader = req.headers.get('cookie') || ''
-      const userIdCookie = cookieHeader.split(';').find(s => s.trim().startsWith('cf_user_id='))
-      finalUserId = userIdCookie?.split('=')[1] || null
-    }
-
-    // Always create or get user first (required for foreign key)
-    try {
-      if (!finalUserId) {
-        // Create new anonymous user
-        const { data: newUser, error: userError } = await supabaseAdmin
-          .from('users')
-          .insert({
-            subscription_status: 'free'
-          })
-          .select()
-          .single()
-
-        if (userError) {
-          console.error('Error creating user (new):', userError)
-          // Check if it's a connection issue
-          if (userError.message?.includes('Invalid API key') || userError.message?.includes('JWT')) {
-            return NextResponse.json(
-              { 
-                error: 'Database configuration error. Please check Supabase credentials.',
-                details: process.env.NODE_ENV === 'development' ? userError.message : undefined
-              },
-              { status: 500 }
-            )
-          }
-          // Check if table doesn't exist
-          if (userError.code === '42P01' || userError.message?.includes('does not exist')) {
-            return NextResponse.json(
-              { 
-                error: 'Database not set up. Please run supabase-schema.sql in Supabase SQL Editor.',
-                details: process.env.NODE_ENV === 'development' ? 'users table does not exist' : undefined
-              },
-              { status: 500 }
-            )
-          }
-          return NextResponse.json(
-            { 
-              error: 'Failed to create user account',
-              details: process.env.NODE_ENV === 'development' ? userError.message : undefined
-            },
-            { status: 500 }
-          )
-        }
-        finalUserId = newUser.id
-      } else {
-        // Verify user exists, create if not
-        const { data: existingUser, error: fetchError } = await supabaseAdmin
-          .from('users')
-          .select('id')
-          .eq('id', finalUserId)
-          .single()
-
-        if (fetchError || !existingUser) {
-          // User doesn't exist, create it
-          const { data: newUser, error: createError } = await supabaseAdmin
-            .from('users')
-            .insert({
-              id: finalUserId,
-              subscription_status: 'free'
-            })
-            .select()
-            .single()
-
-          if (createError) {
-            console.error('Error creating user (existing ID):', createError)
-            // Try to create without specifying ID (let DB generate)
-            const { data: autoUser, error: autoError } = await supabaseAdmin
-              .from('users')
-              .insert({
-                subscription_status: 'free'
-              })
-              .select()
-              .single()
-
-            if (autoError || !autoUser) {
-              return NextResponse.json(
-                { 
-                  error: 'Failed to create user account',
-                  details: process.env.NODE_ENV === 'development' ? (autoError?.message || createError.message) : undefined
-                },
-                { status: 500 }
-              )
-            }
-            finalUserId = autoUser.id
-          }
-        }
-      }
-    } catch (error: any) {
-      console.error('Exception creating user:', error)
-      return NextResponse.json(
-        { 
-          error: 'Database error. Please try again.',
-          details: process.env.NODE_ENV === 'development' ? error.message : undefined
-        },
-        { status: 500 }
-      )
-    }
-
-    if (!finalUserId) {
-      return NextResponse.json(
-        { error: 'Failed to get or create user' },
-        { status: 500 }
-      )
-    }
-
-    // Insert pending payment
-    // Note: user_id might not exist in users table if database is not configured
-    // In that case, we'll allow it for development but log a warning
+    // Insert pending payment (user must exist due to auth trigger)
     const { error: insertError } = await supabaseAdmin
       .from('crypto_payments')
       .insert({

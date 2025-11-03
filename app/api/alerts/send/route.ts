@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { getUserTier, getAlertThreshold, getMaxDailyAlerts } from '@/lib/subscription'
+import { getLimit, getUserPlan } from '@/lib/plan'
 import { sendTelegramMessage, formatKOTHAlert } from '@/lib/api/telegram'
 
 /**
@@ -37,9 +37,9 @@ export async function POST(request: Request) {
 
     // Check each alert against tokens
     for (const alert of alerts) {
-      const userTier = await getUserTier(alert.user_id)
-      const threshold = alert.threshold_value || getAlertThreshold(userTier)
-      const maxDaily = getMaxDailyAlerts(userTier)
+      const plan = await getUserPlan(alert.user_id)
+      const threshold = alert.threshold_value || (getLimit(plan, 'alerts.threshold_min') as number)
+      const maxDaily = getLimit(plan, 'alerts.max_per_day') as number
 
       // Check daily limit
       const today = new Date()

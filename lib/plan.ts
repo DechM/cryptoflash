@@ -55,3 +55,46 @@ export function getLimit<T extends Feature>(plan: PlanId, key: T): number | bool
   return PLAN_LIMITS[plan][key];
 }
 
+/**
+ * Get user's plan from database
+ * Uses auth.uid() for security
+ */
+export async function getUserPlan(userId: string): Promise<PlanId> {
+  const { supabaseAdmin } = await import('@/lib/supabase')
+  
+  try {
+    const { data: user, error } = await supabaseAdmin
+      .from('users')
+      .select('subscription_status, subscription_expires_at')
+      .eq('id', userId)
+      .single()
+
+    if (error || !user) {
+      return 'free'
+    }
+
+    // Check if subscription expired
+    if (user.subscription_status === 'pro' || user.subscription_status === 'ultimate') {
+      if (user.subscription_expires_at) {
+        const expiresAt = new Date(user.subscription_expires_at)
+        const now = new Date()
+
+        if (expiresAt <= now) {
+          // Subscription expired, update to free
+          await supabaseAdmin
+            .from('users')
+            .update({ subscription_status: 'free' })
+            .eq('id', userId)
+          return 'free'
+        }
+      }
+      return user.subscription_status as 'pro' | 'ultimate'
+    }
+
+    return 'free'
+  } catch (error) {
+    console.error('Error getting user plan:', error)
+    return 'free'
+  }
+}
+

@@ -1,34 +1,16 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { getLimit } from '@/lib/plan'
+import { getLimit, getUserPlan } from '@/lib/plan'
+import { requireAuth } from '@/lib/auth'
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('userId')
+    // Require authentication
+    const user = await requireAuth()
+    const userId = user.id
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'User ID required' },
-        { status: 400 }
-      )
-    }
-
-    // Get user plan
-    const { data: user, error: userError } = await supabaseAdmin
-      .from('users')
-      .select('subscription_status')
-      .eq('id', userId)
-      .single()
-
-    if (userError || !user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      )
-    }
-
-    const plan = (user.subscription_status || 'free') as 'free' | 'pro' | 'ultimate'
+    // Get user plan from database
+    const plan = await getUserPlan(userId)
 
     // Check if user has access to history
     const historyDays = getLimit(plan, 'history.days') as number

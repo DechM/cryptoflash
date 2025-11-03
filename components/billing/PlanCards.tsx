@@ -1,10 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { usePlan } from "@/hooks/usePlan";
+import { useSession } from "@/hooks/useSession";
 import type { PlanId } from "@/lib/plan";
-import { Crown, Zap, Shield, Sparkles, Check } from "lucide-react";
+import { Crown, Zap, Shield, Sparkles, Check, Lock } from "lucide-react";
 import { SolanaPayModal } from "./SolanaPayModal";
+import Link from "next/link";
 
 function Card({
   title,
@@ -14,6 +17,8 @@ function Card({
   cta,
   onClick,
   current,
+  disabled,
+  disabledMessage,
 }: {
   title: string;
   price: string;
@@ -22,6 +27,8 @@ function Card({
   cta: string;
   onClick: () => void;
   current: boolean;
+  disabled?: boolean;
+  disabledMessage?: string;
 }) {
   return (
     <div
@@ -36,25 +43,42 @@ function Card({
       <div className="space-y-2 text-sm text-[#b8c5d6] mb-6 flex-grow">
         {children}
       </div>
-      <button
-        disabled={current}
-        onClick={onClick}
-        className={`mt-4 w-full h-11 rounded-xl font-semibold transition-all ${
-          current
-            ? "bg-white/10 cursor-not-allowed text-[#6b7280]"
-            : highlight
-            ? "bg-gradient-to-r from-[#00ff88] to-[#00d9ff] text-black hover:opacity-90"
-            : "bg-[#00ff88] text-black hover:bg-[#00ff88]/90"
-        }`}
-      >
-        {current ? "Current Plan" : cta}
-      </button>
+      <div className="relative">
+        <button
+          disabled={current || disabled}
+          onClick={onClick}
+          title={disabled ? disabledMessage : undefined}
+          className={`mt-4 w-full h-11 rounded-xl font-semibold transition-all ${
+            current
+              ? "bg-white/10 cursor-not-allowed text-[#6b7280]"
+              : disabled
+              ? "bg-white/5 cursor-not-allowed text-[#6b7280] border border-white/10"
+              : highlight
+              ? "bg-gradient-to-r from-[#00ff88] to-[#00d9ff] text-black hover:opacity-90"
+              : "bg-[#00ff88] text-black hover:bg-[#00ff88]/90"
+          }`}
+        >
+          {current ? "Current Plan" : disabled ? (
+            <span className="flex items-center justify-center space-x-2">
+              <Lock className="h-4 w-4" />
+              <span>Login to Purchase</span>
+            </span>
+          ) : (
+            cta
+          )}
+        </button>
+        {disabled && disabledMessage && (
+          <p className="mt-2 text-xs text-center text-[#6b7280]">{disabledMessage}</p>
+        )}
+      </div>
     </div>
   );
 }
 
 export default function PlanCards() {
+  const router = useRouter()
   const { plan, changePlan } = usePlan();
+  const { user, loading: sessionLoading } = useSession();
   const [paymentModal, setPaymentModal] = useState<{
     isOpen: boolean;
     solanaPayUrl: string;
@@ -64,6 +88,12 @@ export default function PlanCards() {
   } | null>(null);
 
   const handleSolanaPay = async (selectedPlan: 'pro' | 'ultimate') => {
+    // Check if user is logged in
+    if (!user) {
+      router.push(`/login?next=${encodeURIComponent('/premium')}`)
+      return
+    }
+
     try {
       const response = await fetch('/api/pay/create-session', {
         method: 'POST',
@@ -76,6 +106,10 @@ export default function PlanCards() {
       const data = await response.json();
 
       if (data.error) {
+        if (data.error.includes('Authentication') || response.status === 401) {
+          router.push(`/login?next=${encodeURIComponent('/premium')}`)
+          return
+        }
         alert(data.error);
         return;
       }
@@ -142,6 +176,8 @@ export default function PlanCards() {
           highlight
           onClick={onSelect("pro")}
           current={plan === "pro"}
+          disabled={!user && !sessionLoading}
+          disabledMessage={!user ? "Login required to purchase" : undefined}
         >
           <div className="flex items-center space-x-2">
             <Check className="h-4 w-4 text-[#00ff88]" />
@@ -175,6 +211,8 @@ export default function PlanCards() {
           cta="Pay with Solana"
           onClick={onSelect("ultimate")}
           current={plan === "ultimate"}
+          disabled={!user && !sessionLoading}
+          disabledMessage={!user ? "Login required to purchase" : undefined}
         >
           <div className="flex items-center space-x-2">
             <Sparkles className="h-4 w-4 text-[#ff006e]" />

@@ -28,16 +28,15 @@ export async function POST(req: Request) {
 
     // Handle /start command
     if (command === '/start' || command.startsWith('/start ')) {
-      // Create or update user by telegram_chat_id
-      // First, try to find existing user by telegram_chat_id
+      // Try to find existing user by telegram_chat_id
       const { data: existingUser } = await supabaseAdmin
         .from('users')
-        .select('id')
+        .select('id, email')
         .eq('telegram_chat_id', chatId.toString())
         .single()
 
       if (existingUser) {
-        // Update existing user
+        // Update existing user's telegram info
         await supabaseAdmin
           .from('users')
           .update({
@@ -47,27 +46,29 @@ export async function POST(req: Request) {
           })
           .eq('id', existingUser.id)
       } else {
-        // Create new user - use upsert with telegram_chat_id as unique identifier
-        const { error: upsertError } = await supabaseAdmin
-          .from('users')
-          .upsert(
-            {
-              telegram_chat_id: chatId.toString(),
-              telegram_username: username,
-              subscription_status: 'free'
-            },
-            {
-              onConflict: 'telegram_chat_id'
-            }
-          )
+        // No existing user with this telegram_chat_id
+        // User needs to create account first and link via /api/me/link-telegram
+        const welcomeMessage = `👋 <b>Welcome to CryptoFlash!</b>
 
-        if (upsertError) {
-          console.error('Error upserting user in Telegram webhook:', upsertError)
-          // Log error but continue - user might already exist
-        }
+🔐 <b>To activate alerts:</b>
+1. Create an account at <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://cryptoflash.app'}/register">cryptoflash.app/register</a>
+2. Or login at <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://cryptoflash.app'}/login">cryptoflash.app/login</a>
+3. Link your Telegram account in settings
+4. Set up alerts on <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://cryptoflash.app'}/alerts">cryptoflash.app/alerts</a>
+
+📊 Once linked, you'll receive KOTH alert signals here! 🚀
+
+⚠️ <i>DYOR - This is not financial advice</i>`
+
+        await sendTelegramMessage({
+          chat_id: chatId,
+          text: welcomeMessage
+        })
+
+        return NextResponse.json({ ok: true })
       }
 
-      // Send welcome message
+      // Send welcome message to existing linked user
       const welcomeMessage = `✅ <b>CryptoFlash Alerts Activated!</b>
 
 🚀 You will now receive KOTH alert signals here when tokens match your criteria.
