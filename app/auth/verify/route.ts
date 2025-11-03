@@ -48,7 +48,7 @@ export async function GET(request: Request) {
       }
     )
 
-    // First, check if user is already authenticated (Supabase may have already processed the token)
+    // Check if user is already authenticated (Supabase may have already processed the token)
     const { data: { user: existingUser }, error: userError } = await supabase.auth.getUser()
     
     if (existingUser && !userError) {
@@ -57,23 +57,66 @@ export async function GET(request: Request) {
       return NextResponse.redirect(new URL(next, requestUrl.origin))
     }
 
-    // If no session, try to verify token from URL
+    // Try to get token/code from URL
+    // Supabase email links can have token in query params, hash, or Supabase might redirect with code
     const token = requestUrl.searchParams.get('token') || requestUrl.searchParams.get('token_hash')
+    const code = requestUrl.searchParams.get('code') // Supabase might send code instead
     const type = requestUrl.searchParams.get('type')
+    
+    // Check hash fragment (Supabase sometimes puts token in #)
+    const hash = requestUrl.hash
+    let tokenFromHash = null
+    if (hash) {
+      try {
+        const hashParams = new URLSearchParams(hash.substring(1)) // Remove #
+        tokenFromHash = hashParams.get('token') || hashParams.get('token_hash')
+      } catch (e) {
+        // Hash might not be URLSearchParams format
+        console.warn('Failed to parse hash:', e)
+      }
+    }
+    
+    const finalToken = token || tokenFromHash
 
-    if (!token || !type) {
+    // If we have a code, try to exchange it for session (Supabase redirect flow)
+    if (code && !finalToken) {
+      console.log('Found code in URL, exchanging for session...')
+      try {
+        const { data: sessionData, error: codeError } = await supabase.auth.exchangeCodeForSession(code)
+        if (!codeError && sessionData.session) {
+          console.log('Session created from code:', sessionData.user?.email)
+          return NextResponse.redirect(new URL(next, requestUrl.origin))
+        }
+      } catch (e) {
+        console.warn('Code exchange failed:', e)
+      }
+    }
+
+    if (!finalToken || !type) {
       // No token and no session - invalid link
-      console.error('Verification failed: no token and no session')
+      console.error('Verification failed: no token/code and no session', { 
+        hasToken: !!token, 
+        hasTokenHash: !!tokenFromHash,
+        hasCode: !!code,
+        hasType: !!type,
+        hasSession: !!existingUser,
+        url: requestUrl.toString(),
+        searchParams: Object.fromEntries(requestUrl.searchParams)
+      })
       return NextResponse.redirect(
-        new URL('/login?error=invalid_link&message=' + encodeURIComponent('Invalid verification link. Please request a new one.'), requestUrl.origin)
+        new URL('/login?error=invalid_link&message=' + encodeURIComponent('Invalid verification link. The link may have expired or already been used. Please request a new one.'), requestUrl.origin)
       )
     }
 
     // Verify email token directly
-    console.log('Verifying token directly...', { type, hasToken: !!token })
+    console.log('Verifying token directly...', { 
+      type, 
+      hasToken: !!finalToken,
+      tokenSource: token ? 'query' : 'hash'
+    })
     const { data, error } = await supabase.auth.verifyOtp({
       type: type as 'signup' | 'email' | 'recovery',
-      token_hash: token,
+      token_hash: finalToken,
     })
 
     if (error) {
