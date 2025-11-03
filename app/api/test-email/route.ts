@@ -8,19 +8,21 @@ import { supabaseAdmin } from '@/lib/supabase'
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { email } = body
+    const { email, password } = body
 
     if (!email) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 })
     }
 
-    // Use Supabase Admin API to resend confirmation email
+    // Use Supabase Admin API to generate confirmation link
+    // For signup type, password is required
     const { data, error } = await supabaseAdmin.auth.admin.generateLink({
       type: 'signup',
       email: email,
+      password: password || 'temp-password-123', // Temporary password for testing
       options: {
         redirectTo: process.env.NEXT_PUBLIC_SITE_URL 
-          ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/verify`
+          ? `${process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '')}/auth/verify`
           : 'http://localhost:3000/auth/verify'
       }
     })
