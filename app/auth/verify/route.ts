@@ -13,6 +13,15 @@ import { cookies } from 'next/headers'
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   
+  // Log all incoming parameters for debugging
+  console.log('=== VERIFICATION ROUTE HIT ===', {
+    pathname: requestUrl.pathname,
+    search: requestUrl.search,
+    hash: requestUrl.hash,
+    allParams: Object.fromEntries(requestUrl.searchParams),
+    fullUrl: requestUrl.toString()
+  })
+  
   // Handle redirect_to parameter (clean up double slashes)
   let next = '/dashboard'
   const redirect_to = requestUrl.searchParams.get('redirect_to')
