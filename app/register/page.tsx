@@ -25,10 +25,20 @@ function RegisterPageContent() {
     setError(null)
 
     try {
+      // CRITICAL: emailRedirectTo MUST be in Supabase allowed redirect URLs
+      // Check Supabase Dashboard → Authentication → URL Configuration → Redirect URLs
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
-      const redirectUrl = `${siteUrl}/auth/verify`
+      // Remove trailing slash if present
+      const cleanSiteUrl = siteUrl.replace(/\/$/, '')
+      const redirectUrl = `${cleanSiteUrl}/auth/verify`
       
-      console.log('Signup attempt:', { email, siteUrl, redirectUrl })
+      console.log('Signup attempt:', { 
+        email, 
+        siteUrl, 
+        cleanSiteUrl,
+        redirectUrl,
+        warning: 'Make sure this URL is in Supabase Redirect URLs list!'
+      })
       
       // Sign up with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
