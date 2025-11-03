@@ -7,37 +7,48 @@ import type { User } from '@supabase/supabase-js'
 /**
  * Get Supabase client for server-side operations
  * Handles cookie-based session management
+ * IMPORTANT: Never throws redirect errors - returns null on auth failure
  */
 export async function createClient() {
-  const cookieStore = await cookies()
+  try {
+    const cookieStore = await cookies()
 
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
+    return createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              )
+            } catch {
+              // The `setAll` method was called from a Server Component.
+              // This can be ignored if we have middleware refreshing
+              // user sessions.
+            }
+          },
         },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          } catch {
-            // The `setAll` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
-          }
-        },
-      },
+      }
+    )
+  } catch (error: any) {
+    // Catch any redirect errors from Supabase SSR
+    if (error?.digest?.includes('NEXT_REDIRECT')) {
+      console.error('Supabase SSR attempted redirect in API route context')
+      throw new Error('Authentication failed - no redirect in API routes')
     }
-  )
+    throw error
+  }
 }
 
 /**
  * Get current authenticated user
  * Returns null if not authenticated
+ * NEVER throws redirect errors - safe for API routes
  */
 export async function getCurrentUser(): Promise<User | null> {
   try {
@@ -48,6 +59,7 @@ export async function getCurrentUser(): Promise<User | null> {
     
     if (sessionError) {
       console.error('Error getting session:', sessionError.message)
+      return null
     }
     
     // If we have a session, try to get user
@@ -72,6 +84,11 @@ export async function getCurrentUser(): Promise<User | null> {
 
     return user
   } catch (error: any) {
+    // Explicitly catch NEXT_REDIRECT errors and prevent them
+    if (error?.digest?.includes('NEXT_REDIRECT') || error?.message?.includes('redirect')) {
+      console.error('Blocked redirect in getCurrentUser (API route context)')
+      return null
+    }
     console.error('Error getting current user:', error?.message || error)
     return null
   }
