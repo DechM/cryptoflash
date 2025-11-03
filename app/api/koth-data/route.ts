@@ -61,17 +61,25 @@ export async function GET() {
     const [dexscreenerData, whaleData] = await Promise.all([
       fetchTokenData(tokenAddresses),
       // Process whale data in batches to avoid rate limits (429 errors)
+      // DISABLED for free tier to avoid rate limits - return zeros for all
       (async () => {
+        // For free tier, skip whale tracking to avoid Helius rate limits
+        // Enable with ENABLE_WHALE_TRACKING=true env var if you have paid Helius
+        if (process.env.ENABLE_WHALE_TRACKING !== 'true') {
+          console.log('Whale tracking disabled - returning zeros to avoid Helius rate limits')
+          return tokenAddresses.map(() => ({ whaleCount: 0, whaleInflows: 0, totalVolume: 0 }))
+        }
+
         const whaleResults: Array<{ whaleCount: number; whaleInflows: number; totalVolume: number }> = []
         
-        // Process in batches of 5 to respect Helius rate limits
-        const batchSize = 5
+        // Process in smaller batches with longer delays for free tier
+        const batchSize = 3 // Reduced from 5 to 3
         for (let i = 0; i < tokenAddresses.length; i += batchSize) {
           const batch = tokenAddresses.slice(i, i + batchSize)
           
           // Fetch batch with Promise.allSettled to handle individual failures gracefully
           const batchResults = await Promise.allSettled(
-            batch.map(addr => fetchWhaleTransactions(addr))
+            batch.map(addr => fetchWhaleTransactions(addr, 5)) // Reduced limit from 50 to 5
           )
           
           // Extract results, defaulting to zeros on failure
@@ -81,9 +89,9 @@ export async function GET() {
               : { whaleCount: 0, whaleInflows: 0, totalVolume: 0 }
           ))
           
-          // Rate limit: delay between batches (500ms = ~2 req/sec per token, well under limit)
+          // Rate limit: longer delay between batches (1 second for free tier safety)
           if (i + batchSize < tokenAddresses.length) {
-            await new Promise(resolve => setTimeout(resolve, 500))
+            await new Promise(resolve => setTimeout(resolve, 1000)) // Increased from 500ms to 1000ms
           }
         }
         
