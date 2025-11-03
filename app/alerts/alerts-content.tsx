@@ -38,11 +38,21 @@ export default function AlertsPageContent() {
         const response = await fetch('/api/me/link-telegram')
         if (response.ok) {
           const data = await response.json()
-          setTelegramLinked(data.linked || false)
+          const isLinked = data.linked || false
+          setTelegramLinked(isLinked)
+          
           if (data.telegram_username) {
             setTelegramUsername(data.telegram_username)
           }
-          shouldPoll = true // Continue polling if not linked
+          
+          // Stop polling if linked
+          if (isLinked) {
+            shouldPoll = false
+            return // Exit early if linked
+          }
+          
+          // Continue polling if not linked
+          shouldPoll = true
         } else if (response.status === 401) {
           // Stop polling if we get 401 (unauthorized)
           console.warn('Unauthorized - stopping Telegram link polling')
@@ -69,7 +79,7 @@ export default function AlertsPageContent() {
     }, 5000)
     
     return () => clearInterval(interval)
-  }, [user, telegramLinked])
+  }, [user]) // Remove telegramLinked from dependencies to avoid infinite loop
 
   // Update threshold when plan changes
   useEffect(() => {
@@ -203,7 +213,7 @@ export default function AlertsPageContent() {
               className="mb-6 p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30"
             >
               <div className="flex items-start justify-between">
-                <div className="flex items-start space-x-3">
+                <div className="flex items-start space-x-3 flex-1">
                   <AlertCircle className="h-5 w-5 text-yellow-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
                     <p className="font-semibold text-yellow-400 mb-1">Telegram Not Linked</p>
@@ -220,6 +230,31 @@ export default function AlertsPageContent() {
                         <ExternalLink className="h-4 w-4" />
                         <span>Open Telegram Bot</span>
                       </a>
+                      <button
+                        onClick={async () => {
+                          try {
+                            const response = await fetch('/api/me/link-telegram')
+                            if (response.ok) {
+                              const data = await response.json()
+                              setTelegramLinked(data.linked || false)
+                              if (data.telegram_username) {
+                                setTelegramUsername(data.telegram_username)
+                              }
+                              if (data.linked) {
+                                alert('✅ Telegram account is now linked!')
+                              } else {
+                                alert('⚠️ Not linked yet. Make sure you clicked "Start" in Telegram after opening the bot.')
+                              }
+                            }
+                          } catch (error) {
+                            console.error('Error refreshing link status:', error)
+                          }
+                        }}
+                        className="inline-flex items-center space-x-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold transition-colors text-sm"
+                      >
+                        <LinkIcon className="h-4 w-4" />
+                        <span>Check Status</span>
+                      </button>
                       <button
                         onClick={async () => {
                           setLinkingTelegram(true)
