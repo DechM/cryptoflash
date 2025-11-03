@@ -1,13 +1,21 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getLimit, getUserPlan } from '@/lib/plan'
-import { requireAuth } from '@/lib/auth'
+import { getCurrentUser } from '@/lib/auth'
 import type { PlanId } from '@/lib/plan'
 
 export async function POST(request: Request) {
   try {
-    // Require authentication
-    const user = await requireAuth()
+    // Check authentication
+    const user = await getCurrentUser()
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Please log in to create alerts' },
+        { status: 401 }
+      )
+    }
+    
     const userId = user.id
 
     const body = await request.json()

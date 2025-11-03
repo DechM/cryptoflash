@@ -18,32 +18,8 @@ Verify your CryptoFlash account
 
 #### Email Body (HTML):
 ```html
-<h2 style="color: #00ff88; font-family: Arial, sans-serif;">Welcome to CryptoFlash! 🚀</h2>
 
-<p style="color: #333; font-family: Arial, sans-serif;">
-  Thanks for signing up! To complete your registration and start tracking KOTH tokens, please verify your email address.
-</p>
 
-<p style="text-align: center; margin: 30px 0;">
-  <a href="{{ .ConfirmationURL }}" style="background: linear-gradient(135deg, #00ff88 0%, #00d9ff 100%); color: #000; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
-    Verify Email Address
-  </a>
-</p>
-
-<p style="color: #666; font-family: Arial, sans-serif; font-size: 14px;">
-  If the button doesn't work, copy and paste this link into your browser:<br>
-  <a href="{{ .ConfirmationURL }}" style="color: #00ff88;">{{ .ConfirmationURL }}</a>
-</p>
-
-<p style="color: #999; font-family: Arial, sans-serif; font-size: 12px; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
-  This link will expire in 24 hours.<br><br>
-  <strong>CryptoFlash Team</strong><br>
-  Real-time KOTH tracker for Pump.fun
-</p>
-
-<p style="color: #999; font-family: Arial, sans-serif; font-size: 11px; margin-top: 20px;">
-  ⚠️ <strong>DYOR</strong> - This is not financial advice
-</p>
 ```
 
 #### Plain Text Version (fallback):

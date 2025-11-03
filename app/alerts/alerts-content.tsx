@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Navbar } from '@/components/Navbar'
-import { AlertCircle, Check, Zap, Lock } from 'lucide-react'
+import { AlertCircle, Check, Zap, Lock, Link as LinkIcon, ExternalLink } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useFeature } from '@/hooks/useFeature'
 import { useSession } from '@/hooks/useSession'
@@ -14,6 +14,8 @@ export default function AlertsPageContent() {
   const [tokenAddress, setTokenAddress] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [telegramLinked, setTelegramLinked] = useState<boolean | null>(null) // null = checking, true/false = status
+  const [linkingTelegram, setLinkingTelegram] = useState(false)
 
   const { plan, limit, isEnabled } = useFeature()
   const minThreshold = limit('alerts.threshold_min') as number
@@ -21,6 +23,40 @@ export default function AlertsPageContent() {
   const maxPerDay = limit('alerts.max_per_day') as number
   
   const [threshold, setThreshold] = useState(minThreshold)
+
+  // Check Telegram link status on mount and poll for updates
+  useEffect(() => {
+    if (!user) return
+    
+    const checkTelegramLink = async () => {
+      try {
+        const response = await fetch('/api/me/link-telegram')
+        if (response.ok) {
+          const data = await response.json()
+          setTelegramLinked(data.linked || false)
+          if (data.telegram_username) {
+            setTelegramUsername(data.telegram_username)
+          }
+        } else {
+          setTelegramLinked(false)
+        }
+      } catch (error) {
+        console.error('Error checking Telegram link:', error)
+        setTelegramLinked(false)
+      }
+    }
+    
+    checkTelegramLink()
+    
+    // Poll every 5 seconds to check if user linked Telegram (if not linked)
+    const interval = setInterval(() => {
+      if (telegramLinked === false || telegramLinked === null) {
+        checkTelegramLink()
+      }
+    }, 5000)
+    
+    return () => clearInterval(interval)
+  }, [user, telegramLinked])
 
   // Update threshold when plan changes
   useEffect(() => {
@@ -52,10 +88,17 @@ export default function AlertsPageContent() {
       const data = await response.json()
 
       if (!response.ok) {
+        if (response.status === 401) {
+          // User not authenticated - redirect to login
+          alert(data.message || 'Please log in to create alerts')
+          window.location.href = `/login?next=${encodeURIComponent('/alerts')}`
+          return
+        }
+        
         if (data.error === 'MAX_ALERTS_REACHED') {
           alert(`You've reached your limit. ${plan === 'free' ? 'Upgrade to Pro for 10 tokens or Ultimate for unlimited!' : 'Upgrade to Ultimate for unlimited!'}`)
         } else {
-          alert(data.error || 'Failed to create alert')
+          alert(data.message || data.error || 'Failed to create alert')
         }
         return
       }
@@ -130,24 +173,81 @@ export default function AlertsPageContent() {
             </motion.div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="telegramUsername" className="block text-sm font-semibold text-[#b8c5d6] mb-2">
-                Telegram Username <span className="text-xs text-[#6b7280]">(optional - for linking)</span>
-              </label>
-              <input
-                type="text"
-                id="telegramUsername"
-                value={telegramUsername}
-                onChange={(e) => setTelegramUsername(e.target.value)}
-                placeholder="@your_username"
-                className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-[#00ff88] focus:outline-none text-white placeholder-[#6b7280]"
-              />
-              <p className="mt-2 text-xs text-[#6b7280]">
-                Send /start to @CryptoFlashBot to enable alerts. Or use the <Link href="/api/me/link-telegram" className="text-[#00ff88] hover:underline">link endpoint</Link>.
-              </p>
+          {/* Telegram Link Status */}
+          {telegramLinked === null && (
+            <div className="mb-6 p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
+              <div className="flex items-center space-x-2">
+                <AlertCircle className="h-5 w-5 text-blue-400 animate-spin" />
+                <span className="text-sm text-blue-400">Checking Telegram link status...</span>
+              </div>
             </div>
+          )}
 
+          {telegramLinked === false && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="mb-6 p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-start space-x-3">
+                  <AlertCircle className="h-5 w-5 text-yellow-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-yellow-400 mb-1">Telegram Not Linked</p>
+                    <p className="text-sm text-[#b8c5d6] mb-3">
+                      Link your Telegram account to receive alerts when tokens match your criteria.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <a
+                        href={`https://t.me/${process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'CryptoFlashBot'}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center space-x-2 px-4 py-2 rounded-lg bg-[#0088cc] hover:bg-[#0077b3] text-white font-semibold transition-colors text-sm"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        <span>Open Telegram Bot</span>
+                      </a>
+                      <button
+                        onClick={async () => {
+                          setLinkingTelegram(true)
+                          try {
+                            const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'CryptoFlashBot'
+                            alert(`Please:\n1. Open https://t.me/${botUsername}\n2. Click "Start" or send /start\n3. Come back and create an alert\n\nWe'll automatically link your account when you send /start to the bot.`)
+                          } catch (error) {
+                            console.error('Error:', error)
+                          } finally {
+                            setLinkingTelegram(false)
+                          }
+                        }}
+                        disabled={linkingTelegram}
+                        className="inline-flex items-center space-x-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold transition-colors text-sm disabled:opacity-50"
+                      >
+                        <LinkIcon className="h-4 w-4" />
+                        <span>{linkingTelegram ? 'Opening...' : 'How to Link'}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {telegramLinked === true && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="mb-6 p-4 rounded-lg bg-[#00ff88]/20 border border-[#00ff88]/30"
+            >
+              <div className="flex items-center space-x-2">
+                <Check className="h-5 w-5 text-[#00ff88]" />
+                <span className="text-sm text-[#00ff88] font-semibold">
+                  ✅ Telegram linked! You'll receive alerts when tokens match your criteria.
+                </span>
+              </div>
+            </motion.div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="tokenAddress" className="block text-sm font-semibold text-[#b8c5d6] mb-2">
                 Token Address {plan === 'free' && '(Optional - leave empty for all tokens)'}
@@ -209,8 +309,9 @@ export default function AlertsPageContent() {
 
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || (telegramLinked === false && plan !== 'free')}
               className="w-full px-6 py-3 rounded-lg bg-gradient-to-r from-[#00ff88] to-[#00d9ff] text-black font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+              title={telegramLinked === false && plan !== 'free' ? 'Please link your Telegram account first' : undefined}
             >
               {submitting ? (
                 <>
@@ -224,6 +325,12 @@ export default function AlertsPageContent() {
                 </>
               )}
             </button>
+            
+            {telegramLinked === false && plan !== 'free' && (
+              <p className="text-xs text-yellow-400 text-center">
+                ⚠️ Link your Telegram account above to enable alerts
+              </p>
+            )}
           </form>
 
           {plan === 'free' && (

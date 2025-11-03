@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { requireAuth } from '@/lib/auth'
+import { getCurrentUser } from '@/lib/auth'
 
 /**
  * Link Telegram to authenticated user
@@ -9,8 +9,16 @@ import { requireAuth } from '@/lib/auth'
  */
 export async function POST(req: Request) {
   try {
-    // Require authentication
-    const user = await requireAuth()
+    // Check authentication
+    const user = await getCurrentUser()
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Please log in to link Telegram' },
+        { status: 401 }
+      )
+    }
+    
     const userId = user.id
 
     const body = await req.json()
@@ -74,15 +82,6 @@ export async function POST(req: Request) {
     })
   } catch (error: any) {
     console.error('Error in link-telegram:', error)
-    
-    // Handle redirect if not authenticated
-    if (error.message?.includes('redirect') || error.message?.includes('login')) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
-
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -96,7 +95,15 @@ export async function POST(req: Request) {
  */
 export async function GET(req: Request) {
   try {
-    const user = await requireAuth()
+    const user = await getCurrentUser()
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Please log in' },
+        { status: 401 }
+      )
+    }
+    
     const userId = user.id
 
     const { data: userData, error } = await supabaseAdmin
@@ -119,13 +126,7 @@ export async function GET(req: Request) {
       telegram_username: userData?.telegram_username || null
     })
   } catch (error: any) {
-    if (error.message?.includes('redirect') || error.message?.includes('login')) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
-
+    console.error('Error in GET link-telegram:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

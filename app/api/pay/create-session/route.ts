@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin, isSupabaseConfigured } from '@/lib/supabase'
-import { requireAuth } from '@/lib/auth'
+import { getCurrentUser } from '@/lib/auth'
 
 // Generate UUID without external library
 function generateUUID(): string {
@@ -59,8 +59,16 @@ export async function POST(req: Request) {
       )
     }
 
-    // Require authentication - no anonymous payments
-    const user = await requireAuth()
+    // Check authentication - no anonymous payments
+    const user = await getCurrentUser()
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Please log in to purchase a subscription' },
+        { status: 401 }
+      )
+    }
+    
     const finalUserId = user.id
 
     const body = await req.json()

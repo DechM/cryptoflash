@@ -61,12 +61,20 @@ export async function getCurrentUser(): Promise<User | null> {
 /**
  * Require authentication - redirects to login if not authenticated
  * Use this in Server Components and API routes
+ * 
+ * NOTE: In API routes, throws a special error that should be caught and handled
+ * with NextResponse.redirect() or NextResponse.json() with 401 status
  */
 export async function requireAuth(): Promise<User> {
   const user = await getCurrentUser()
 
   if (!user) {
-    redirect('/login')
+    // In API routes, we should return 401 instead of redirecting
+    // Check if we're in an API route context
+    const error = new Error('Unauthorized') as any
+    error.status = 401
+    error.redirectTo = '/login'
+    throw error
   }
 
   return user

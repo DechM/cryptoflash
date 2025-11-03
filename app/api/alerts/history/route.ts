@@ -1,12 +1,20 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getLimit, getUserPlan } from '@/lib/plan'
-import { requireAuth } from '@/lib/auth'
+import { getCurrentUser } from '@/lib/auth'
 
 export async function GET(request: Request) {
   try {
-    // Require authentication
-    const user = await requireAuth()
+    // Check authentication
+    const user = await getCurrentUser()
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Please log in to view alert history' },
+        { status: 401 }
+      )
+    }
+    
     const userId = user.id
 
     // Get user plan from database

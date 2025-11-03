@@ -46,26 +46,50 @@ export async function POST(req: Request) {
           })
           .eq('id', existingUser.id)
       } else {
-        // No existing user with this telegram_chat_id
-        // User needs to create account first and link via /api/me/link-telegram
-        const welcomeMessage = `👋 <b>Welcome to CryptoFlash!</b>
+        // Try to find user by telegram_username if provided
+        let foundUser = null
+        if (username) {
+          const { data: userByUsername } = await supabaseAdmin
+            .from('users')
+            .select('id, email')
+            .eq('telegram_username', username)
+            .single()
+          
+          if (userByUsername && !userByUsername.telegram_chat_id) {
+            // Found user by username, link it
+            foundUser = userByUsername
+            await supabaseAdmin
+              .from('users')
+              .update({
+                telegram_username: username,
+                telegram_chat_id: chatId.toString(),
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', foundUser.id)
+          }
+        }
+
+        if (!foundUser) {
+          // No existing user found - user needs to create account first
+          const welcomeMessage = `👋 <b>Welcome to CryptoFlash!</b>
 
 🔐 <b>To activate alerts:</b>
 1. Create an account at <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://cryptoflash.app'}/register">cryptoflash.app/register</a>
 2. Or login at <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://cryptoflash.app'}/login">cryptoflash.app/login</a>
-3. Link your Telegram account in settings
-4. Set up alerts on <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://cryptoflash.app'}/alerts">cryptoflash.app/alerts</a>
+3. Set up alerts on <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://cryptoflash.app'}/alerts">cryptoflash.app/alerts</a>
+4. Click "Open Telegram Bot" to link your account
 
 📊 Once linked, you'll receive KOTH alert signals here! 🚀
 
 ⚠️ <i>DYOR - This is not financial advice</i>`
 
-        await sendTelegramMessage({
-          chat_id: chatId,
-          text: welcomeMessage
-        })
+          await sendTelegramMessage({
+            chat_id: chatId,
+            text: welcomeMessage
+          })
 
-        return NextResponse.json({ ok: true })
+          return NextResponse.json({ ok: true })
+        }
       }
 
       // Send welcome message to existing linked user
