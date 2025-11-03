@@ -51,7 +51,7 @@ export async function POST(req: Request) {
         if (username) {
           const { data: userByUsername } = await supabaseAdmin
             .from('users')
-            .select('id, email')
+            .select('id, email, telegram_chat_id')
             .eq('telegram_username', username)
             .single()
           
