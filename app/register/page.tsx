@@ -25,8 +25,7 @@ function RegisterPageContent() {
     setError(null)
 
     try {
-      // Remove trailing slash to avoid double slashes in URL
-      const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || window.location.origin).replace(/\/$/, '')
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
       const redirectUrl = `${siteUrl}/auth/verify`
       
       console.log('Signup attempt:', { email, siteUrl, redirectUrl })
