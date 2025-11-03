@@ -5,16 +5,13 @@ import { cookies } from 'next/headers'
 /**
  * Email verification handler
  * Handles email confirmation links from Supabase
- * GET /auth/verify?token=...&type=signup&redirect_to=...
  * 
- * Note: Supabase sends 'token' parameter, but verifyOtp() expects 'token_hash'
+ * Supabase can redirect in two ways:
+ * 1. Direct link with token: /auth/verify?token=...&type=signup
+ * 2. After processing: /auth/verify (token already processed, session set)
  */
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
-  
-  // Supabase email links use 'token', but verifyOtp expects 'token_hash'
-  const token = requestUrl.searchParams.get('token') || requestUrl.searchParams.get('token_hash')
-  const type = requestUrl.searchParams.get('type') // 'signup', 'email', или 'recovery'
   
   // Handle redirect_to parameter (clean up double slashes)
   let next = '/dashboard'
@@ -30,13 +27,6 @@ export async function GET(request: Request) {
       // If not a valid URL, treat as path
       next = redirect_to.replace(/([^:]\/)\/+/g, '$1')
     }
-  }
-
-  if (!token || !type) {
-    // Missing parameters - redirect to login with error
-    return NextResponse.redirect(
-      new URL('/login?error=invalid_link&message=' + encodeURIComponent('Invalid verification link'), requestUrl.origin)
-    )
   }
 
   try {
@@ -58,9 +48,29 @@ export async function GET(request: Request) {
       }
     )
 
-    // Verify email token
-    // Note: Supabase sends 'token' but verifyOtp expects 'token_hash'
-    // We use the token value as token_hash
+    // First, check if user is already authenticated (Supabase may have already processed the token)
+    const { data: { user: existingUser }, error: userError } = await supabase.auth.getUser()
+    
+    if (existingUser && !userError) {
+      // User is already authenticated - Supabase processed the token
+      console.log('User already authenticated via session:', existingUser.email)
+      return NextResponse.redirect(new URL(next, requestUrl.origin))
+    }
+
+    // If no session, try to verify token from URL
+    const token = requestUrl.searchParams.get('token') || requestUrl.searchParams.get('token_hash')
+    const type = requestUrl.searchParams.get('type')
+
+    if (!token || !type) {
+      // No token and no session - invalid link
+      console.error('Verification failed: no token and no session')
+      return NextResponse.redirect(
+        new URL('/login?error=invalid_link&message=' + encodeURIComponent('Invalid verification link. Please request a new one.'), requestUrl.origin)
+      )
+    }
+
+    // Verify email token directly
+    console.log('Verifying token directly...', { type, hasToken: !!token })
     const { data, error } = await supabase.auth.verifyOtp({
       type: type as 'signup' | 'email' | 'recovery',
       token_hash: token,
@@ -89,7 +99,7 @@ export async function GET(request: Request) {
 
     // Success - user is now verified and logged in
     if (data.user) {
-      // Redirect to dashboard or next parameter
+      console.log('Email verification successful:', data.user.email)
       return NextResponse.redirect(new URL(next, requestUrl.origin))
     }
 
