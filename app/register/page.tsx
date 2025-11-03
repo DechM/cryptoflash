@@ -58,7 +58,12 @@ function RegisterPageContent() {
         error: authError?.message,
         emailSent: !authError && authData?.user && !authData?.session,
         userEmail: authData?.user?.email,
-        emailConfirmed: authData?.user?.email_confirmed_at
+        emailConfirmed: authData?.user?.email_confirmed_at,
+        // Diagnostic info
+        hasUser: !!authData?.user,
+        userCreated: !!authData?.user?.created_at,
+        shouldSendEmail: !authError && authData?.user && !authData?.session,
+        diagnostic: 'If emailSent is false, check Supabase: Email Confirmations must be ON, Rate Limit not exceeded, SMTP configured correctly'
       })
 
       if (authError) {
