@@ -47,12 +47,23 @@ function RegisterPageContent() {
         user: authData?.user?.id, 
         session: !!authData?.session,
         error: authError?.message,
-        emailSent: !authError && authData?.user && !authData?.session
+        emailSent: !authError && authData?.user && !authData?.session,
+        userEmail: authData?.user?.email,
+        emailConfirmed: authData?.user?.email_confirmed_at
       })
 
       if (authError) {
         console.error('Signup error:', authError)
-        setError(authError.message)
+        
+        // More detailed error messages
+        let errorMessage = authError.message
+        if (authError.message?.includes('rate limit') || authError.message?.includes('too many')) {
+          errorMessage = 'Too many registration attempts. Please wait a few minutes and try again.'
+        } else if (authError.message?.includes('email')) {
+          errorMessage = 'Email error: ' + authError.message
+        }
+        
+        setError(errorMessage)
         setLoading(false)
         return
       }
