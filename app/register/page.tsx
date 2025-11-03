@@ -27,20 +27,31 @@ function RegisterPageContent() {
     try {
       // Remove trailing slash to avoid double slashes in URL
       const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || window.location.origin).replace(/\/$/, '')
+      const redirectUrl = `${siteUrl}/auth/verify`
+      
+      console.log('Signup attempt:', { email, siteUrl, redirectUrl })
       
       // Sign up with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${siteUrl}/auth/verify`,
+          emailRedirectTo: redirectUrl,
           data: {
             telegram_username: telegramUsername || null
           }
         }
       })
 
+      console.log('Signup response:', { 
+        user: authData?.user?.id, 
+        session: !!authData?.session,
+        error: authError?.message,
+        emailSent: !authError && authData?.user && !authData?.session
+      })
+
       if (authError) {
+        console.error('Signup error:', authError)
         setError(authError.message)
         setLoading(false)
         return
@@ -55,13 +66,16 @@ function RegisterPageContent() {
       // If email verification is enabled, show message
       // Otherwise, redirect immediately
       if (authData.user && !authData.session) {
-        // Email verification required
+        // Email verification required - email should be sent
+        console.log('Email verification required - confirmation email should be sent')
         router.push('/login?verified=false')
       } else {
-        // Auto-logged in, redirect
+        // Auto-logged in (email confirmation disabled), redirect
+        console.log('Auto-logged in (email confirmation may be disabled)')
         router.push(next)
       }
     } catch (err: any) {
+      console.error('Signup exception:', err)
       setError(err.message || 'An error occurred')
       setLoading(false)
     }
