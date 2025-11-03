@@ -42,18 +42,37 @@ export async function createClient() {
 export async function getCurrentUser(): Promise<User | null> {
   try {
     const supabase = await createClient()
+    
+    // First try to get session (might have session but not user)
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    
+    if (sessionError) {
+      console.error('Error getting session:', sessionError.message)
+    }
+    
+    // If we have a session, try to get user
+    if (session?.user) {
+      return session.user
+    }
+    
+    // Fallback: try getUser directly (this uses the session token)
     const {
       data: { user },
       error,
     } = await supabase.auth.getUser()
 
-    if (error || !user) {
+    if (error) {
+      console.error('Error getting user:', error.message)
+      return null
+    }
+
+    if (!user) {
       return null
     }
 
     return user
-  } catch (error) {
-    console.error('Error getting current user:', error)
+  } catch (error: any) {
+    console.error('Error getting current user:', error?.message || error)
     return null
   }
 }

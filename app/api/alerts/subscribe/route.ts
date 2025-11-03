@@ -10,12 +10,14 @@ export async function POST(request: Request) {
     const user = await getCurrentUser()
     
     if (!user) {
+      console.error('Alert creation failed: No authenticated user found')
       return NextResponse.json(
         { error: 'Unauthorized', message: 'Please log in to create alerts' },
         { status: 401 }
       )
     }
     
+    console.log('Creating alert for user:', user.id, user.email)
     const userId = user.id
 
     const body = await request.json()
