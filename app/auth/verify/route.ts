@@ -5,15 +5,34 @@ import { cookies } from 'next/headers'
 /**
  * Email verification handler
  * Handles email confirmation links from Supabase
- * GET /auth/verify?token_hash=...&type=signup
+ * GET /auth/verify?token=...&type=signup&redirect_to=...
+ * 
+ * Note: Supabase sends 'token' parameter, but verifyOtp() expects 'token_hash'
  */
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
-  const token_hash = requestUrl.searchParams.get('token_hash')
+  
+  // Supabase email links use 'token', but verifyOtp expects 'token_hash'
+  const token = requestUrl.searchParams.get('token') || requestUrl.searchParams.get('token_hash')
   const type = requestUrl.searchParams.get('type') // 'signup', 'email', или 'recovery'
-  const next = requestUrl.searchParams.get('next') || '/dashboard'
+  
+  // Handle redirect_to parameter (clean up double slashes)
+  let next = '/dashboard'
+  const redirect_to = requestUrl.searchParams.get('redirect_to')
+  if (redirect_to) {
+    // Remove double slashes and normalize
+    next = redirect_to.replace(/([^:]\/)\/+/g, '$1')
+    // Extract pathname if it's a full URL
+    try {
+      const urlObj = new URL(next)
+      next = urlObj.pathname + urlObj.search + urlObj.hash
+    } catch {
+      // If not a valid URL, treat as path
+      next = redirect_to.replace(/([^:]\/)\/+/g, '$1')
+    }
+  }
 
-  if (!token_hash || !type) {
+  if (!token || !type) {
     // Missing parameters - redirect to login with error
     return NextResponse.redirect(
       new URL('/login?error=invalid_link&message=' + encodeURIComponent('Invalid verification link'), requestUrl.origin)
@@ -40,9 +59,11 @@ export async function GET(request: Request) {
     )
 
     // Verify email token
+    // Note: Supabase sends 'token' but verifyOtp expects 'token_hash'
+    // We use the token value as token_hash
     const { data, error } = await supabase.auth.verifyOtp({
       type: type as 'signup' | 'email' | 'recovery',
-      token_hash,
+      token_hash: token,
     })
 
     if (error) {
