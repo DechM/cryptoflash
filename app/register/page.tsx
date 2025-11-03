@@ -25,11 +25,14 @@ function RegisterPageContent() {
     setError(null)
 
     try {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
+      
       // Sign up with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          emailRedirectTo: `${siteUrl}/auth/verify`,
           data: {
             telegram_username: telegramUsername || null
           }

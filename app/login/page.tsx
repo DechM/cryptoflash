@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Navbar } from '@/components/Navbar'
-import { Mail, Lock, Loader2, AlertCircle } from 'lucide-react'
+import { useSession } from '@/hooks/useSession'
+import { Mail, Lock, Loader2, AlertCircle, CheckCircle } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 function LoginPageContent() {
@@ -13,6 +14,16 @@ function LoginPageContent() {
   const searchParams = useSearchParams()
   const next = searchParams.get('next') || '/dashboard'
   const verified = searchParams.get('verified')
+  const urlError = searchParams.get('error')
+  const urlMessage = searchParams.get('message')
+  const { user, loading: sessionLoading } = useSession()
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!sessionLoading && user) {
+      router.push(next)
+    }
+  }, [user, sessionLoading, router, next])
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -88,7 +99,8 @@ function LoginPageContent() {
               Welcome back to CryptoFlash
             </p>
 
-            {verified === 'false' && (
+            {/* Email verification required message (only if not logged in) */}
+            {verified === 'false' && !user && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -98,6 +110,55 @@ function LoginPageContent() {
                 <div>
                   <p className="text-sm text-blue-400 font-semibold mb-1">Email verification required</p>
                   <p className="text-xs text-[#6b7280]">Please check your email and click the verification link.</p>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Verification error messages */}
+            {urlError && !user && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className={`mb-6 p-4 rounded-lg flex items-start space-x-3 ${
+                  urlError === 'expired'
+                    ? 'bg-yellow-500/10 border border-yellow-500/30'
+                    : urlError === 'invalid_link' || urlError === 'verification_failed'
+                    ? 'bg-red-500/10 border border-red-500/30'
+                    : 'bg-blue-500/10 border border-blue-500/30'
+                }`}
+              >
+                <AlertCircle className={`h-5 w-5 mt-0.5 flex-shrink-0 ${
+                  urlError === 'expired'
+                    ? 'text-yellow-400'
+                    : urlError === 'invalid_link' || urlError === 'verification_failed'
+                    ? 'text-red-400'
+                    : 'text-blue-400'
+                }`} />
+                <div>
+                  <p className={`text-sm font-semibold mb-1 ${
+                    urlError === 'expired'
+                      ? 'text-yellow-400'
+                      : urlError === 'invalid_link' || urlError === 'verification_failed'
+                      ? 'text-red-400'
+                      : 'text-blue-400'
+                  }`}>
+                    {urlError === 'expired' && 'Verification Link Expired'}
+                    {urlError === 'invalid_link' && 'Invalid Link'}
+                    {urlError === 'verification_failed' && 'Verification Failed'}
+                    {urlError === 'server_error' && 'Server Error'}
+                    {!['expired', 'invalid_link', 'verification_failed', 'server_error'].includes(urlError) && 'Verification Error'}
+                  </p>
+                  <p className="text-xs text-[#6b7280]">
+                    {urlMessage ? decodeURIComponent(urlMessage) : 'Please try signing up again or contact support.'}
+                  </p>
+                  {urlError === 'expired' && (
+                    <Link
+                      href="/register"
+                      className="text-xs text-blue-400 hover:underline mt-1 inline-block"
+                    >
+                      Sign up again →
+                    </Link>
+                  )}
                 </div>
               </motion.div>
             )}
