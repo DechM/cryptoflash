@@ -23,18 +23,10 @@ export async function GET() {
       return NextResponse.json({ leaderboard: cache.leaderboard })
     }
 
-    // Get alert history from Supabase with user info
+    // Get alert history from Supabase
     const { data: alertHistory, error } = await supabaseAdmin
       .from('alert_history')
-      .select(`
-        user_id,
-        token_address,
-        token_name,
-        token_symbol,
-        sent_at,
-        alert_score,
-        users!inner(id, email)
-      `)
+      .select('user_id, token_address, token_name, token_symbol, sent_at, alert_score')
       .order('sent_at', { ascending: false })
       .limit(1000) // Get recent alerts
 
@@ -45,7 +37,7 @@ export async function GET() {
     }
 
     if (!alertHistory || alertHistory.length === 0) {
-      console.log('No alert history found')
+      console.log('No alert history found - users need to create alerts first')
       return NextResponse.json({ leaderboard: [] })
     }
 
