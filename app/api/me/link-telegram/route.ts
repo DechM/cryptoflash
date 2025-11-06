@@ -1,16 +1,16 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { getCurrentUser } from '@/lib/auth'
+import { getCurrentUserFromRequest } from '@/lib/auth'
 
 /**
  * Link Telegram to authenticated user
  * POST /api/me/link-telegram
  * Body: { chatId: string, username?: string }
  */
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     // Check authentication
-    const user = await getCurrentUser()
+    const user = await getCurrentUserFromRequest(req)
     
     if (!user) {
       return NextResponse.json(
@@ -92,9 +92,9 @@ export async function POST(req: Request) {
  * Get current user's telegram link status
  * GET /api/me/link-telegram
  */
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
-    const user = await getCurrentUser()
+    const user = await getCurrentUserFromRequest(req)
     
     if (!user) {
       return NextResponse.json(
