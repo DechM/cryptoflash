@@ -53,12 +53,18 @@ export async function POST(req: Request) {
 
     // Handle /start command
     if (command === '/start' || command.startsWith('/start ')) {
+      console.log(`📨 Received /start command from chat_id: ${chatId}, username: ${username || 'none'}, command: ${command}`)
+      
       // Try to find existing user by telegram_chat_id
-      const { data: existingUser } = await supabaseAdmin
+      const { data: existingUser, error: existingUserError } = await supabaseAdmin
         .from('users')
         .select('id, email')
         .eq('telegram_chat_id', chatId.toString())
         .single()
+      
+      if (existingUserError && existingUserError.code !== 'PGRST116') {
+        console.error(`❌ Error checking existing user by telegram_chat_id:`, existingUserError)
+      }
 
       if (existingUser) {
         // User already linked - update info and send welcome message
