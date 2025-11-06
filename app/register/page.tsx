@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Navbar } from '@/components/Navbar'
-import { Mail, Lock, User, Loader2, AlertCircle } from 'lucide-react'
+import { Loader2, AlertCircle } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 function RegisterPageContent() {
@@ -165,14 +165,13 @@ function RegisterPageContent() {
                   Email Address
                 </label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[#6b7280] pointer-events-none z-10" />
                   <input
                     type="email"
                     id="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="w-full pl-11 pr-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-[#00FFA3] focus:outline-none text-white placeholder-[#6b7280]"
+                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-[#00FFA3] focus:outline-none text-white placeholder-[#6b7280]"
                     placeholder="your@email.com"
                   />
                 </div>
@@ -183,7 +182,6 @@ function RegisterPageContent() {
                   Password
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[#6b7280] pointer-events-none z-10" />
                   <input
                     type="password"
                     id="password"
@@ -191,7 +189,7 @@ function RegisterPageContent() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     minLength={8}
-                    className="w-full pl-11 pr-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-[#00FFA3] focus:outline-none text-white placeholder-[#6b7280]"
+                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-[#00FFA3] focus:outline-none text-white placeholder-[#6b7280]"
                     placeholder="At least 8 characters"
                   />
                 </div>
@@ -202,13 +200,12 @@ function RegisterPageContent() {
                   Telegram Username <span className="text-xs text-[#6b7280]">(optional)</span>
                 </label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[#6b7280] pointer-events-none z-10" />
                   <input
                     type="text"
                     id="telegram"
                     value={telegramUsername}
                     onChange={(e) => setTelegramUsername(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-[#00FFA3] focus:outline-none text-white placeholder-[#6b7280]"
+                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-[#00FFA3] focus:outline-none text-white placeholder-[#6b7280]"
                     placeholder="@username (optional)"
                   />
                 </div>

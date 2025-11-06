@@ -51,57 +51,55 @@ export function Navbar() {
               )
             })}
 
-            {/* Auth UI */}
-            <div className="ml-4 relative">
-              {sessionLoading ? (
-                <div className="px-4 py-2 text-[#6b7280]">Loading...</div>
-              ) : user ? (
-                <div className="relative">
-                  <button
-                    onClick={() => setShowUserMenu(!showUserMenu)}
-                    className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors border border-white/10"
-                  >
-                    <User className="h-4 w-4 text-[#00FFA3]" />
-                    <span className="text-sm text-white font-medium max-w-[150px] truncate">
-                      {user.email}
-                    </span>
-                    <svg
-                      className={`h-4 w-4 text-[#6b7280] transition-transform ${
-                        showUserMenu ? 'rotate-180' : ''
-                      }`}
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-
-                  {showUserMenu && (
-                    <div className="absolute right-0 mt-2 w-48 glass rounded-lg border border-white/10 overflow-hidden z-50">
-                      <button
-                        onClick={async () => {
-                          await signOut()
-                          setShowUserMenu(false)
-                        }}
-                        className="w-full flex items-center space-x-2 px-4 py-2 text-left text-[#b8c5d6] hover:bg-white/10 transition-colors"
-                      >
-                        <LogOut className="h-4 w-4" />
-                        <span>Sign Out</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <Link
-                  href={`/login?next=${encodeURIComponent(pathname || '/dashboard')}`}
-                  className="btn-cta-login"
+            {/* Auth UI - integrated with nav items */}
+            {sessionLoading ? (
+              <div className="px-4 py-2 text-[#6b7280]">Loading...</div>
+            ) : user ? (
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center space-x-2 px-4 md:px-5 py-2 md:py-2.5 rounded-xl transition-all duration-200 font-medium bg-white/5 hover:bg-white/10 border border-white/10 text-sm md:text-base"
                 >
-                  <LogIn className="h-4 w-4" />
-                  <span>Login</span>
-                </Link>
-              )}
-            </div>
+                  <User className="h-3.5 w-3.5 md:h-4 md:w-4 text-[#00FFA3]" />
+                  <span className="text-white font-medium max-w-[150px] truncate">
+                    {user.email}
+                  </span>
+                  <svg
+                    className={`h-3.5 w-3.5 md:h-4 md:w-4 text-[#6b7280] transition-transform ${
+                      showUserMenu ? 'rotate-180' : ''
+                    }`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {showUserMenu && (
+                  <div className="absolute right-0 mt-2 w-48 glass rounded-lg border border-white/10 overflow-hidden z-50">
+                    <button
+                      onClick={async () => {
+                        await signOut()
+                        setShowUserMenu(false)
+                      }}
+                      className="w-full flex items-center space-x-2 px-4 py-2 text-left text-[#b8c5d6] hover:bg-white/10 transition-colors"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link
+                href={`/login?next=${encodeURIComponent(pathname || '/dashboard')}`}
+                className="btn-cta-login px-4 md:px-5 py-2 md:py-2.5 rounded-xl text-sm md:text-base min-h-[44px]"
+              >
+                <LogIn className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                <span>Login</span>
+              </Link>
+            )}
           </div>
 
           {/* Mobile menu */}
