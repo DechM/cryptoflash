@@ -8,7 +8,7 @@
     },
     {
       "path": "/api/twitter/post",
-      "schedule": "*/30 * * * *"
+      "schedule": "*/5 * * * *"
     }
   ]
 }
