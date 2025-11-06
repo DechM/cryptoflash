@@ -27,14 +27,14 @@ export function TokenTable({ tokens, refreshInterval = 60000 }: TokenTableProps)
         <table className="w-full text-sm md:text-base">
           <thead>
             <tr className="border-b border-white/10">
-              <th className="text-left py-3 px-4 text-sm font-semibold text-[#b8c5d6]">Rank</th>
-              <th className="text-left py-3 px-4 text-sm font-semibold text-[#b8c5d6]">Token</th>
-              <th className="text-left py-3 px-4 text-sm font-semibold text-[#b8c5d6]">CA</th>
-              <th className="text-right py-3 px-4 text-sm font-semibold text-[#b8c5d6]">Progress</th>
-              <th className="text-right py-3 px-4 text-sm font-semibold text-[#b8c5d6]">Score</th>
-              <th className="text-right py-3 px-4 text-sm font-semibold text-[#b8c5d6]">Whales</th>
-              <th className="text-right py-3 px-4 text-sm font-semibold text-[#b8c5d6]">Volume 24h</th>
-              <th className="text-center py-3 px-4 text-sm font-semibold text-[#b8c5d6]">Action</th>
+              <th className="text-left py-3 px-2 md:px-4 text-xs md:text-sm font-semibold text-[#b8c5d6]">Rank</th>
+              <th className="text-left py-3 px-2 md:px-4 text-xs md:text-sm font-semibold text-[#b8c5d6]">Token</th>
+              <th className="text-left py-3 px-2 md:px-4 text-xs md:text-sm font-semibold text-[#b8c5d6] hidden sm:table-cell">CA</th>
+              <th className="text-right py-3 px-2 md:px-4 text-xs md:text-sm font-semibold text-[#b8c5d6]">Progress</th>
+              <th className="text-right py-3 px-2 md:px-4 text-xs md:text-sm font-semibold text-[#b8c5d6]">Score</th>
+              <th className="text-right py-3 px-2 md:px-4 text-xs md:text-sm font-semibold text-[#b8c5d6] hidden md:table-cell">Whales</th>
+              <th className="text-right py-3 px-2 md:px-4 text-xs md:text-sm font-semibold text-[#b8c5d6] hidden lg:table-cell">Volume 24h</th>
+              <th className="text-center py-3 px-2 md:px-4 text-xs md:text-sm font-semibold text-[#b8c5d6]">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -46,26 +46,26 @@ export function TokenTable({ tokens, refreshInterval = 60000 }: TokenTableProps)
                 transition={{ delay: index * 0.02 }}
                 className="border-b border-white/5 hover:bg-white/5 transition-colors"
               >
-                <td className="py-4 px-4">
-                  <span className="text-[#b8c5d6] font-medium">#{index + 1}</span>
+                <td className="py-3 md:py-4 px-2 md:px-4">
+                  <span className="text-[#b8c5d6] font-medium text-xs md:text-sm">#{index + 1}</span>
                 </td>
-                <td className="py-4 px-4">
+                <td className="py-3 md:py-4 px-2 md:px-4">
                   <div>
-                    <div className="font-semibold text-white">{token.name}</div>
-                    <div className="text-sm text-[#6b7280]">{token.symbol}</div>
+                    <div className="font-semibold text-white text-sm md:text-base">{token.name}</div>
+                    <div className="text-xs md:text-sm text-[#6b7280]">{token.symbol}</div>
                   </div>
                 </td>
-                <td className="py-4 px-4">
+                <td className="py-3 md:py-4 px-2 md:px-4 hidden sm:table-cell">
                   <div className="flex items-center space-x-2">
-                    <span className="text-sm font-mono text-[#b8c5d6]">
+                    <span className="text-xs md:text-sm font-mono text-[#b8c5d6]">
                       {formatAddress(token.tokenAddress)}
                     </span>
                     <button
                       onClick={() => handleCopy(token.tokenAddress)}
-                      className="text-[#6b7280] hover:text-[#00FFA3] transition-colors"
+                      className="text-[#6b7280] hover:text-[#00FFA3] transition-colors min-w-[20px] min-h-[20px]"
                       title="Copy address"
                     >
-                      <Copy className="h-4 w-4" />
+                      <Copy className="h-3 w-3 md:h-4 md:w-4" />
                     </button>
                     {copiedAddress === token.tokenAddress && (
                       <span className="text-xs text-[#00FFA3]">Copied!</span>
