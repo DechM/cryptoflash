@@ -17,7 +17,7 @@ export interface WhaleTransaction {
  */
 export async function fetchWhaleTransactions(
   tokenAddress: string,
-  limit: number = 50
+  limit: number = 3 // Reduced from 50 to 3 for free tier rate limiting
 ): Promise<{
   whaleCount: number
   whaleInflows: number
@@ -49,8 +49,10 @@ export async function fetchWhaleTransactions(
       return { whaleCount: 0, whaleInflows: 0, totalVolume: 0 }
     }
 
-    // Fetch transaction details in batches
-    const batchSize = 10
+    // Fetch transaction details in smaller batches to respect rate limits
+    // Helius free tier: 10 req/sec = 100ms between requests
+    // For safety: process 3 transactions at a time with 500ms delay = ~2 req/sec per token
+    const batchSize = 3 // Reduced from 10 to 3 for free tier
     let whaleCount = 0
     let whaleInflows = 0
     let totalVolume = 0
@@ -86,9 +88,7 @@ export async function fetchWhaleTransactions(
       for (const result of results) {
         if (result.result) {
           const tx = result.result
-          // Extract transfer amount (simplified - actual parsing depends on tx structure)
-          // For pump.fun, we need to parse the transaction to get SOL amount
-          // This is a simplified version - actual implementation needs proper Solana tx parsing
+          // Extract SOL transfer amount from transaction
           const amount = parseTransactionAmount(tx)
           
           if (amount >= 1.0) { // Whale = 1+ SOL
@@ -99,9 +99,10 @@ export async function fetchWhaleTransactions(
         }
       }
 
-      // Rate limit: Helius allows 10 req/sec for RPC
+      // Rate limit: 500ms delay between batches (Helius free tier = 10 req/sec)
+      // This ensures we stay well under the limit (2 req/sec per token)
       if (i + batchSize < signatures.length) {
-        await new Promise(resolve => setTimeout(resolve, 200))
+        await new Promise(resolve => setTimeout(resolve, 500)) // Increased from 200ms
       }
     }
 
@@ -124,21 +125,39 @@ export async function fetchWhaleTransactions(
 
 /**
  * Parse transaction amount from Solana transaction
- * Simplified version - actual implementation needs proper parsing
+ * Extracts SOL transfer amounts from balance changes
  */
 function parseTransactionAmount(transaction: any): number {
-  // This is a simplified parser
-  // Real implementation needs to:
-  // 1. Parse instruction data
-  // 2. Extract SOL transfer amounts
-  // 3. Handle pump.fun specific instructions
-  
   try {
-    // Attempt to extract from pre/post token balances or instructions
-    // For now, return 0 as placeholder
-    // TODO: Implement proper Solana transaction parsing
-    return 0
-  } catch {
+    // Solana transactions have meta.preBalances and meta.postBalances
+    // These are in lamports (1 SOL = 1e9 lamports)
+    const meta = transaction.meta
+    if (!meta) return 0
+
+    const preBalances = meta.preBalances || []
+    const postBalances = meta.postBalances || []
+    
+    if (preBalances.length === 0 || postBalances.length === 0) {
+      return 0
+    }
+
+    // Calculate total SOL change across all accounts
+    // For pump.fun, we're interested in SOL transfers (buys)
+    let totalInflow = 0
+    
+    for (let i = 0; i < Math.min(preBalances.length, postBalances.length); i++) {
+      const change = (postBalances[i] - preBalances[i]) / 1e9 // Convert lamports to SOL
+      
+      // Only count positive changes (inflows) and significant amounts (> 0.01 SOL)
+      // Negative changes are outflows (sells), we ignore those for whale tracking
+      if (change > 0.01) {
+        totalInflow += change
+      }
+    }
+
+    return Math.max(0, totalInflow) // Return positive flows only
+  } catch (error) {
+    console.warn('Error parsing transaction amount:', error)
     return 0
   }
 }

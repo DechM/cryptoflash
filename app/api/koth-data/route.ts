@@ -72,14 +72,17 @@ export async function GET() {
 
         const whaleResults: Array<{ whaleCount: number; whaleInflows: number; totalVolume: number }> = []
         
-        // Process in smaller batches with longer delays for free tier
-        const batchSize = 3 // Reduced from 5 to 3
+        // Process in very small batches with longer delays to respect Helius free tier limits
+        // Free tier: 10 req/sec total, so we process 2 tokens at a time with 2s delay
+        // This gives us ~1 req/sec per token, well under the 10 req/sec limit
+        const batchSize = 2 // Reduced from 3 to 2 tokens at a time
         for (let i = 0; i < tokenAddresses.length; i += batchSize) {
           const batch = tokenAddresses.slice(i, i + batchSize)
           
           // Fetch batch with Promise.allSettled to handle individual failures gracefully
+          // Limit to 3 signatures per token (reduced from 5) to minimize requests
           const batchResults = await Promise.allSettled(
-            batch.map(addr => fetchWhaleTransactions(addr, 5)) // Reduced limit from 50 to 5
+            batch.map(addr => fetchWhaleTransactions(addr, 3)) // Reduced from 5 to 3 signatures
           )
           
           // Extract results, defaulting to zeros on failure
@@ -89,9 +92,10 @@ export async function GET() {
               : { whaleCount: 0, whaleInflows: 0, totalVolume: 0 }
           ))
           
-          // Rate limit: longer delay between batches (1 second for free tier safety)
+          // Rate limit: 2 second delay between token batches
+          // This ensures we stay well under Helius free tier limit (10 req/sec)
           if (i + batchSize < tokenAddresses.length) {
-            await new Promise(resolve => setTimeout(resolve, 1000)) // Increased from 500ms to 1000ms
+            await new Promise(resolve => setTimeout(resolve, 2000)) // Increased from 1000ms to 2000ms
           }
         }
         
