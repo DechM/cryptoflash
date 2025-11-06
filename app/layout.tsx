@@ -57,8 +57,7 @@ export const metadata: Metadata = {
   },
   metadataBase: new URL(siteUrl),
   verification: {
-    // Add Google Search Console verification when available
-    // google: 'your-google-verification-code',
+    google: process.env.GOOGLE_SITE_VERIFICATION || undefined,
   },
 };
 
@@ -141,7 +140,10 @@ export default function RootLayout({
             })
           }}
         />
-        {children}
+        <div className="flex flex-col min-h-screen">
+          {children}
+          <Footer />
+        </div>
       </body>
     </html>
   );
