@@ -164,7 +164,7 @@ export default function AlertsPageContent() {
   const canUseCustomThreshold = plan !== 'free'
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a0e27] via-[#1a1f3a] to-[#0a0e27] w-full">
+    <div className="min-h-screen bg-[#0B1020] w-full">
       <Navbar />
 
       <main className="w-full px-4 sm:px-6 lg:px-8 py-8">
@@ -209,7 +209,7 @@ export default function AlertsPageContent() {
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="mb-6 p-4 rounded-lg bg-[#00ff88]/20 border border-[#00ff88]/30"
+              className="mb-6 p-4 rounded-lg bg-[#00FFA3]/20 border border-[#00FFA3]/30"
             >
               <div className="flex items-center space-x-2">
                 <Check className="h-5 w-5 text-[#00FFA3]" />

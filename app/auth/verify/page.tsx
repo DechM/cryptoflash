@@ -104,7 +104,7 @@ function VerifyPageContent() {
   }, [router, searchParams])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a0e27] via-[#1a1f3a] to-[#0a0e27] w-full flex items-center justify-center">
+    <div className="min-h-screen bg-[#0B1020] w-full flex items-center justify-center">
       <div className="glass rounded-2xl p-8 border border-white/10 text-center max-w-md">
         {status === 'loading' && (
           <>
@@ -145,7 +145,7 @@ function VerifyPageContent() {
 export default function VerifyPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-[#0a0e27] via-[#1a1f3a] to-[#0a0e27] w-full flex items-center justify-center">
+      <div className="min-h-screen bg-[#0B1020] w-full flex items-center justify-center">
         <div className="glass rounded-2xl p-8 border border-white/10 text-center max-w-md">
           <Loader2 className="h-12 w-12 text-[#00ff88] animate-spin mx-auto mb-4" />
           <h1 className="text-2xl font-bold gradient-text mb-2">Loading...</h1>

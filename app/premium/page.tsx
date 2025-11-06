@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 
 export default function PremiumPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a0e27] via-[#1a1f3a] to-[#0a0e27] w-full">
+    <div className="min-h-screen bg-[#0B1020] w-full">
       <Navbar />
       
       <main className="w-full px-4 sm:px-6 lg:px-8 py-10">

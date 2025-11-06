@@ -82,7 +82,7 @@ function LoginPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a0e27] via-[#1a1f3a] to-[#0a0e27] w-full">
+    <div className="min-h-screen bg-[#0B1020] w-full">
       <Navbar />
       
       <main className="w-full px-4 sm:px-6 lg:px-8 py-12">
@@ -242,7 +242,7 @@ function LoginPageContent() {
                   <div className="w-full border-t border-white/10"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-[#0a0e27] text-[#6b7280]">Or continue with</span>
+                  <span className="px-2 bg-[#0B1020] text-[#6b7280]">Or continue with</span>
                 </div>
               </div>
 
@@ -289,7 +289,7 @@ function LoginPageContent() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-[#0a0e27] via-[#1a1f3a] to-[#0a0e27] w-full flex items-center justify-center">
+      <div className="min-h-screen bg-[#0B1020] w-full flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00FFA3] mx-auto mb-4"></div>
           <p className="text-[#b8c5d6]">Loading...</p>
