@@ -25,6 +25,8 @@ const MAX_POSTS_PER_DAY = 15 // Safety margin for 500/month free tier limit
  * Main logic for posting tweets (shared between POST and GET)
  */
 async function handleTwitterPost() {
+  console.log('[Twitter Post] Starting Twitter post job at', new Date().toISOString())
+  
   // Check daily post limit
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -34,8 +36,10 @@ async function handleTwitterPost() {
     .select('*', { count: 'exact', head: true })
     .gte('posted_at', today.toISOString())
 
+  console.log(`[Twitter Post] Daily count: ${todayCount || 0}/${MAX_POSTS_PER_DAY}`)
+
   if ((todayCount || 0) >= MAX_POSTS_PER_DAY) {
-    console.log(`Daily limit reached: ${todayCount}/${MAX_POSTS_PER_DAY} posts today`)
+    console.log(`[Twitter Post] Daily limit reached: ${todayCount}/${MAX_POSTS_PER_DAY} posts today`)
     return NextResponse.json({
       success: false,
       message: 'Daily post limit reached',
@@ -54,16 +58,23 @@ async function handleTwitterPost() {
   if (lastPost?.posted_at) {
     const lastPostTime = new Date(lastPost.posted_at).getTime()
     const timeSinceLastPost = Date.now() - lastPostTime
+    const minutesSinceLastPost = Math.floor(timeSinceLastPost / 60000)
+
+    console.log(`[Twitter Post] Last post was ${minutesSinceLastPost} minutes ago (at ${lastPost.posted_at})`)
 
     if (timeSinceLastPost < MIN_POST_INTERVAL) {
       const minutesRemaining = Math.ceil((MIN_POST_INTERVAL - timeSinceLastPost) / 60000)
-      console.log(`Rate limit: ${minutesRemaining} minutes until next post`)
+      console.log(`[Twitter Post] Rate limit: ${minutesRemaining} minutes until next post`)
       return NextResponse.json({
         success: false,
         message: 'Rate limit: too soon since last post',
-        minutesRemaining
+        minutesRemaining,
+        lastPostTime: lastPost.posted_at,
+        minutesSinceLastPost
       })
     }
+  } else {
+    console.log('[Twitter Post] No previous posts found')
   }
 
   // Fetch latest KOTH tokens
@@ -80,7 +91,10 @@ async function handleTwitterPost() {
 
   const { tokens }: { tokens: Token[] } = await kothResponse.json()
 
+  console.log(`[Twitter Post] Fetched ${tokens?.length || 0} tokens from KOTH data`)
+
   if (!tokens || tokens.length === 0) {
+    console.log('[Twitter Post] No tokens available')
     return NextResponse.json({ message: 'No tokens available' })
   }
 
@@ -89,8 +103,19 @@ async function handleTwitterPost() {
     (token) => token.progress >= 70 && token.score > 75
   )
 
+  console.log(`[Twitter Post] Found ${eligibleTokens.length} eligible tokens (70%+ progress, score > 75)`)
+  
+  if (eligibleTokens.length > 0) {
+    console.log(`[Twitter Post] Top eligible token: ${eligibleTokens[0].symbol} - Score: ${eligibleTokens[0].score}, Progress: ${eligibleTokens[0].progress}%`)
+  }
+
   if (eligibleTokens.length === 0) {
-    return NextResponse.json({ message: 'No eligible tokens (70%+ progress, score > 75)' })
+    console.log('[Twitter Post] No eligible tokens found')
+    return NextResponse.json({ 
+      message: 'No eligible tokens (70%+ progress, score > 75)',
+      totalTokens: tokens.length,
+      eligibleCount: 0
+    })
   }
 
   // Get already posted tokens
@@ -99,14 +124,22 @@ async function handleTwitterPost() {
     .select('token_address')
 
   const postedAddresses = new Set(postedTokens?.map((t) => t.token_address) || [])
+  console.log(`[Twitter Post] Found ${postedAddresses.size} already posted tokens`)
 
   // Filter out already posted tokens
   const newTokens = eligibleTokens.filter(
     (token) => !postedAddresses.has(token.tokenAddress)
   )
 
+  console.log(`[Twitter Post] Found ${newTokens.length} new tokens to post`)
+
   if (newTokens.length === 0) {
-    return NextResponse.json({ message: 'All eligible tokens already posted' })
+    console.log('[Twitter Post] All eligible tokens already posted')
+    return NextResponse.json({ 
+      message: 'All eligible tokens already posted',
+      eligibleCount: eligibleTokens.length,
+      alreadyPostedCount: postedAddresses.size
+    })
   }
 
   // Sort by score DESC and take top 1-2 tokens
@@ -114,10 +147,13 @@ async function handleTwitterPost() {
     .sort((a, b) => b.score - a.score)
     .slice(0, 2) // Post max 2 tokens per run
 
+  console.log(`[Twitter Post] Will post ${topTokens.length} token(s):`, topTokens.map(t => `${t.symbol} (score: ${t.score}, progress: ${t.progress}%)`))
+
   const postedTweets: Array<{ token: string; tweetId: string | null }> = []
 
   // Post each token
   for (const token of topTokens) {
+    console.log(`[Twitter Post] Attempting to post ${token.symbol} (${token.name})...`)
     // Check if we've hit daily limit during this run
     if ((todayCount || 0) + postedTweets.length >= MAX_POSTS_PER_DAY) {
       console.log('Daily limit reached during posting')
@@ -136,8 +172,10 @@ async function handleTwitterPost() {
     const tweetResult = await postTweet(tweetText)
 
     if (tweetResult) {
+      console.log(`[Twitter Post] Successfully posted tweet for ${token.symbol}: ${tweetResult.id}`)
+      
       // Save to database
-      await supabaseAdmin.from('twitter_posts').insert({
+      const { error: insertError } = await supabaseAdmin.from('twitter_posts').insert({
         token_address: token.tokenAddress,
         token_name: token.name,
         token_symbol: token.symbol,
@@ -147,29 +185,37 @@ async function handleTwitterPost() {
         posted_at: new Date().toISOString()
       })
 
+      if (insertError) {
+        console.error(`[Twitter Post] Error saving to database:`, insertError)
+      } else {
+        console.log(`[Twitter Post] Saved to database: ${token.tokenAddress}`)
+      }
+
       postedTweets.push({
         token: `${token.symbol} (${token.name})`,
         tweetId: tweetResult.id
       })
-
-      console.log(`Posted tweet for ${token.symbol}: ${tweetResult.id}`)
 
       // Wait 1 second between posts (if posting multiple)
       if (topTokens.length > 1 && token !== topTokens[topTokens.length - 1]) {
         await new Promise((resolve) => setTimeout(resolve, 1000))
       }
     } else {
-      console.error(`Failed to post tweet for ${token.symbol}`)
+      console.error(`[Twitter Post] Failed to post tweet for ${token.symbol} - postTweet returned null/undefined`)
     }
   }
 
-  return NextResponse.json({
+  const result = {
     success: true,
     postedCount: postedTweets.length,
     postedTweets,
     todayTotal: (todayCount || 0) + postedTweets.length,
     dailyLimit: MAX_POSTS_PER_DAY
-  })
+  }
+
+  console.log(`[Twitter Post] Job completed:`, result)
+  
+  return NextResponse.json(result)
 }
 
 export async function POST(request: Request) {
