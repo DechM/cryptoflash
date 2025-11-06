@@ -94,24 +94,24 @@ export default function BGLeaderboardPage() {
                   transition={{ delay: 0.3 + index * 0.05 }}
                   className={`border-b border-white/5 hover:bg-white/5 transition-colors ${getRankColor(entry.rank)}`}
                 >
-                  <td className="py-4 px-4">
-                    <div className="flex items-center space-x-2">
+                  <td className="py-3 md:py-4 px-2 md:px-4">
+                    <div className="flex items-center space-x-1 md:space-x-2">
                       {getRankIcon(entry.rank)}
                     </div>
                   </td>
-                  <td className="py-4 px-4">
-                    <span className="font-mono text-white">{entry.wallet}</span>
+                  <td className="py-3 md:py-4 px-2 md:px-4">
+                    <span className="font-mono text-white text-xs md:text-sm">{formatAddress(entry.wallet)}</span>
                   </td>
-                  <td className="py-4 px-4 text-right">
-                    <span className="text-[#b8c5d6] font-semibold">{entry.snipes}</span>
+                  <td className="py-3 md:py-4 px-2 md:px-4 text-right hidden sm:table-cell">
+                    <span className="text-[#b8c5d6] font-semibold text-xs md:text-sm">{entry.snipes}</span>
                   </td>
-                  <td className="py-4 px-4 text-right">
-                    <span className="text-[#00FFA3] font-bold">{entry.profit}</span>
+                  <td className="py-3 md:py-4 px-2 md:px-4 text-right">
+                    <span className="text-[#00FFA3] font-bold text-xs md:text-sm">${formatNumber(entry.profit)}</span>
                   </td>
-                  <td className="py-4 px-4 text-right">
-                    <div className="flex items-center justify-end space-x-2">
-                      <TrendingUp className="h-4 w-4 text-[#00FFA3]" />
-                      <span className="text-[#00FFA3] font-semibold">{entry.success}%</span>
+                  <td className="py-3 md:py-4 px-2 md:px-4 text-right hidden md:table-cell">
+                    <div className="flex items-center justify-end space-x-1 md:space-x-2">
+                      <TrendingUp className="h-3 w-3 md:h-4 md:w-4 text-[#00FFA3]" />
+                      <span className="text-[#00FFA3] font-semibold text-xs md:text-sm">{entry.success}%</span>
                     </div>
                   </td>
                 </motion.tr>
