@@ -223,13 +223,28 @@ export async function POST(req: Request) {
                 console.error('Error details:', JSON.stringify(updateError, null, 2))
                 console.error(`User ID: ${foundUser.id}, Chat ID: ${chatId}, Chat ID type: ${typeof chatId}`)
                 
+                // Check if it's a type mismatch error (column is int8 instead of TEXT)
+                const isTypeMismatch = updateError.message?.includes('integer') || 
+                                      updateError.message?.includes('int8') ||
+                                      updateError.message?.includes('bigint') ||
+                                      updateError.code === '42804' // PostgreSQL type mismatch error
+                
+                if (isTypeMismatch) {
+                  console.error('🚨 CRITICAL: Type mismatch detected! Column telegram_chat_id is likely int8, not TEXT!')
+                  console.error('🚨 You need to run the SQL migration: supabase-migration-telegram-chat-id.sql')
+                }
+                
                 // Don't spam - only send error message once
                 const errorKey = `error-${chatId}`
                 const lastError = processedUpdates.get(errorKey)
                 if (!lastError || (now - lastError) > 60000) { // 1 minute cooldown
+                  const errorMsg = isTypeMismatch 
+                    ? `⚠️ <b>Database Configuration Error</b>\n\nYour database column type is incorrect. Please run the SQL migration to fix this.\n\nSee: supabase-migration-telegram-chat-id.sql`
+                    : `⚠️ <b>Error Linking Account</b>\n\nThere was an error linking your account. Please try again or contact support.\n\nError: ${updateError.message || 'Unknown error'}`
+                  
                   await sendTelegramMessage({
                     chat_id: chatId,
-                    text: `⚠️ <b>Error Linking Account</b>\n\nThere was an error linking your account. Please try again or contact support.\n\nError: ${updateError.message || 'Unknown error'}`
+                    text: errorMsg
                   })
                   processedUpdates.set(errorKey, now)
                 }
