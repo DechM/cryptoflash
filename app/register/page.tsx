@@ -190,9 +190,9 @@ function RegisterPageContent() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    minLength={6}
+                    minLength={8}
                     className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-[#00ff88] focus:outline-none text-white placeholder-[#6b7280]"
-                    placeholder="At least 6 characters"
+                    placeholder="At least 8 characters"
                   />
                 </div>
               </div>
