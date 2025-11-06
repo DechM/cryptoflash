@@ -4,7 +4,7 @@
   "crons": [
     {
       "path": "/api/alerts/send",
-      "schedule": "*/2 * * * *"
+      "schedule": "*/5 * * * *"
     },
     {
       "path": "/api/twitter/post",

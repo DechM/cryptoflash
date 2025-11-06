@@ -72,7 +72,7 @@ Real-time KOTH (King of the Hill) tracker for Pump.fun memecoins on Solana. Get 
 3. Add environment variables in Vercel dashboard
 4. Deploy!
 
-The `vercel.json` includes cron job configuration for automatic alert checking every 2 minutes.
+The `vercel.json` includes cron job configuration for automatic alert checking every 5 minutes.
 
 ## Project Structure
 
