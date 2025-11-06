@@ -31,55 +31,71 @@ export default function AlertsPageContent() {
       return
     }
     
-    let shouldPoll = true // Flag to stop polling on auth errors
+    let isMounted = true
+    let pollInterval: NodeJS.Timeout | null = null
     
     const checkTelegramLink = async () => {
+      if (!isMounted) return
+      
       try {
         const response = await fetch('/api/me/link-telegram')
         if (response.ok) {
           const data = await response.json()
           const isLinked = data.linked || false
-          setTelegramLinked(isLinked)
           
-          if (data.telegram_username) {
-            setTelegramUsername(data.telegram_username)
+          if (isMounted) {
+            setTelegramLinked(isLinked)
+            
+            if (data.telegram_username) {
+              setTelegramUsername(data.telegram_username)
+            }
+            
+            // Stop polling if linked
+            if (isLinked && pollInterval) {
+              clearInterval(pollInterval)
+              pollInterval = null
+            }
           }
-          
-          // Stop polling if linked
-          if (isLinked) {
-            shouldPoll = false
-            return // Exit early if linked
-          }
-          
-          // Continue polling if not linked
-          shouldPoll = true
         } else if (response.status === 401) {
           // Stop polling if we get 401 (unauthorized)
           console.warn('Unauthorized - stopping Telegram link polling')
-          setTelegramLinked(false)
-          shouldPoll = false
+          if (isMounted) {
+            setTelegramLinked(false)
+          }
+          if (pollInterval) {
+            clearInterval(pollInterval)
+            pollInterval = null
+          }
         } else {
-          setTelegramLinked(false)
-          shouldPoll = true // Continue polling on other errors
+          if (isMounted) {
+            setTelegramLinked(false)
+          }
         }
       } catch (error) {
         console.error('Error checking Telegram link:', error)
-        setTelegramLinked(false)
-        shouldPoll = false // Stop on network errors
+        if (isMounted) {
+          setTelegramLinked(false)
+        }
       }
     }
     
+    // Initial check
     checkTelegramLink()
     
-    // Poll every 5 seconds ONLY if shouldPoll is true and not linked
-    const interval = setInterval(() => {
-      if (shouldPoll && (telegramLinked === false || telegramLinked === null)) {
+    // Poll every 3 seconds if not linked
+    pollInterval = setInterval(() => {
+      if (isMounted && telegramLinked !== true) {
         checkTelegramLink()
       }
-    }, 5000)
+    }, 3000)
     
-    return () => clearInterval(interval)
-  }, [user]) // Remove telegramLinked from dependencies to avoid infinite loop
+    return () => {
+      isMounted = false
+      if (pollInterval) {
+        clearInterval(pollInterval)
+      }
+    }
+  }, [user, telegramLinked]) // Include telegramLinked to stop polling when linked
 
   // Update threshold when plan changes
   useEffect(() => {
@@ -115,6 +131,12 @@ export default function AlertsPageContent() {
           // User not authenticated - redirect to login
           alert(data.message || 'Please log in to create alerts')
           window.location.href = `/login?next=${encodeURIComponent('/alerts')}`
+          return
+        }
+        
+        if (data.error === 'TELEGRAM_NOT_LINKED') {
+          alert('⚠️ Please link your Telegram account first!\n\nClick "Open Telegram Bot" above, then click "Start" in Telegram.')
+          setTelegramLinked(false) // Force refresh of link status
           return
         }
         
@@ -297,11 +319,35 @@ OR manually:
               animate={{ opacity: 1, scale: 1 }}
               className="mb-6 p-4 rounded-lg bg-[#00ff88]/20 border border-[#00ff88]/30"
             >
-              <div className="flex items-center space-x-2">
-                <Check className="h-5 w-5 text-[#00ff88]" />
-                <span className="text-sm text-[#00ff88] font-semibold">
-                  ✅ Telegram linked! You'll receive alerts when tokens match your criteria.
-                </span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Check className="h-5 w-5 text-[#00ff88]" />
+                  <span className="text-sm text-[#00ff88] font-semibold">
+                    ✅ Telegram linked! You'll receive alerts when tokens match your criteria.
+                  </span>
+                </div>
+                <button
+                  onClick={async () => {
+                    try {
+                      const response = await fetch('/api/alerts/test-send', {
+                        method: 'POST'
+                      })
+                      const data = await response.json()
+                      
+                      if (response.ok) {
+                        alert('✅ Test alert sent! Check your Telegram.')
+                      } else {
+                        alert(`❌ ${data.message || data.error || 'Failed to send test alert'}`)
+                      }
+                    } catch (error) {
+                      console.error('Error sending test alert:', error)
+                      alert('❌ Failed to send test alert')
+                    }
+                  }}
+                  className="ml-4 px-4 py-2 rounded-lg bg-[#00ff88]/20 hover:bg-[#00ff88]/30 border border-[#00ff88]/50 text-[#00ff88] font-semibold text-sm transition-colors"
+                >
+                  Send Test Alert
+                </button>
               </div>
             </motion.div>
           )}
@@ -368,9 +414,9 @@ OR manually:
 
             <button
               type="submit"
-              disabled={submitting || (telegramLinked === false && plan !== 'free')}
+              disabled={submitting || telegramLinked === false}
               className="w-full px-6 py-3 rounded-lg bg-gradient-to-r from-[#00ff88] to-[#00d9ff] text-black font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-              title={telegramLinked === false && plan !== 'free' ? 'Please link your Telegram account first' : undefined}
+              title={telegramLinked === false ? 'Please link your Telegram account first to receive alerts' : undefined}
             >
               {submitting ? (
                 <>
@@ -385,7 +431,7 @@ OR manually:
               )}
             </button>
             
-            {telegramLinked === false && plan !== 'free' && (
+            {telegramLinked === false && (
               <p className="text-xs text-yellow-400 text-center">
                 ⚠️ Link your Telegram account above to enable alerts
               </p>

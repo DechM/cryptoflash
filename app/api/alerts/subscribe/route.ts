@@ -26,6 +26,23 @@ export async function POST(request: Request) {
     // Get plan from database (source of truth)
     const plan = await getUserPlan(userId)
     
+    // Check if Telegram is linked (required for all plans to receive alerts)
+    const { data: userData } = await supabaseAdmin
+      .from('users')
+      .select('telegram_chat_id')
+      .eq('id', userId)
+      .single()
+
+    if (!userData?.telegram_chat_id) {
+      return NextResponse.json(
+        {
+          error: 'TELEGRAM_NOT_LINKED',
+          message: 'Please link your Telegram account first to receive alerts. Click "Open Telegram Bot" above.'
+        },
+        { status: 400 }
+      )
+    }
+    
     const maxAlerts = getLimit(plan, 'alerts.max_tokens') as number
 
     // Check current active alerts
@@ -42,7 +59,7 @@ export async function POST(request: Request) {
         {
           error: 'MAX_ALERTS_REACHED',
           message: plan === 'free' 
-            ? 'Free users can track 1 token. Upgrade to Pro ($4.99) or Ultimate ($19.99) for more alerts!'
+            ? 'Free users can track 1 token. Upgrade to Pro (19.99 USDC/mo) or Ultimate (39.99 USDC/mo) for more alerts!'
             : plan === 'pro'
             ? 'Pro users can track up to 10 tokens. Upgrade to Ultimate for unlimited!'
             : 'Alert limit reached',

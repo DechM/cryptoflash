@@ -84,7 +84,17 @@ export async function POST(req: Request) {
                 .eq('email', email)
                 .single()
               
-              if (userByEmail && !userByEmail.telegram_chat_id) {
+              if (userByEmail) {
+                if (userByEmail.telegram_chat_id && userByEmail.telegram_chat_id !== chatId.toString()) {
+                  // Already linked to different Telegram account
+                  await sendTelegramMessage({
+                    chat_id: chatId,
+                    text: `⚠️ <b>Account Already Linked</b>\n\nThis email is already linked to another Telegram account. Please contact support if you need to change it.`
+                  })
+                  return NextResponse.json({ ok: true })
+                }
+                
+                // Link this Telegram account
                 foundUser = userByEmail
                 await supabaseAdmin
                   .from('users')
@@ -120,10 +130,29 @@ export async function POST(req: Request) {
 
           return NextResponse.json({ ok: true })
         }
-      }
 
-      // Send welcome message to existing linked user
-      const welcomeMessage = `✅ <b>CryptoFlash Alerts Activated!</b>
+        // Successfully linked - send confirmation
+        const linkedMessage = `✅ <b>Telegram Account Linked Successfully!</b>
+
+🎉 Your CryptoFlash account is now connected to Telegram.
+
+📊 <b>Next Steps:</b>
+1. Go to <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://cryptoflash.app'}/alerts">cryptoflash.app/alerts</a>
+2. Create alerts for tokens you want to track
+3. You'll receive real-time alerts here when tokens match your criteria! 🚀
+
+💡 <b>Test Alert:</b>
+You can test if alerts work by clicking "Send Test Alert" on the alerts page.
+
+⚠️ <i>DYOR - This is not financial advice</i>`
+
+        await sendTelegramMessage({
+          chat_id: chatId,
+          text: linkedMessage
+        })
+      } else {
+        // User already linked - send welcome message
+        const welcomeMessage = `✅ <b>CryptoFlash Alerts Activated!</b>
 
 🚀 You will now receive KOTH alert signals here when tokens match your criteria.
 
@@ -134,10 +163,11 @@ export async function POST(req: Request) {
 
 ⚠️ <i>DYOR - This is not financial advice</i>`
 
-      await sendTelegramMessage({
-        chat_id: chatId,
-        text: welcomeMessage
-      })
+        await sendTelegramMessage({
+          chat_id: chatId,
+          text: welcomeMessage
+        })
+      }
 
       return NextResponse.json({ ok: true })
     }
