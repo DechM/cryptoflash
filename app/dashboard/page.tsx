@@ -117,10 +117,10 @@ export default function DashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-3xl md:text-4xl font-bold gradient-text mb-2">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold gradient-text mb-2">
             KOTH Tracker
           </h1>
-          <p className="text-[#b8c5d6]">
+          <p className="text-sm md:text-base text-[#b8c5d6] leading-relaxed">
             Real-time tracking of Pump.fun tokens in bonding curve phase
           </p>
           <div className="flex items-center space-x-4 mb-4 mt-4">
@@ -152,7 +152,7 @@ export default function DashboardPage() {
         </motion.div>
 
         {/* Stats Cards */}
-        <div className="w-full grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="w-full grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -167,10 +167,10 @@ export default function DashboardPage() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
-            className="glass-card rounded-xl p-4 border border-[#00D1FF]/20"
+            className="glass-card rounded-xl p-3 md:p-4 border border-[#00D1FF]/20"
           >
-            <div className="text-sm text-[#b8c5d6] mb-1">KOTH Ready</div>
-            <div className="text-2xl font-bold text-[#00D1FF]">
+            <div className="text-xs md:text-sm text-[#b8c5d6] mb-1">KOTH Ready</div>
+            <div className="text-xl md:text-2xl font-bold text-[#00D1FF]">
               {tokens.filter(t => t.progress >= 95).length}
             </div>
           </motion.div>
@@ -179,10 +179,10 @@ export default function DashboardPage() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.3 }}
-            className="glass-card rounded-xl p-4 border border-[#ffd700]/20"
+            className="glass-card rounded-xl p-3 md:p-4 border border-[#ffd700]/20"
           >
-            <div className="text-sm text-[#b8c5d6] mb-1">High Score (90+)</div>
-            <div className="text-2xl font-bold text-[#ffd700]">
+            <div className="text-xs md:text-sm text-[#b8c5d6] mb-1">High Score (90+)</div>
+            <div className="text-xl md:text-2xl font-bold text-[#ffd700]">
               {tokens.filter(t => t.score >= 90).length}
             </div>
           </motion.div>
@@ -191,10 +191,10 @@ export default function DashboardPage() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.4 }}
-            className="glass-card rounded-xl p-4 border border-[#FF2E86]/20"
+            className="glass-card rounded-xl p-3 md:p-4 border border-[#FF2E86]/20"
           >
-            <div className="text-sm text-[#b8c5d6] mb-1">Total Whales</div>
-            <div className="text-2xl font-bold text-[#FF2E86]">
+            <div className="text-xs md:text-sm text-[#b8c5d6] mb-1">Total Whales</div>
+            <div className="text-xl md:text-2xl font-bold text-[#FF2E86]">
               {tokens.reduce((sum, t) => sum + t.whaleCount, 0)}
             </div>
           </motion.div>

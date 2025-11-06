@@ -24,7 +24,7 @@ export function TokenTable({ tokens, refreshInterval = 60000 }: TokenTableProps)
   return (
     <div className="w-full glass-card rounded-xl p-4 md:p-6 overflow-x-auto">
       <div className="min-w-full">
-        <table className="w-full">
+        <table className="w-full text-sm md:text-base">
           <thead>
             <tr className="border-b border-white/10">
               <th className="text-left py-3 px-4 text-sm font-semibold text-[#b8c5d6]">Rank</th>
@@ -72,19 +72,19 @@ export function TokenTable({ tokens, refreshInterval = 60000 }: TokenTableProps)
                     )}
                   </div>
                 </td>
-                <td className="py-4 px-4 text-right">
-                  <div className="flex items-center justify-end space-x-2">
-                    <span className="font-semibold">{token.progress.toFixed(1)}%</span>
+                <td className="py-3 md:py-4 px-2 md:px-4 text-right">
+                  <div className="flex items-center justify-end space-x-1 md:space-x-2">
+                    <span className="font-semibold text-xs md:text-sm">{token.progress.toFixed(1)}%</span>
                     {token.progress >= 95 && (
-                      <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-[#FF2E86]/20 text-[#FF2E86] pulse-glow">
+                      <span className="px-1.5 md:px-2 py-0.5 rounded-full text-[10px] md:text-xs font-semibold bg-[#FF2E86]/20 text-[#FF2E86] pulse-glow">
                         KOTH
                       </span>
                     )}
                   </div>
                 </td>
-                <td className="py-4 px-4 text-right">
+                <td className="py-3 md:py-4 px-2 md:px-4 text-right">
                   <div
-                    className={`inline-flex items-center px-3 py-1 rounded-lg border ${getScoreBgColor(
+                    className={`inline-flex items-center px-2 md:px-3 py-0.5 md:py-1 rounded-lg border text-xs md:text-sm ${getScoreBgColor(
                       token.score
                     )}`}
                   >
@@ -93,19 +93,19 @@ export function TokenTable({ tokens, refreshInterval = 60000 }: TokenTableProps)
                     </span>
                   </div>
                 </td>
-                <td className="py-4 px-4 text-right">
-                  <span className="text-[#b8c5d6]">{token.whaleCount}</span>
+                <td className="py-3 md:py-4 px-2 md:px-4 text-right hidden md:table-cell">
+                  <span className="text-[#b8c5d6] text-xs md:text-sm">{token.whaleCount}</span>
                 </td>
-                <td className="py-4 px-4 text-right">
+                <td className="py-3 md:py-4 px-2 md:px-4 text-right hidden lg:table-cell">
                   <div className="flex items-center justify-end space-x-1">
                     {token.volumeChange24h !== undefined && (
                       token.volumeChange24h >= 0 ? (
-                        <TrendingUp className="h-4 w-4 text-[#00FFA3]" />
+                        <TrendingUp className="h-3 w-3 md:h-4 md:w-4 text-[#00FFA3]" />
                       ) : (
-                        <TrendingDown className="h-4 w-4 text-[#FF2E86]" />
+                        <TrendingDown className="h-3 w-3 md:h-4 md:w-4 text-[#FF2E86]" />
                       )
                     )}
-                    <span className="text-[#b8c5d6]">
+                    <span className="text-[#b8c5d6] text-xs md:text-sm">
                       {token.volume24h ? `$${formatNumber(token.volume24h)}` : 'N/A'}
                     </span>
                   </div>
