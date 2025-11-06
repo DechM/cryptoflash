@@ -97,12 +97,25 @@ export async function POST(req: Request) {
 
       // Try to find user by telegram_username if provided
       let foundUser = null
+      console.log(`🔍 Checking username matching. Username: ${username || 'none'}, foundUser before: ${foundUser}`)
+      
       if (username) {
-        const { data: userByUsername } = await supabaseAdmin
+        console.log(`🔍 Searching for user by telegram_username: ${username}`)
+        const { data: userByUsername, error: usernameError } = await supabaseAdmin
           .from('users')
           .select('id, email, telegram_chat_id')
           .eq('telegram_username', username)
           .single()
+        
+        if (usernameError && usernameError.code !== 'PGRST116') {
+          console.error(`❌ Error finding user by username:`, usernameError)
+        }
+        
+        if (userByUsername) {
+          console.log(`✅ Found user by username: ${userByUsername.id}, telegram_chat_id: ${userByUsername.telegram_chat_id || 'NULL'}`)
+        } else {
+          console.log(`⚠️ No user found by username: ${username}`)
+        }
         
         if (userByUsername && !userByUsername.telegram_chat_id) {
           // Found user by username, link it
@@ -144,6 +157,8 @@ export async function POST(req: Request) {
 
       // If not found by username, check if user sent /start with a linking code
       // Format: /start <linking_code> or /start email:<email>
+      console.log(`🔍 Before email matching check: foundUser=${foundUser ? foundUser.id : 'null'}, command.startsWith('/start ')=${command.startsWith('/start ')}`)
+      
       if (!foundUser && command.startsWith('/start ')) {
         const startParam = command.substring(7).trim() // Get part after "/start "
         console.log(`🔍 Processing /start parameter: "${startParam}"`)
