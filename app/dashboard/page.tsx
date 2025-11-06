@@ -157,10 +157,10 @@ export default function DashboardPage() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.1 }}
-            className="glass-card rounded-xl p-4 border border-[#00FFA3]/20"
+            className="glass-card rounded-xl p-3 md:p-4 border border-[#00FFA3]/20 hover-lift hover-glow cursor-default"
           >
-            <div className="text-sm text-[#b8c5d6] mb-1">Total Tokens</div>
-            <div className="text-2xl font-bold text-[#00FFA3]">{tokens.length}</div>
+            <div className="text-xs md:text-sm text-[#b8c5d6] mb-1">Total Tokens</div>
+            <div className="text-xl md:text-2xl font-bold text-[#00FFA3] number-transition">{tokens.length}</div>
           </motion.div>
           
           <motion.div

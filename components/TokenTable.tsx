@@ -76,7 +76,7 @@ export function TokenTable({ tokens, refreshInterval = 60000 }: TokenTableProps)
                   <div className="flex items-center justify-end space-x-1 md:space-x-2">
                     <span className="font-semibold text-xs md:text-sm">{token.progress.toFixed(1)}%</span>
                     {token.progress >= 95 && (
-                      <span className="px-1.5 md:px-2 py-0.5 rounded-full text-[10px] md:text-xs font-semibold bg-[#FF2E86]/20 text-[#FF2E86] pulse-glow">
+                      <span className="px-1.5 md:px-2 py-0.5 rounded-full text-[10px] md:text-xs font-semibold bg-[#FF2E86]/20 text-[#FF2E86] pulse-glow pulse-important">
                         KOTH
                       </span>
                     )}
@@ -84,11 +84,11 @@ export function TokenTable({ tokens, refreshInterval = 60000 }: TokenTableProps)
                 </td>
                 <td className="py-3 md:py-4 px-2 md:px-4 text-right">
                   <div
-                    className={`inline-flex items-center px-2 md:px-3 py-0.5 md:py-1 rounded-lg border text-xs md:text-sm ${getScoreBgColor(
+                    className={`inline-flex items-center px-2 md:px-3 py-0.5 md:py-1 rounded-lg border text-xs md:text-sm transition-all duration-200 hover:scale-105 ${getScoreBgColor(
                       token.score
                     )}`}
                   >
-                    <span className={`font-bold ${getScoreColor(token.score)}`}>
+                    <span className={`font-bold number-transition ${getScoreColor(token.score)}`}>
                       {token.score.toFixed(1)}
                     </span>
                   </div>
