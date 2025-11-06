@@ -17,7 +17,7 @@ export interface WhaleTransaction {
  */
 export async function fetchWhaleTransactions(
   tokenAddress: string,
-  limit: number = 3 // Reduced from 50 to 3 for free tier rate limiting
+  limit: number = 2 // 2 signatures for better whale detection (optimized for 900k/month limit)
 ): Promise<{
   whaleCount: number
   whaleInflows: number
@@ -29,6 +29,7 @@ export async function fetchWhaleTransactions(
   }
 
   try {
+    // Get signatures (limit = 2)
     const response = await axios.post(
       HELIUS_BASE_URL,
       {
@@ -43,7 +44,7 @@ export async function fetchWhaleTransactions(
         ]
       },
       {
-        timeout: 8000 // Reduced from 10000 to 8000 for faster failure
+        timeout: 8000
       }
     )
 
@@ -60,68 +61,58 @@ export async function fetchWhaleTransactions(
       return { whaleCount: 0, whaleInflows: 0, totalVolume: 0 }
     }
 
-    // Fetch transaction details in smaller batches to respect rate limits
-    // Helius free tier: 10 req/sec = 100ms between requests
-    // For safety: process 3 transactions at a time with 500ms delay = ~2 req/sec per token
-    const batchSize = 3 // Reduced from 10 to 3 for free tier
+    // Fetch transaction details for signatures (batch request - only 2 transactions)
+    const batchRequests = signatures.map((sig: any, index: number) => ({
+      jsonrpc: '2.0',
+      id: `tx-${index}`,
+      method: 'getTransaction',
+      params: [
+        sig.signature,
+        {
+          maxSupportedTransactionVersion: 0
+        }
+      ]
+    }))
+
+    const batchResponse = await axios.post(
+      HELIUS_BASE_URL,
+      batchRequests,
+      {
+        timeout: 8000
+      }
+    )
+
+    // Check for RPC errors in batch response
+    const batchResults = Array.isArray(batchResponse.data) 
+      ? batchResponse.data 
+      : [batchResponse.data]
+    
+    // Check if any request in batch failed
+    const hasErrors = batchResults.some((r: any) => r.error)
+    if (hasErrors) {
+      console.warn(`Helius batch request errors for ${tokenAddress}, processing valid results only`)
+    }
+
+    // Process transactions
     let whaleCount = 0
     let whaleInflows = 0
     let totalVolume = 0
 
-    for (let i = 0; i < signatures.length; i += batchSize) {
-      const batch = signatures.slice(i, i + batchSize)
-      
-      const batchRequests = batch.map((sig: any, index: number) => ({
-        jsonrpc: '2.0',
-        id: `tx-${i + index}`,
-        method: 'getTransaction',
-        params: [
-          sig.signature,
-          {
-            maxSupportedTransactionVersion: 0
-          }
-        ]
-      }))
-
-      const batchResponse = await axios.post(
-        HELIUS_BASE_URL,
-        batchRequests,
-        {
-          timeout: 8000 // Reduced timeout for faster failure
-        }
-      )
-
-      // Check for RPC errors in batch response
-      const batchResults = Array.isArray(batchResponse.data) 
-        ? batchResponse.data 
-        : [batchResponse.data]
-      
-      // Check if any request in batch failed
-      const hasErrors = batchResults.some((r: any) => r.error)
-      if (hasErrors) {
-        console.warn(`Helius batch request errors for ${tokenAddress}, skipping batch`)
-        continue // Skip this batch and continue with next
+    for (const result of batchResults) {
+      if (result.error) {
+        continue // Skip failed requests
       }
-
-      // Process batch responses (already extracted above)
-      for (const result of batchResults) {
-        if (result.result) {
-          const tx = result.result
-          // Extract SOL transfer amount from transaction
-          const amount = parseTransactionAmount(tx)
-          
-          if (amount >= 1.0) { // Whale = 1+ SOL
-            whaleCount++
-            whaleInflows += amount
-          }
-          totalVolume += amount || 0
+      
+      if (result.result) {
+        const tx = result.result
+        // Extract SOL transfer amount from transaction
+        const amount = parseTransactionAmount(tx)
+        
+        if (amount >= 1.0) { // Whale = 1+ SOL
+          whaleCount++
+          whaleInflows += amount
         }
-      }
-
-      // Rate limit: 500ms delay between batches (Helius free tier = 10 req/sec)
-      // This ensures we stay well under the limit (2 req/sec per token)
-      if (i + batchSize < signatures.length) {
-        await new Promise(resolve => setTimeout(resolve, 500)) // Increased from 200ms
+        totalVolume += amount || 0
       }
     }
 
