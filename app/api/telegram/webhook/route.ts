@@ -56,14 +56,23 @@ export async function POST(req: Request) {
       console.log(`📨 Received /start command from chat_id: ${chatId}, username: ${username || 'none'}, command: ${command}`)
       
       // Try to find existing user by telegram_chat_id
+      console.log(`🔍 Step 1: Checking for existing user with telegram_chat_id: ${chatId.toString()}`)
       const { data: existingUser, error: existingUserError } = await supabaseAdmin
         .from('users')
         .select('id, email')
         .eq('telegram_chat_id', chatId.toString())
         .single()
       
-      if (existingUserError && existingUserError.code !== 'PGRST116') {
-        console.error(`❌ Error checking existing user by telegram_chat_id:`, existingUserError)
+      if (existingUserError) {
+        if (existingUserError.code === 'PGRST116' || existingUserError.code === 'PGRST204') {
+          // No user found - this is OK, continue
+          console.log(`ℹ️ No existing user found with telegram_chat_id ${chatId.toString()} (code: ${existingUserError.code})`)
+        } else {
+          console.error(`❌ Error checking existing user by telegram_chat_id:`, existingUserError)
+          console.error(`Error code: ${existingUserError.code}, message: ${existingUserError.message}`)
+        }
+      } else if (existingUser) {
+        console.log(`✅ Found existing user: ${existingUser.id}, email: ${existingUser.email}`)
       }
 
       if (existingUser) {
