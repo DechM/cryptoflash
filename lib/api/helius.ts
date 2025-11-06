@@ -23,6 +23,11 @@ export async function fetchWhaleTransactions(
   whaleInflows: number
   totalVolume: number
 }> {
+  // Skip if no API key
+  if (!HELIUS_API_KEY || HELIUS_API_KEY === '') {
+    return { whaleCount: 0, whaleInflows: 0, totalVolume: 0 }
+  }
+
   try {
     const response = await axios.post(
       HELIUS_BASE_URL,
@@ -38,9 +43,15 @@ export async function fetchWhaleTransactions(
         ]
       },
       {
-        timeout: 10000
+        timeout: 8000 // Reduced from 10000 to 8000 for faster failure
       }
     )
+
+    // Check for RPC errors in response
+    if (response.data.error) {
+      console.warn(`Helius RPC error for ${tokenAddress}:`, response.data.error.message)
+      return { whaleCount: 0, whaleInflows: 0, totalVolume: 0 }
+    }
 
     // Get transaction details for signatures
     const signatures = response.data.result || []
@@ -76,16 +87,24 @@ export async function fetchWhaleTransactions(
         HELIUS_BASE_URL,
         batchRequests,
         {
-          timeout: 15000
+          timeout: 8000 // Reduced timeout for faster failure
         }
       )
 
-      // Process batch responses
-      const results = Array.isArray(batchResponse.data) 
+      // Check for RPC errors in batch response
+      const batchResults = Array.isArray(batchResponse.data) 
         ? batchResponse.data 
         : [batchResponse.data]
+      
+      // Check if any request in batch failed
+      const hasErrors = batchResults.some((r: any) => r.error)
+      if (hasErrors) {
+        console.warn(`Helius batch request errors for ${tokenAddress}, skipping batch`)
+        continue // Skip this batch and continue with next
+      }
 
-      for (const result of results) {
+      // Process batch responses (already extracted above)
+      for (const result of batchResults) {
         if (result.result) {
           const tx = result.result
           // Extract SOL transfer amount from transaction
@@ -115,8 +134,15 @@ export async function fetchWhaleTransactions(
     // Handle rate limit errors gracefully (429 = Too Many Requests)
     if (error.response?.status === 429) {
       console.warn(`Helius rate limit hit for ${tokenAddress}, returning zeros`)
+    } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+      // Timeout - don't log as error, just return zeros
+      console.warn(`Helius timeout for ${tokenAddress}, returning zeros`)
+    } else if (error.message?.includes('Request fail') || error.message?.includes('Network')) {
+      // Network errors - don't spam logs
+      console.warn(`Helius network error for ${tokenAddress}, returning zeros`)
     } else {
-      console.error('Error fetching Helius whale data:', error.message)
+      // Only log unexpected errors
+      console.error('Error fetching Helius whale data:', error.message || error.code)
     }
     // Return zeros on error - graceful degradation (app continues working)
     return { whaleCount: 0, whaleInflows: 0, totalVolume: 0 }

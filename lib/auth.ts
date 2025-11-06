@@ -74,7 +74,11 @@ export async function getCurrentUser(): Promise<User | null> {
     } = await supabase.auth.getUser()
 
     if (error) {
-      console.error('Error getting user:', error.message)
+      // Don't log "Auth session missing" as error - it's normal for unauthenticated users
+      // Only log actual errors (network issues, etc.)
+      if (!error.message?.includes('session') && !error.message?.includes('missing')) {
+        console.error('Error getting user:', error.message)
+      }
       return null
     }
 
