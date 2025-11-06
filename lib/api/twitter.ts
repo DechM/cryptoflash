@@ -24,6 +24,7 @@ interface TwitterPostResponse {
  * Format Twitter post message (NO direct pump.fun links for safety)
  * Includes link to our website for traffic
  * Includes hashtags for better reach and engagement
+ * Optimized for engagement and virality (2024-2025 best practices)
  */
 export function formatTwitterPost(token: TwitterToken): string {
   // Simple link to our website (no https:// to prevent preview card)
@@ -38,14 +39,40 @@ export function formatTwitterPost(token: TwitterToken): string {
     ? `💵 Price: $${token.priceUsd.toFixed(6)}` 
     : ''
   
-  return `🚨 KOTH Alert!
+  // Calculate urgency/time elements based on progress
+  const progress = token.progress || 0
+  const score = token.score || 0
+  
+  // Urgency indicator for high progress tokens
+  let urgencyText = ''
+  if (progress >= 99) {
+    urgencyText = ' ⚡ (Almost KOTH!)'
+  } else if (progress >= 95) {
+    urgencyText = ' ⚡ (Very Close!)'
+  } else if (progress >= 90) {
+    urgencyText = ' 🔥 (KOTH Zone!)'
+  }
+  
+  // Score badge for high-scoring tokens
+  let scoreBadge = ''
+  if (score >= 85) {
+    scoreBadge = ' ⭐ (Top 1%)'
+  } else if (score >= 80) {
+    scoreBadge = ' ⭐ (Top 5%)'
+  } else if (score >= 75) {
+    scoreBadge = ' ⭐ (Top 10%)'
+  }
+  
+  // Optimized template with urgency and value indicators
+  // Format: Urgency + Data + CTA + Hashtags (algorithm-friendly)
+  return `🚨 KOTH Alert!${urgencyText}
 
 💰 ${token.name} $${token.symbol}
-📊 Score: ${token.score.toFixed(1)}/100
-📈 Progress: ${token.progress.toFixed(1)}%
+📊 Score: ${token.score.toFixed(1)}/100${scoreBadge}
+📈 Progress: ${token.progress.toFixed(1)}%${urgencyText}
 ${priceText}
 
-🔍 ${siteLink}
+👉 Track live: ${siteLink}
 
 ${hashtags}
 
