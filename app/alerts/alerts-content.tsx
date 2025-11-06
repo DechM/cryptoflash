@@ -209,7 +209,7 @@ export default function AlertsPageContent() {
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="mb-6 p-4 rounded-lg bg-[#00FFA3]/20 border border-[#00FFA3]/30"
+              className="mb-6 p-4 rounded-lg bg-[#00FFA3]/20 border border-[#00FFA3]/30 bounce-in"
             >
               <div className="flex items-center space-x-2">
                 <Check className="h-5 w-5 text-[#00FFA3]" />

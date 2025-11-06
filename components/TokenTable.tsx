@@ -44,7 +44,7 @@ export function TokenTable({ tokens, refreshInterval = 60000 }: TokenTableProps)
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.02 }}
-                className="border-b border-white/5 hover:bg-white/5 transition-colors"
+                className="border-b border-white/5 hover:bg-white/5 transition-all duration-200 hover-lift"
               >
                 <td className="py-3 md:py-4 px-2 md:px-4">
                   <span className="text-[#b8c5d6] font-medium text-xs md:text-sm">#{index + 1}</span>

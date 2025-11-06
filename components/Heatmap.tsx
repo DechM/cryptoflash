@@ -46,7 +46,7 @@ export function Heatmap({ tokens }: HeatmapProps) {
   }
 
   return (
-    <div className="w-full glass-card rounded-xl p-4 md:p-6">
+    <div className="w-full glass-card rounded-xl p-4 md:p-6 hover-lift">
       <h3 className="text-lg font-semibold mb-4 text-white">KOTH Heatmap</h3>
       <div className="h-96 w-full">
         <ResponsiveContainer width="100%" height="100%">

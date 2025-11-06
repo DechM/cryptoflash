@@ -167,10 +167,10 @@ export default function DashboardPage() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
-            className="glass-card rounded-xl p-3 md:p-4 border border-[#00D1FF]/20"
+            className="glass-card rounded-xl p-3 md:p-4 border border-[#00D1FF]/20 hover-lift hover-glow cursor-default"
           >
             <div className="text-xs md:text-sm text-[#b8c5d6] mb-1">KOTH Ready</div>
-            <div className="text-xl md:text-2xl font-bold text-[#00D1FF]">
+            <div className="text-xl md:text-2xl font-bold text-[#00D1FF] number-transition">
               {tokens.filter(t => t.progress >= 95).length}
             </div>
           </motion.div>
@@ -179,10 +179,10 @@ export default function DashboardPage() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.3 }}
-            className="glass-card rounded-xl p-3 md:p-4 border border-[#ffd700]/20"
+            className="glass-card rounded-xl p-3 md:p-4 border border-[#ffd700]/20 hover-lift hover-glow cursor-default"
           >
             <div className="text-xs md:text-sm text-[#b8c5d6] mb-1">High Score (90+)</div>
-            <div className="text-xl md:text-2xl font-bold text-[#ffd700]">
+            <div className="text-xl md:text-2xl font-bold text-[#ffd700] number-transition">
               {tokens.filter(t => t.score >= 90).length}
             </div>
           </motion.div>
@@ -191,10 +191,10 @@ export default function DashboardPage() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.4 }}
-            className="glass-card rounded-xl p-3 md:p-4 border border-[#FF2E86]/20"
+            className="glass-card rounded-xl p-3 md:p-4 border border-[#FF2E86]/20 hover-lift hover-glow cursor-default"
           >
             <div className="text-xs md:text-sm text-[#b8c5d6] mb-1">Total Whales</div>
-            <div className="text-xl md:text-2xl font-bold text-[#FF2E86]">
+            <div className="text-xl md:text-2xl font-bold text-[#FF2E86] number-transition">
               {tokens.reduce((sum, t) => sum + t.whaleCount, 0)}
             </div>
           </motion.div>

@@ -36,10 +36,10 @@ export function Navbar() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`px-4 md:px-5 py-2 md:py-2.5 rounded-lg transition-all font-medium min-w-[100px] md:min-w-[120px] text-center text-sm md:text-base ${
+                  className={`px-4 md:px-5 py-2 md:py-2.5 rounded-lg transition-all duration-200 font-medium min-w-[100px] md:min-w-[120px] text-center text-sm md:text-base ${
                     isActive
-                      ? 'bg-gradient-to-r from-[#00FFA3]/20 to-[#00D1FF]/20 text-[#00FFA3] border border-[#00FFA3]/30 shadow-lg shadow-[#00FFA3]/20'
-                      : 'text-[#b8c5d6] hover:bg-white/10 hover:text-white border border-transparent hover:border-white/10'
+                      ? 'bg-gradient-to-r from-[#00FFA3]/20 to-[#00D1FF]/20 text-[#00FFA3] border border-[#00FFA3]/30 shadow-lg shadow-[#00FFA3]/20 hover:scale-105'
+                      : 'text-[#b8c5d6] hover:bg-white/10 hover:text-white border border-transparent hover:border-white/10 hover:scale-105'
                   }`}
                 >
                   <div className="flex items-center justify-center space-x-1.5 md:space-x-2">
