@@ -488,7 +488,7 @@ OR manually:
               </div>
               <Link
                 href="/premium"
-                className="inline-block px-6 py-2 rounded-lg bg-gradient-to-r from-[#FF2E86] to-[#ff6b35] text-white font-semibold hover:opacity-90 transition-opacity"
+                className="btn-cta-upgrade inline-block"
               >
                 View Plans →
               </Link>

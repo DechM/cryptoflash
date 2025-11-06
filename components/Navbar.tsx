@@ -152,7 +152,7 @@ export function Navbar() {
                     key={item.href}
                     href={item.href}
                     onClick={() => setShowMobileMenu(false)}
-                    className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                    className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                       isActive
                         ? 'bg-gradient-to-r from-[#00FFA3]/20 to-[#00D1FF]/20 text-[#00FFA3] border border-[#00FFA3]/30'
                         : 'text-[#b8c5d6] hover:bg-white/10 hover:text-white'
