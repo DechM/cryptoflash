@@ -83,7 +83,7 @@ export async function GET() {
       cachedWhaleData = tokenAddresses.map(() => ({ whaleCount: 0, whaleInflows: 0, totalVolume: 0 }))
       // Cache zeros too (to avoid checking env var every time)
       whaleCache = {
-        data: new Map(tokenAddresses.map((addr, idx) => [addr, cachedWhaleData[idx]])),
+        data: new Map(tokenAddresses.map((addr, idx) => [addr, cachedWhaleData![idx]])),
         timestamp: Date.now()
       }
     } else {
