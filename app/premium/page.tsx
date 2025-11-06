@@ -21,7 +21,7 @@ export default function PremiumPage() {
             <h1 className="text-3xl md:text-4xl font-bold gradient-text mb-4">
               Choose Your Plan
             </h1>
-            <p className="text-xl text-[#b8c5d6] max-w-2xl mx-auto">
+            <p className="text-base md:text-xl text-[#b8c5d6] max-w-2xl mx-auto px-4">
               Unlock powerful features to maximize your KOTH sniping potential
             </p>
           </motion.div>

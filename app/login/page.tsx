@@ -90,12 +90,12 @@ function LoginPageContent() {
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="glass rounded-2xl p-8 border border-white/10"
+            className="glass rounded-2xl p-6 md:p-8 border border-white/10"
           >
-            <h1 className="text-3xl font-bold gradient-text mb-2 text-center">
+            <h1 className="text-2xl md:text-3xl font-bold gradient-text mb-2 text-center">
               Sign In
             </h1>
-            <p className="text-[#b8c5d6] text-center mb-8">
+            <p className="text-sm md:text-base text-[#b8c5d6] text-center mb-6 md:mb-8">
               Welcome back to CryptoFlash
             </p>
 

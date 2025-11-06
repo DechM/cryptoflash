@@ -65,18 +65,19 @@ export default function BGLeaderboardPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="glass rounded-xl p-6 md:p-8 overflow-x-auto"
+          className="glass rounded-xl p-4 md:p-6 lg:p-8 overflow-x-auto"
         >
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-white/10">
-                <th className="text-left py-3 px-4 text-sm font-semibold text-[#b8c5d6]">Rank</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-[#b8c5d6]">Wallet</th>
-                <th className="text-right py-3 px-4 text-sm font-semibold text-[#b8c5d6]">Snipes</th>
-                <th className="text-right py-3 px-4 text-sm font-semibold text-[#b8c5d6]">Total Profit</th>
-                <th className="text-right py-3 px-4 text-sm font-semibold text-[#b8c5d6]">Success Rate</th>
-              </tr>
-            </thead>
+          <div className="min-w-full">
+            <table className="w-full text-sm md:text-base">
+              <thead>
+                <tr className="border-b border-white/10">
+                  <th className="text-left py-3 px-2 md:px-4 text-xs md:text-sm font-semibold text-[#b8c5d6]">Rank</th>
+                  <th className="text-left py-3 px-2 md:px-4 text-xs md:text-sm font-semibold text-[#b8c5d6]">Wallet</th>
+                  <th className="text-right py-3 px-2 md:px-4 text-xs md:text-sm font-semibold text-[#b8c5d6] hidden sm:table-cell">Snipes</th>
+                  <th className="text-right py-3 px-2 md:px-4 text-xs md:text-sm font-semibold text-[#b8c5d6]">Profit</th>
+                  <th className="text-right py-3 px-2 md:px-4 text-xs md:text-sm font-semibold text-[#b8c5d6] hidden md:table-cell">Success</th>
+                </tr>
+              </thead>
             <tbody>
               {leaderboard.length === 0 && !isLoading && !error && (
                 <tr>

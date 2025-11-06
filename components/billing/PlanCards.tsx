@@ -32,15 +32,15 @@ function Card({
 }) {
   return (
     <div
-      className={`rounded-2xl border p-6 w-full flex flex-col ${
+      className={`rounded-2xl border p-4 md:p-6 w-full flex flex-col ${
         highlight
           ? "border-[#00FFA3]/40 shadow-[0_0_40px_-12px_rgba(0,255,163,.45)] bg-gradient-to-br from-[#00FFA3]/10 to-[#00D1FF]/10"
           : "border-white/10 bg-white/5"
       } backdrop-blur-lg`}
     >
-      <div className="text-xl font-semibold mb-1 text-white">{title}</div>
-      <div className="text-3xl mb-4 font-bold gradient-text">{price}</div>
-      <div className="space-y-2 text-sm text-[#b8c5d6] mb-6 flex-grow">
+      <div className="text-lg md:text-xl font-semibold mb-1 text-white">{title}</div>
+      <div className="text-2xl md:text-3xl mb-4 font-bold gradient-text">{price}</div>
+      <div className="space-y-2 text-xs md:text-sm text-[#b8c5d6] mb-6 flex-grow">
         {children}
       </div>
       <div className="relative">
@@ -48,7 +48,7 @@ function Card({
           disabled={current || disabled}
           onClick={onClick}
           title={disabled ? disabledMessage : undefined}
-          className={`mt-4 w-full h-11 rounded-xl font-semibold transition-all ${
+          className={`mt-4 w-full h-11 md:h-12 rounded-xl font-semibold text-sm md:text-base transition-all min-h-[44px] ${
             current
               ? "bg-white/10 cursor-not-allowed text-[#6b7280]"
               : disabled

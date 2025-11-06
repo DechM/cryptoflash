@@ -123,21 +123,21 @@ export default function DashboardPage() {
           <p className="text-sm md:text-base text-[#b8c5d6] leading-relaxed">
             Real-time tracking of Pump.fun tokens in bonding curve phase
           </p>
-          <div className="flex items-center space-x-4 mb-4 mt-4">
+          <div className="flex flex-wrap items-center gap-2 md:gap-4 mb-4 mt-4">
             {isEnabled('analytics.premium') && (
               <button
                 onClick={handleExport}
-                className="btn-secondary flex items-center space-x-2"
+                className="btn-secondary flex items-center space-x-2 text-sm md:text-base px-3 md:px-4 py-2 md:py-2.5 min-h-[44px]"
                 title="Export to CSV"
               >
                 <Download className="h-4 w-4" />
-                <span>Export</span>
+                <span className="hidden sm:inline">Export</span>
               </button>
             )}
             <button
               onClick={fetchKOTHData}
               disabled={loading}
-              className="btn-secondary flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none"
+              className="btn-secondary flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none text-sm md:text-base px-3 md:px-4 py-2 md:py-2.5 min-h-[44px]"
             >
               <RefreshCw className={`h-4 w-4 transition-transform duration-300 ${loading ? 'animate-spin' : 'hover:rotate-180'}`} />
               <span>Refresh</span>

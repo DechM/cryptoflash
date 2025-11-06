@@ -188,7 +188,7 @@ export default function AlertsPageContent() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="glass rounded-xl p-6 md:p-8"
+          className="glass rounded-xl p-4 md:p-6 lg:p-8"
         >
           {plan === 'free' && (
             <div className="mb-6 p-4 rounded-lg bg-[#ffd700]/10 border border-[#ffd700]/30">
