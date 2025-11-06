@@ -99,12 +99,25 @@ async function handleTwitterPost() {
     return NextResponse.json({ message: 'No tokens available' })
   }
 
+  // Log token stats for debugging
+  if (tokens.length > 0) {
+    const topTokens = tokens
+      .sort((a, b) => (b.score || 0) - (a.score || 0))
+      .slice(0, 5)
+    console.log(`[Twitter Post] Top 5 tokens by score:`, topTokens.map(t => ({
+      symbol: t.symbol,
+      score: t.score,
+      progress: t.progress
+    })))
+  }
+
   // Filter: 70%+ progress, score > 75 (optimized for early alerts)
+  // TEMP: Lowered for testing - will restore to 70%+ and score > 75
   const eligibleTokens = tokens.filter(
-    (token) => token.progress >= 70 && token.score > 75
+    (token) => (token.progress || 0) >= 60 && (token.score || 0) > 70
   )
 
-  console.log(`[Twitter Post] Found ${eligibleTokens.length} eligible tokens (70%+ progress, score > 75)`)
+  console.log(`[Twitter Post] Found ${eligibleTokens.length} eligible tokens (60%+ progress, score > 70)`)
   
   if (eligibleTokens.length > 0) {
     console.log(`[Twitter Post] Top eligible token: ${eligibleTokens[0].symbol} - Score: ${eligibleTokens[0].score}, Progress: ${eligibleTokens[0].progress}%`)
@@ -112,9 +125,21 @@ async function handleTwitterPost() {
 
   if (eligibleTokens.length === 0) {
     console.log('[Twitter Post] No eligible tokens found')
+    // Return detailed info for debugging
+    const tokenStats = {
+      total: tokens.length,
+      withProgress: tokens.filter(t => t.progress && t.progress > 0).length,
+      withScore: tokens.filter(t => t.score && t.score > 0).length,
+      maxProgress: tokens.length > 0 ? Math.max(...tokens.map(t => t.progress || 0)) : 0,
+      maxScore: tokens.length > 0 ? Math.max(...tokens.map(t => t.score || 0)) : 0,
+      avgProgress: tokens.length > 0 ? tokens.reduce((sum, t) => sum + (t.progress || 0), 0) / tokens.length : 0,
+      avgScore: tokens.length > 0 ? tokens.reduce((sum, t) => sum + (t.score || 0), 0) / tokens.length : 0
+    }
+    console.log('[Twitter Post] Token stats:', tokenStats)
     return NextResponse.json({ 
-      message: 'No eligible tokens (70%+ progress, score > 75)',
-      totalTokens: tokens.length,
+      success: false,
+      message: 'No eligible tokens (60%+ progress, score > 70)',
+      tokenStats,
       eligibleCount: 0
     })
   }
@@ -137,9 +162,16 @@ async function handleTwitterPost() {
   if (newTokens.length === 0) {
     console.log('[Twitter Post] All eligible tokens already posted')
     return NextResponse.json({ 
+      success: false,
       message: 'All eligible tokens already posted',
       eligibleCount: eligibleTokens.length,
-      alreadyPostedCount: postedAddresses.size
+      alreadyPostedCount: postedAddresses.size,
+      eligibleTokens: eligibleTokens.map(t => ({
+        symbol: t.symbol,
+        address: t.tokenAddress,
+        score: t.score,
+        progress: t.progress
+      }))
     })
   }
 
@@ -244,13 +276,20 @@ export async function GET() {
   try {
     // Allow GET for Vercel Cron (which may send GET requests)
     // Also useful for manual testing
-    return await handleTwitterPost()
+    const result = await handleTwitterPost()
+    // Ensure we always return a proper response
+    if (!result) {
+      return NextResponse.json({ error: 'No response from handler' }, { status: 500 })
+    }
+    return result
   } catch (error: any) {
-    console.error('Error in Twitter post endpoint (GET):', error)
+    console.error('[Twitter Post] Error in GET endpoint:', error)
     return NextResponse.json(
       {
+        success: false,
         error: 'Failed to post to Twitter',
-        message: error.message
+        message: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       },
       { status: 500 }
     )
