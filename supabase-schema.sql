@@ -114,6 +114,24 @@ CREATE INDEX IF NOT EXISTS idx_crypto_payments_user_id ON crypto_payments(user_i
 CREATE INDEX IF NOT EXISTS idx_crypto_payments_status ON crypto_payments(status);
 CREATE INDEX IF NOT EXISTS idx_crypto_payments_tx_signature ON crypto_payments(tx_signature) WHERE tx_signature IS NOT NULL;
 
+-- Twitter posts tracking table
+CREATE TABLE IF NOT EXISTS twitter_posts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  token_address TEXT NOT NULL UNIQUE, -- Prevent duplicate posts for same token
+  token_name TEXT,
+  token_symbol TEXT,
+  score NUMERIC,
+  progress NUMERIC,
+  tweet_id TEXT, -- Twitter tweet ID for reference
+  posted_at TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Indexes
+CREATE UNIQUE INDEX IF NOT EXISTS idx_twitter_posts_token_address ON twitter_posts(token_address);
+CREATE INDEX IF NOT EXISTS idx_twitter_posts_posted_at ON twitter_posts(posted_at DESC);
+CREATE INDEX IF NOT EXISTS idx_twitter_posts_score ON twitter_posts(score DESC);
+
 -- Enable Row Level Security (RLS)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_alerts ENABLE ROW LEVEL SECURITY;
