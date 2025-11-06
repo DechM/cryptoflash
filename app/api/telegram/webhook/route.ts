@@ -36,7 +36,7 @@ export async function POST(req: Request) {
         .single()
 
       if (existingUser) {
-        // Update existing user's telegram info
+        // User already linked - update info and send welcome message
         await supabaseAdmin
           .from('users')
           .update({
@@ -45,113 +45,7 @@ export async function POST(req: Request) {
             updated_at: new Date().toISOString()
           })
           .eq('id', existingUser.id)
-      } else {
-        // Try to find user by telegram_username if provided
-        let foundUser = null
-        if (username) {
-          const { data: userByUsername } = await supabaseAdmin
-            .from('users')
-            .select('id, email, telegram_chat_id')
-            .eq('telegram_username', username)
-            .single()
-          
-          if (userByUsername && !userByUsername.telegram_chat_id) {
-            // Found user by username, link it
-            foundUser = userByUsername
-            await supabaseAdmin
-              .from('users')
-              .update({
-                telegram_username: username,
-                telegram_chat_id: chatId.toString(),
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', foundUser.id)
-          }
-        }
 
-        // If not found by username, check if user sent /start with a linking code
-        // Format: /start <linking_code> or /start email:<email>
-        if (!foundUser && command.startsWith('/start ')) {
-          const startParam = command.substring(7).trim() // Get part after "/start "
-          
-          // Try to find by email if format is /start email:user@example.com
-          if (startParam.startsWith('email:')) {
-            const email = startParam.substring(6).trim()
-            if (email) {
-              const { data: userByEmail } = await supabaseAdmin
-                .from('users')
-                .select('id, email, telegram_chat_id')
-                .eq('email', email)
-                .single()
-              
-              if (userByEmail) {
-                if (userByEmail.telegram_chat_id && userByEmail.telegram_chat_id !== chatId.toString()) {
-                  // Already linked to different Telegram account
-                  await sendTelegramMessage({
-                    chat_id: chatId,
-                    text: `⚠️ <b>Account Already Linked</b>\n\nThis email is already linked to another Telegram account. Please contact support if you need to change it.`
-                  })
-                  return NextResponse.json({ ok: true })
-                }
-                
-                // Link this Telegram account
-                foundUser = userByEmail
-                await supabaseAdmin
-                  .from('users')
-                  .update({
-                    telegram_username: username,
-                    telegram_chat_id: chatId.toString(),
-                    updated_at: new Date().toISOString()
-                  })
-                  .eq('id', foundUser.id)
-              }
-            }
-          }
-        }
-
-        if (!foundUser) {
-          // No existing user found - user needs to create account first
-          const welcomeMessage = `👋 <b>Welcome to CryptoFlash!</b>
-
-🔐 <b>To activate alerts:</b>
-1. Create an account at <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://cryptoflash.app'}/register">cryptoflash.app/register</a>
-2. Or login at <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://cryptoflash.app'}/login">cryptoflash.app/login</a>
-3. Set up alerts on <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://cryptoflash.app'}/alerts">cryptoflash.app/alerts</a>
-4. Click "Open Telegram Bot" to link your account
-
-📊 Once linked, you'll receive KOTH alert signals here! 🚀
-
-⚠️ <i>DYOR - This is not financial advice</i>`
-
-          await sendTelegramMessage({
-            chat_id: chatId,
-            text: welcomeMessage
-          })
-
-          return NextResponse.json({ ok: true })
-        }
-
-        // Successfully linked - send confirmation
-        const linkedMessage = `✅ <b>Telegram Account Linked Successfully!</b>
-
-🎉 Your CryptoFlash account is now connected to Telegram.
-
-📊 <b>Next Steps:</b>
-1. Go to <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://cryptoflash.app'}/alerts">cryptoflash.app/alerts</a>
-2. Create alerts for tokens you want to track
-3. You'll receive real-time alerts here when tokens match your criteria! 🚀
-
-💡 <b>Test Alert:</b>
-You can test if alerts work by clicking "Send Test Alert" on the alerts page.
-
-⚠️ <i>DYOR - This is not financial advice</i>`
-
-        await sendTelegramMessage({
-          chat_id: chatId,
-          text: linkedMessage
-        })
-      } else {
-        // User already linked - send welcome message
         const welcomeMessage = `✅ <b>CryptoFlash Alerts Activated!</b>
 
 🚀 You will now receive KOTH alert signals here when tokens match your criteria.
@@ -167,7 +61,114 @@ You can test if alerts work by clicking "Send Test Alert" on the alerts page.
           chat_id: chatId,
           text: welcomeMessage
         })
+
+        return NextResponse.json({ ok: true })
       }
+
+      // Try to find user by telegram_username if provided
+      let foundUser = null
+      if (username) {
+        const { data: userByUsername } = await supabaseAdmin
+          .from('users')
+          .select('id, email, telegram_chat_id')
+          .eq('telegram_username', username)
+          .single()
+        
+        if (userByUsername && !userByUsername.telegram_chat_id) {
+          // Found user by username, link it
+          foundUser = userByUsername
+          await supabaseAdmin
+            .from('users')
+            .update({
+              telegram_username: username,
+              telegram_chat_id: chatId.toString(),
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', foundUser.id)
+        }
+      }
+
+      // If not found by username, check if user sent /start with a linking code
+      // Format: /start <linking_code> or /start email:<email>
+      if (!foundUser && command.startsWith('/start ')) {
+        const startParam = command.substring(7).trim() // Get part after "/start "
+        
+        // Try to find by email if format is /start email:user@example.com
+        if (startParam.startsWith('email:')) {
+          const email = startParam.substring(6).trim()
+          if (email) {
+            const { data: userByEmail } = await supabaseAdmin
+              .from('users')
+              .select('id, email, telegram_chat_id')
+              .eq('email', email)
+              .single()
+            
+            if (userByEmail) {
+              if (userByEmail.telegram_chat_id && userByEmail.telegram_chat_id !== chatId.toString()) {
+                // Already linked to different Telegram account
+                await sendTelegramMessage({
+                  chat_id: chatId,
+                  text: `⚠️ <b>Account Already Linked</b>\n\nThis email is already linked to another Telegram account. Please contact support if you need to change it.`
+                })
+                return NextResponse.json({ ok: true })
+              }
+              
+              // Link this Telegram account
+              foundUser = userByEmail
+              await supabaseAdmin
+                .from('users')
+                .update({
+                  telegram_username: username,
+                  telegram_chat_id: chatId.toString(),
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', foundUser.id)
+            }
+          }
+        }
+      }
+
+      if (!foundUser) {
+        // No existing user found - user needs to create account first
+        const welcomeMessage = `👋 <b>Welcome to CryptoFlash!</b>
+
+🔐 <b>To activate alerts:</b>
+1. Create an account at <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://cryptoflash.app'}/register">cryptoflash.app/register</a>
+2. Or login at <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://cryptoflash.app'}/login">cryptoflash.app/login</a>
+3. Set up alerts on <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://cryptoflash.app'}/alerts">cryptoflash.app/alerts</a>
+4. Click "Open Telegram Bot" to link your account
+
+📊 Once linked, you'll receive KOTH alert signals here! 🚀
+
+⚠️ <i>DYOR - This is not financial advice</i>`
+
+        await sendTelegramMessage({
+          chat_id: chatId,
+          text: welcomeMessage
+        })
+
+        return NextResponse.json({ ok: true })
+      }
+
+      // Successfully linked - send confirmation
+      const linkedMessage = `✅ <b>Telegram Account Linked Successfully!</b>
+
+🎉 Your CryptoFlash account is now connected to Telegram.
+
+📊 <b>Next Steps:</b>
+1. Go to <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://cryptoflash.app'}/alerts">cryptoflash.app/alerts</a>
+2. Create alerts for tokens you want to track
+3. You'll receive real-time alerts here when tokens match your criteria! 🚀
+
+💡 <b>Test Alert:</b>
+You can test if alerts work by clicking "Send Test Alert" on the alerts page.
+
+⚠️ <i>DYOR - This is not financial advice</i>`
+
+      await sendTelegramMessage({
+        chat_id: chatId,
+        text: linkedMessage
+      })
 
       return NextResponse.json({ ok: true })
     }
