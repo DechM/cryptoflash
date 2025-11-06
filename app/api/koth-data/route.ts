@@ -130,6 +130,8 @@ export async function GET() {
         ? Promise.resolve(cachedWhaleData)
         : (async () => {
             console.log(`🚀 Starting whale tracking for ${tokenAddresses.length} tokens (top 30 will be tracked)`)
+            console.log(`🔧 ENABLE_WHALE_TRACKING=${process.env.ENABLE_WHALE_TRACKING}`)
+            console.log(`🔧 HELIUS_API_KEY exists: ${!!process.env.HELIUS_API_KEY}`)
             
             // OPTIMIZATION: Only track whales for top 30 tokens (highest progress)
             // This reduces API calls while maintaining good coverage

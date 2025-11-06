@@ -23,12 +23,18 @@ export async function fetchWhaleTransactions(
   whaleInflows: number
   totalVolume: number
 }> {
+  console.log(`🔍 [HELIUS START] fetchWhaleTransactions called for ${tokenAddress.substring(0, 12)}... with limit=${limit}`)
+  console.log(`🔧 HELIUS_API_KEY exists: ${!!HELIUS_API_KEY}`)
+  console.log(`🔧 HELIUS_BASE_URL: ${HELIUS_BASE_URL.substring(0, 50)}...`)
+  
   // Skip if no API key
   if (!HELIUS_API_KEY || HELIUS_API_KEY === '') {
+    console.warn(`⚠️ [HELIUS] No API key, returning zeros for ${tokenAddress.substring(0, 12)}...`)
     return { whaleCount: 0, whaleInflows: 0, totalVolume: 0 }
   }
 
   try {
+    console.log(`📡 [HELIUS] Calling getSignaturesForAddress for ${tokenAddress.substring(0, 12)}...`)
     // Get signatures (limit = 2)
     const response = await axios.post(
       HELIUS_BASE_URL,
