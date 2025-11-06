@@ -20,8 +20,15 @@ interface TwitterPostResponse {
 /**
  * Format Twitter post message (NO direct pump.fun links for safety)
  * Includes link to our website for traffic
+ * Includes hashtags for better reach and engagement
  */
 export function formatTwitterPost(token: TwitterToken): string {
+  // Simple link to our website (no tracking parameters)
+  const siteLink = "https://cryptoflash.app"
+  
+  // Hashtags in exact order for optimal reach
+  const hashtags = "#PumpFun #KOTH #Solana #Memecoin #SolanaGems"
+  
   return `🚨 KOTH Alert!
 
 💰 ${token.name} ($${token.symbol})
@@ -29,9 +36,11 @@ export function formatTwitterPost(token: TwitterToken): string {
 📈 Progress: ${token.progress.toFixed(1)}%
 ${token.priceUsd ? `💵 Price: $${token.priceUsd.toFixed(6)}` : ''}
 
-🔍 cryptoflash.app
+🔍 ${siteLink}
 
-⚠️ DYOR - Not financial advice`
+${hashtags}
+
+⚠️ DYOR • NFA`
 }
 
 /**
