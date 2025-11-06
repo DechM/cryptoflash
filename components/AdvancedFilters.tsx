@@ -30,11 +30,11 @@ export function AdvancedFilters({ onFilterChange, userTier }: AdvancedFiltersPro
           <h3 className="font-semibold text-white">Advanced Filters</h3>
         </div>
         <p className="text-sm text-[#b8c5d6] mb-4">
-          🔒 Advanced Filters are a Pro feature
+          🔒 Advanced Filters are a Pro/Ultimate feature
         </p>
         <a
           href="/premium"
-          className="inline-block px-4 py-2 rounded-lg bg-gradient-to-r from-[#FF2E86] to-[#ff6b35] text-white font-semibold hover:opacity-90 transition-opacity"
+          className="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-gradient-to-r from-[#FF2E86] to-[#ff6b35] text-white font-semibold text-sm md:text-base hover:opacity-90 transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg shadow-[#FF2E86]/20 hover:shadow-[#FF2E86]/40 min-h-[44px]"
         >
           Upgrade to Pro
         </a>

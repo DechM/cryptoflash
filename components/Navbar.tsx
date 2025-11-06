@@ -11,6 +11,7 @@ export function Navbar() {
   const router = useRouter()
   const { user, signOut, loading: sessionLoading } = useSession()
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [showMobileMenu, setShowMobileMenu] = useState(false)
 
   const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: Zap },
@@ -94,7 +95,7 @@ export function Navbar() {
               ) : (
                 <Link
                   href={`/login?next=${encodeURIComponent(pathname || '/dashboard')}`}
-                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#00FFA3] to-[#00D1FF] text-black font-semibold hover:opacity-90 transition-opacity"
+                  className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15 border border-white/20 text-white font-medium text-sm transition-all duration-200 hover:scale-105"
                 >
                   Login
                 </Link>
@@ -102,12 +103,12 @@ export function Navbar() {
             </div>
           </div>
 
-          {/* Mobile menu - Auth UI */}
+          {/* Mobile menu */}
           <div className="md:hidden flex items-center space-x-2">
             {!sessionLoading && !user && (
               <Link
                 href={`/login?next=${encodeURIComponent(pathname || '/dashboard')}`}
-                className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#00FFA3] to-[#00D1FF] text-black text-sm font-semibold"
+                className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 border border-white/20 text-white text-sm font-medium transition-all duration-200"
               >
                 Login
               </Link>
@@ -121,12 +122,48 @@ export function Navbar() {
                 <LogOut className="h-5 w-5" />
               </button>
             )}
-            <button className="text-[#b8c5d6] hover:text-white transition-colors p-2">
+            <button
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+              className="text-[#b8c5d6] hover:text-white transition-colors p-2"
+              aria-label="Toggle menu"
+            >
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                {showMobileMenu ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
               </svg>
             </button>
           </div>
+        </div>
+
+        {/* Mobile menu dropdown */}
+        {showMobileMenu && (
+          <div className="md:hidden border-t border-white/10 bg-[#0B1020]/95 backdrop-blur-xl">
+            <div className="px-4 py-3 space-y-1">
+              {navItems.map((item) => {
+                const Icon = item.icon
+                const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setShowMobileMenu(false)}
+                    className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                      isActive
+                        ? 'bg-gradient-to-r from-[#00FFA3]/20 to-[#00D1FF]/20 text-[#00FFA3] border border-[#00FFA3]/30'
+                        : 'text-[#b8c5d6] hover:bg-white/10 hover:text-white'
+                    }`}
+                  >
+                    <Icon className="h-5 w-5" />
+                    <span className="font-medium">{item.label}</span>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        )}
         </div>
       </div>
     </nav>
