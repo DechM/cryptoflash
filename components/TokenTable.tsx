@@ -110,7 +110,7 @@ export function TokenTable({ tokens, refreshInterval = 60000 }: TokenTableProps)
                     </span>
                   </div>
                 </td>
-                <td className="py-4 px-4 text-center">
+                <td className="py-3 md:py-4 px-2 md:px-4 text-center">
                   <a
                     href={getPumpFunUrl(token.tokenAddress, 'cryptoflash')}
                     target="_blank"
@@ -125,10 +125,10 @@ export function TokenTable({ tokens, refreshInterval = 60000 }: TokenTableProps)
                       }
                       // Always allow navigation - let pump.fun handle invalid addresses
                     }}
-                    className="inline-flex items-center space-x-2 px-4 py-2 rounded-lg bg-gradient-to-r from-[#00FFA3] to-[#00D1FF] text-black font-semibold hover:opacity-90 transition-opacity glow-mint shadow-lg hover:shadow-[#00FFA3]/50"
+                    className="group inline-flex items-center space-x-1 md:space-x-2 px-3 md:px-4 py-1.5 md:py-2 rounded-lg bg-gradient-to-r from-[#00FFA3] to-[#00D1FF] text-black font-semibold text-xs md:text-sm hover:opacity-90 transition-all duration-200 hover:scale-105 active:scale-95 glow-mint shadow-lg hover:shadow-[#00FFA3]/50 min-h-[32px] md:min-h-[40px] will-change-transform"
                   >
                     <span>BUY</span>
-                    <ExternalLink className="h-4 w-4" />
+                    <ExternalLink className="h-3 w-3 md:h-4 md:w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
                   </a>
                 </td>
               </motion.tr>

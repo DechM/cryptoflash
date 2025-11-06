@@ -139,7 +139,7 @@ export default function DashboardPage() {
               disabled={loading}
               className="btn-secondary flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none"
             >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 transition-transform duration-300 ${loading ? 'animate-spin' : 'hover:rotate-180'}`} />
               <span>Refresh</span>
             </button>
           </div>
