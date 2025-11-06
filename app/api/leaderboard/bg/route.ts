@@ -23,10 +23,18 @@ export async function GET() {
       return NextResponse.json({ leaderboard: cache.leaderboard })
     }
 
-    // Get alert history from Supabase
+    // Get alert history from Supabase with user info
     const { data: alertHistory, error } = await supabaseAdmin
       .from('alert_history')
-      .select('user_id, token_address, token_name, token_symbol, sent_at, alert_score')
+      .select(`
+        user_id,
+        token_address,
+        token_name,
+        token_symbol,
+        sent_at,
+        alert_score,
+        users!inner(id, email)
+      `)
       .order('sent_at', { ascending: false })
       .limit(1000) // Get recent alerts
 
@@ -37,6 +45,7 @@ export async function GET() {
     }
 
     if (!alertHistory || alertHistory.length === 0) {
+      console.log('No alert history found')
       return NextResponse.json({ leaderboard: [] })
     }
 
@@ -61,15 +70,32 @@ export async function GET() {
       priceMap.set(addr.toLowerCase(), data.priceUsd || 0)
     }
 
+    // Get unique user IDs to fetch user data
+    const userIds = Array.from(new Set(alertHistory.map(a => a.user_id).filter(Boolean)))
+    
+    // Fetch user data (email as identifier)
+    const { data: users } = await supabaseAdmin
+      .from('users')
+      .select('id, email')
+      .in('id', userIds)
+
+    const userMap = new Map<string, string>()
+    if (users) {
+      for (const user of users) {
+        // Use email as wallet identifier (or you can add a wallet_address field later)
+        const wallet = user.email ? formatEmailAsWallet(user.email) : formatWallet(user.id)
+        userMap.set(user.id, wallet)
+      }
+    }
+
     // Process alert history
     for (const alert of alertHistory) {
       if (!alert.user_id || !alert.token_address) continue
 
       // Get or create user stats
       if (!userStats.has(alert.user_id)) {
-        // In a real implementation, you would look up user's wallet from users table
-        // For now, we'll use a simplified approach - extract from user_id or use a label
-        const wallet = formatWallet(alert.user_id) // Simplified
+        // Get wallet from user map or fallback to formatted user_id
+        const wallet = userMap.get(alert.user_id) || formatWallet(alert.user_id)
         userStats.set(alert.user_id, {
           userId: alert.user_id,
           wallet,
@@ -84,7 +110,7 @@ export async function GET() {
       const stats = userStats.get(alert.user_id)!
       stats.snipes++
       stats.tokens.add(alert.token_address)
-      stats.totalScore += alert.alert_score || 0
+      stats.totalScore += (alert.alert_score || 0)
       stats.lastSnipe = new Date(Math.max(
         stats.lastSnipe.getTime(),
         new Date(alert.sent_at).getTime()
@@ -164,6 +190,18 @@ function formatWallet(userId: string): string {
     return `${userId.slice(0, 4)}...${userId.slice(-4)}`
   }
   return userId
+}
+
+/**
+ * Format email as wallet identifier
+ */
+function formatEmailAsWallet(email: string): string {
+  // Extract username part before @ and format as wallet-like address
+  const username = email.split('@')[0]
+  if (username.length > 8) {
+    return `${username.slice(0, 4)}...${username.slice(-4)}`
+  }
+  return username
 }
 
 /**
