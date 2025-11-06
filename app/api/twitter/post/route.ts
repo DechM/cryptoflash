@@ -8,13 +8,13 @@ import { Token } from '@/lib/types'
  * Called by Vercel Cron every 30 minutes
  * 
  * Logic:
- * 1. Fetch latest KOTH tokens (80%+ progress)
+ * 1. Fetch latest KOTH tokens (70%+ progress)
  * 2. Check which tokens are NOT in twitter_posts table (prevent duplicates)
- * 3. Filter: Only tokens with score > 85 (quality filter)
+ * 3. Filter: Only tokens with score > 75 (quality filter)
  * 4. Sort by score DESC
  * 5. Post top 1-2 tokens (if any)
  * 6. Save to twitter_posts table
- * 7. Rate limit: Max 1 post per 30 minutes, max 30 posts per day
+ * 7. Rate limit: Max 1 post per 30 minutes, max 15 posts per day
  */
 
 // Rate limiting constants
@@ -88,13 +88,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'No tokens available' })
     }
 
-    // Filter: 80%+ progress, score > 85
+    // Filter: 70%+ progress, score > 75 (optimized for early alerts)
     const eligibleTokens = tokens.filter(
-      (token) => token.progress >= 80 && token.score > 85
+      (token) => token.progress >= 70 && token.score > 75
     )
 
     if (eligibleTokens.length === 0) {
-      return NextResponse.json({ message: 'No eligible tokens (80%+ progress, score > 85)' })
+      return NextResponse.json({ message: 'No eligible tokens (70%+ progress, score > 75)' })
     }
 
     // Get already posted tokens
