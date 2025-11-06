@@ -18,14 +18,8 @@ interface CachedData {
 let cache: CachedData | null = null
 
 // Whale data cache (separate from main cache) - 3 minutes
-const WHALE_CACHE_DURATION = 3 * 60 * 1000
-
-interface WhaleCache {
-  data: Map<string, { whaleCount: number; whaleInflows: number; totalVolume: number }>
-  timestamp: number
-}
-
-let whaleCache: WhaleCache | null = null
+// Using Supabase as persistent cache (works in serverless environment)
+const WHALE_CACHE_DURATION = 3 * 60 * 1000 // 3 minutes
 
 export async function GET() {
   try {
@@ -67,27 +61,65 @@ export async function GET() {
       .map(t => t.tokenAddress)
       .filter((addr): addr is string => !!addr)
 
-    // CHECK WHALE CACHE BEFORE Promise.all (FIX)
+    // CHECK WHALE CACHE FROM SUPABASE (PERSISTENT CACHE FOR SERVERLESS)
     // This prevents whale tracking from being called every time main cache expires (30s)
     let cachedWhaleData: Array<{ whaleCount: number; whaleInflows: number; totalVolume: number }> | null = null
     const whaleTrackingEnabled = process.env.ENABLE_WHALE_TRACKING === 'true'
     
-    if (whaleCache && Date.now() - whaleCache.timestamp < WHALE_CACHE_DURATION) {
-      const cacheAge = Math.round((Date.now() - whaleCache.timestamp) / 1000)
-      console.log(`✅ Using cached whale data (cache age: ${cacheAge}s)`)
-      cachedWhaleData = tokenAddresses.map(addr => 
-        whaleCache!.data.get(addr) || { whaleCount: 0, whaleInflows: 0, totalVolume: 0 }
-      )
-    } else if (!whaleTrackingEnabled) {
+    if (!whaleTrackingEnabled) {
       console.log('⚠️ Whale tracking disabled (ENABLE_WHALE_TRACKING != true) - returning zeros')
       cachedWhaleData = tokenAddresses.map(() => ({ whaleCount: 0, whaleInflows: 0, totalVolume: 0 }))
-      // Cache zeros too (to avoid checking env var every time)
-      whaleCache = {
-        data: new Map(tokenAddresses.map((addr, idx) => [addr, cachedWhaleData![idx]])),
-        timestamp: Date.now()
-      }
     } else {
-      console.log('🔄 Fetching fresh whale data (cache expired or not set)')
+      // Try to get whale data from Supabase (persistent cache)
+      try {
+        const { data: cachedTokens, error } = await supabase
+          .from('koth_tokens')
+          .select('token_address, data, updated_at')
+          .in('token_address', tokenAddresses)
+        
+        if (!error && cachedTokens && cachedTokens.length > 0) {
+          // Check if cache is fresh (updated within last 3 minutes)
+          const now = Date.now()
+          const freshTokens = cachedTokens.filter(t => {
+            const updatedAt = new Date(t.updated_at).getTime()
+            return (now - updatedAt) < WHALE_CACHE_DURATION
+          })
+          
+          if (freshTokens.length > 0) {
+            // Build map from cached data
+            const whaleDataMap = new Map<string, { whaleCount: number; whaleInflows: number; totalVolume: number }>()
+            freshTokens.forEach(t => {
+              const tokenData = t.data as any
+              if (tokenData) {
+                whaleDataMap.set(t.token_address, {
+                  whaleCount: tokenData.whaleCount || 0,
+                  whaleInflows: tokenData.whaleInflows || 0,
+                  totalVolume: tokenData.totalVolume || 0
+                })
+              }
+            })
+            
+            // Check if we have data for most tokens (at least 50% coverage)
+            const coverage = whaleDataMap.size / tokenAddresses.length
+            if (coverage >= 0.5) {
+              const cacheAge = Math.round((now - new Date(freshTokens[0].updated_at).getTime()) / 1000)
+              console.log(`✅ Using cached whale data from Supabase (${Math.round(coverage * 100)}% coverage, cache age: ${cacheAge}s)`)
+              cachedWhaleData = tokenAddresses.map(addr => 
+                whaleDataMap.get(addr) || { whaleCount: 0, whaleInflows: 0, totalVolume: 0 }
+              )
+            } else {
+              console.log(`🔄 Cache coverage too low (${Math.round(coverage * 100)}%), fetching fresh whale data`)
+            }
+          } else {
+            console.log('🔄 Cached whale data expired, fetching fresh data')
+          }
+        } else {
+          console.log('🔄 No cached whale data found in Supabase, fetching fresh data')
+        }
+      } catch (error) {
+        console.warn('Error reading whale cache from Supabase:', error)
+        console.log('🔄 Falling back to fresh whale data fetch')
+      }
     }
 
     // Fetch additional data in parallel
@@ -146,11 +178,8 @@ export async function GET() {
               whaleDataMap.get(addr) || { whaleCount: 0, whaleInflows: 0, totalVolume: 0 }
             )
             
-            // Cache the results (3 min cache)
-            whaleCache = {
-              data: new Map(tokenAddresses.map((addr, idx) => [addr, finalResults[idx]])),
-              timestamp: Date.now()
-            }
+            // Note: Whale data will be cached in Supabase when tokens are saved (below)
+            // This persistent cache works in serverless environment
             
             const totalWhales = finalResults.reduce((sum, r) => sum + r.whaleCount, 0)
             console.log(`✅ Whale tracking complete. Total whales found: ${totalWhales} across ${topTokenAddresses.length} tokens`)
