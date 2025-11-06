@@ -21,6 +21,157 @@ import { Token } from '@/lib/types'
 const MIN_POST_INTERVAL = 30 * 60 * 1000 // 30 minutes
 const MAX_POSTS_PER_DAY = 15 // Safety margin for 500/month free tier limit
 
+/**
+ * Main logic for posting tweets (shared between POST and GET)
+ */
+async function handleTwitterPost() {
+  // Check daily post limit
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const { count: todayCount } = await supabaseAdmin
+    .from('twitter_posts')
+    .select('*', { count: 'exact', head: true })
+    .gte('posted_at', today.toISOString())
+
+  if ((todayCount || 0) >= MAX_POSTS_PER_DAY) {
+    console.log(`Daily limit reached: ${todayCount}/${MAX_POSTS_PER_DAY} posts today`)
+    return NextResponse.json({
+      success: false,
+      message: 'Daily post limit reached',
+      todayCount
+    })
+  }
+
+  // Check last post time (rate limiting)
+  const { data: lastPost } = await supabaseAdmin
+    .from('twitter_posts')
+    .select('posted_at')
+    .order('posted_at', { ascending: false })
+    .limit(1)
+    .single()
+
+  if (lastPost?.posted_at) {
+    const lastPostTime = new Date(lastPost.posted_at).getTime()
+    const timeSinceLastPost = Date.now() - lastPostTime
+
+    if (timeSinceLastPost < MIN_POST_INTERVAL) {
+      const minutesRemaining = Math.ceil((MIN_POST_INTERVAL - timeSinceLastPost) / 60000)
+      console.log(`Rate limit: ${minutesRemaining} minutes until next post`)
+      return NextResponse.json({
+        success: false,
+        message: 'Rate limit: too soon since last post',
+        minutesRemaining
+      })
+    }
+  }
+
+  // Fetch latest KOTH tokens
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL || 'http://localhost:3000'
+  const kothResponse = await fetch(`${baseUrl}/api/koth-data`, {
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  })
+
+  if (!kothResponse.ok) {
+    throw new Error('Failed to fetch KOTH data')
+  }
+
+  const { tokens }: { tokens: Token[] } = await kothResponse.json()
+
+  if (!tokens || tokens.length === 0) {
+    return NextResponse.json({ message: 'No tokens available' })
+  }
+
+  // Filter: 70%+ progress, score > 75 (optimized for early alerts)
+  const eligibleTokens = tokens.filter(
+    (token) => token.progress >= 70 && token.score > 75
+  )
+
+  if (eligibleTokens.length === 0) {
+    return NextResponse.json({ message: 'No eligible tokens (70%+ progress, score > 75)' })
+  }
+
+  // Get already posted tokens
+  const { data: postedTokens } = await supabaseAdmin
+    .from('twitter_posts')
+    .select('token_address')
+
+  const postedAddresses = new Set(postedTokens?.map((t) => t.token_address) || [])
+
+  // Filter out already posted tokens
+  const newTokens = eligibleTokens.filter(
+    (token) => !postedAddresses.has(token.tokenAddress)
+  )
+
+  if (newTokens.length === 0) {
+    return NextResponse.json({ message: 'All eligible tokens already posted' })
+  }
+
+  // Sort by score DESC and take top 1-2 tokens
+  const topTokens = newTokens
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 2) // Post max 2 tokens per run
+
+  const postedTweets: Array<{ token: string; tweetId: string | null }> = []
+
+  // Post each token
+  for (const token of topTokens) {
+    // Check if we've hit daily limit during this run
+    if ((todayCount || 0) + postedTweets.length >= MAX_POSTS_PER_DAY) {
+      console.log('Daily limit reached during posting')
+      break
+    }
+
+    const tweetText = formatTwitterPost({
+      name: token.name,
+      symbol: token.symbol,
+      address: token.tokenAddress,
+      score: token.score,
+      progress: token.progress,
+      priceUsd: token.priceUsd
+    })
+
+    const tweetResult = await postTweet(tweetText)
+
+    if (tweetResult) {
+      // Save to database
+      await supabaseAdmin.from('twitter_posts').insert({
+        token_address: token.tokenAddress,
+        token_name: token.name,
+        token_symbol: token.symbol,
+        score: token.score,
+        progress: token.progress,
+        tweet_id: tweetResult.id,
+        posted_at: new Date().toISOString()
+      })
+
+      postedTweets.push({
+        token: `${token.symbol} (${token.name})`,
+        tweetId: tweetResult.id
+      })
+
+      console.log(`Posted tweet for ${token.symbol}: ${tweetResult.id}`)
+
+      // Wait 1 second between posts (if posting multiple)
+      if (topTokens.length > 1 && token !== topTokens[topTokens.length - 1]) {
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+      }
+    } else {
+      console.error(`Failed to post tweet for ${token.symbol}`)
+    }
+  }
+
+  return NextResponse.json({
+    success: true,
+    postedCount: postedTweets.length,
+    postedTweets,
+    todayTotal: (todayCount || 0) + postedTweets.length,
+    dailyLimit: MAX_POSTS_PER_DAY
+  })
+}
+
 export async function POST(request: Request) {
   try {
     // Verify this is called from Vercel Cron (optional security check)
@@ -29,153 +180,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check daily post limit
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-
-    const { count: todayCount } = await supabaseAdmin
-      .from('twitter_posts')
-      .select('*', { count: 'exact', head: true })
-      .gte('posted_at', today.toISOString())
-
-    if ((todayCount || 0) >= MAX_POSTS_PER_DAY) {
-      console.log(`Daily limit reached: ${todayCount}/${MAX_POSTS_PER_DAY} posts today`)
-      return NextResponse.json({
-        success: false,
-        message: 'Daily post limit reached',
-        todayCount
-      })
-    }
-
-    // Check last post time (rate limiting)
-    const { data: lastPost } = await supabaseAdmin
-      .from('twitter_posts')
-      .select('posted_at')
-      .order('posted_at', { ascending: false })
-      .limit(1)
-      .single()
-
-    if (lastPost?.posted_at) {
-      const lastPostTime = new Date(lastPost.posted_at).getTime()
-      const timeSinceLastPost = Date.now() - lastPostTime
-
-      if (timeSinceLastPost < MIN_POST_INTERVAL) {
-        const minutesRemaining = Math.ceil((MIN_POST_INTERVAL - timeSinceLastPost) / 60000)
-        console.log(`Rate limit: ${minutesRemaining} minutes until next post`)
-        return NextResponse.json({
-          success: false,
-          message: 'Rate limit: too soon since last post',
-          minutesRemaining
-        })
-      }
-    }
-
-    // Fetch latest KOTH tokens
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL || 'http://localhost:3000'
-    const kothResponse = await fetch(`${baseUrl}/api/koth-data`, {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    })
-
-    if (!kothResponse.ok) {
-      throw new Error('Failed to fetch KOTH data')
-    }
-
-    const { tokens }: { tokens: Token[] } = await kothResponse.json()
-
-    if (!tokens || tokens.length === 0) {
-      return NextResponse.json({ message: 'No tokens available' })
-    }
-
-    // Filter: 70%+ progress, score > 75 (optimized for early alerts)
-    const eligibleTokens = tokens.filter(
-      (token) => token.progress >= 70 && token.score > 75
-    )
-
-    if (eligibleTokens.length === 0) {
-      return NextResponse.json({ message: 'No eligible tokens (70%+ progress, score > 75)' })
-    }
-
-    // Get already posted tokens
-    const { data: postedTokens } = await supabaseAdmin
-      .from('twitter_posts')
-      .select('token_address')
-
-    const postedAddresses = new Set(postedTokens?.map((t) => t.token_address) || [])
-
-    // Filter out already posted tokens
-    const newTokens = eligibleTokens.filter(
-      (token) => !postedAddresses.has(token.tokenAddress)
-    )
-
-    if (newTokens.length === 0) {
-      return NextResponse.json({ message: 'All eligible tokens already posted' })
-    }
-
-    // Sort by score DESC and take top 1-2 tokens
-    const topTokens = newTokens
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 2) // Post max 2 tokens per run
-
-    const postedTweets: Array<{ token: string; tweetId: string | null }> = []
-
-    // Post each token
-    for (const token of topTokens) {
-      // Check if we've hit daily limit during this run
-      if ((todayCount || 0) + postedTweets.length >= MAX_POSTS_PER_DAY) {
-        console.log('Daily limit reached during posting')
-        break
-      }
-
-      const tweetText = formatTwitterPost({
-        name: token.name,
-        symbol: token.symbol,
-        address: token.tokenAddress,
-        score: token.score,
-        progress: token.progress,
-        priceUsd: token.priceUsd
-      })
-
-      const tweetResult = await postTweet(tweetText)
-
-      if (tweetResult) {
-        // Save to database
-        await supabaseAdmin.from('twitter_posts').insert({
-          token_address: token.tokenAddress,
-          token_name: token.name,
-          token_symbol: token.symbol,
-          score: token.score,
-          progress: token.progress,
-          tweet_id: tweetResult.id,
-          posted_at: new Date().toISOString()
-        })
-
-        postedTweets.push({
-          token: `${token.symbol} (${token.name})`,
-          tweetId: tweetResult.id
-        })
-
-        console.log(`Posted tweet for ${token.symbol}: ${tweetResult.id}`)
-
-        // Wait 1 second between posts (if posting multiple)
-        if (topTokens.length > 1 && token !== topTokens[topTokens.length - 1]) {
-          await new Promise((resolve) => setTimeout(resolve, 1000))
-        }
-      } else {
-        console.error(`Failed to post tweet for ${token.symbol}`)
-      }
-    }
-
-    return NextResponse.json({
-      success: true,
-      postedCount: postedTweets.length,
-      postedTweets,
-      todayTotal: (todayCount || 0) + postedTweets.length,
-      dailyLimit: MAX_POSTS_PER_DAY
-    })
+    return await handleTwitterPost()
   } catch (error: any) {
-    console.error('Error in Twitter post endpoint:', error)
+    console.error('Error in Twitter post endpoint (POST):', error)
     return NextResponse.json(
       {
         error: 'Failed to post to Twitter',
@@ -186,14 +193,20 @@ export async function POST(request: Request) {
   }
 }
 
-// Allow GET for testing
 export async function GET() {
-  return NextResponse.json({
-    message: 'Twitter post endpoint - use POST to trigger',
-    rateLimit: {
-      minInterval: '30 minutes',
-      maxPerDay: MAX_POSTS_PER_DAY
-    }
-  })
+  try {
+    // Allow GET for Vercel Cron (which may send GET requests)
+    // Also useful for manual testing
+    return await handleTwitterPost()
+  } catch (error: any) {
+    console.error('Error in Twitter post endpoint (GET):', error)
+    return NextResponse.json(
+      {
+        error: 'Failed to post to Twitter',
+        message: error.message
+      },
+      { status: 500 }
+    )
+  }
 }
 
