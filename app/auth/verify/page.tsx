@@ -108,7 +108,7 @@ function VerifyPageContent() {
       <div className="glass rounded-2xl p-8 border border-white/10 text-center max-w-md">
         {status === 'loading' && (
           <>
-            <Loader2 className="h-12 w-12 text-[#00ff88] animate-spin mx-auto mb-4" />
+            <Loader2 className="h-12 w-12 text-[#00FFA3] animate-spin mx-auto mb-4" />
             <h1 className="text-2xl font-bold gradient-text mb-2">Verifying Email</h1>
             <p className="text-[#b8c5d6]">{message}</p>
           </>
@@ -116,8 +116,8 @@ function VerifyPageContent() {
         
         {status === 'success' && (
           <>
-            <div className="h-12 w-12 bg-[#00ff88]/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="h-6 w-6 text-[#00ff88]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="h-12 w-12 bg-[#00FFA3]/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="h-6 w-6 text-[#00FFA3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>

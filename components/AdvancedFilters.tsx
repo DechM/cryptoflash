@@ -34,7 +34,7 @@ export function AdvancedFilters({ onFilterChange, userTier }: AdvancedFiltersPro
         </p>
         <a
           href="/premium"
-          className="inline-block px-4 py-2 rounded-lg bg-gradient-to-r from-[#ff006e] to-[#ff6b35] text-white font-semibold hover:opacity-90 transition-opacity"
+          className="inline-block px-4 py-2 rounded-lg bg-gradient-to-r from-[#FF2E86] to-[#ff6b35] text-white font-semibold hover:opacity-90 transition-opacity"
         >
           Upgrade to Pro
         </a>
@@ -61,11 +61,11 @@ export function AdvancedFilters({ onFilterChange, userTier }: AdvancedFiltersPro
         className="w-full flex items-center justify-between px-4 py-2 rounded-lg hover:bg-white/5 transition-colors"
       >
         <div className="flex items-center space-x-2">
-          <Filter className="h-5 w-5 text-[#00ff88]" />
+          <Filter className="h-5 w-5 text-[#00FFA3]" />
           <span className="font-semibold text-white">Advanced Filters</span>
         </div>
         {Object.keys(filters).length > 0 && (
-          <span className="px-2 py-1 rounded-full bg-[#00ff88]/20 text-[#00ff88] text-xs font-semibold">
+          <span className="px-2 py-1 rounded-full bg-[#00FFA3]/20 text-[#00FFA3] text-xs font-semibold">
             {Object.keys(filters).length} active
           </span>
         )}
@@ -92,7 +92,7 @@ export function AdvancedFilters({ onFilterChange, userTier }: AdvancedFiltersPro
                     max="100"
                     value={filters.scoreMin || ''}
                     onChange={(e) => handleFilterChange('scoreMin', e.target.value ? Number(e.target.value) : undefined)}
-                    className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-[#00ff88] focus:outline-none text-white"
+                    className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-[#00FFA3] focus:outline-none text-white"
                   />
                   <span className="text-[#6b7280]">-</span>
                   <input
@@ -102,7 +102,7 @@ export function AdvancedFilters({ onFilterChange, userTier }: AdvancedFiltersPro
                     max="100"
                     value={filters.scoreMax || ''}
                     onChange={(e) => handleFilterChange('scoreMax', e.target.value ? Number(e.target.value) : undefined)}
-                    className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-[#00ff88] focus:outline-none text-white"
+                    className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-[#00FFA3] focus:outline-none text-white"
                   />
                 </div>
               </div>
@@ -119,7 +119,7 @@ export function AdvancedFilters({ onFilterChange, userTier }: AdvancedFiltersPro
                     max="100"
                     value={filters.progressMin || ''}
                     onChange={(e) => handleFilterChange('progressMin', e.target.value ? Number(e.target.value) : undefined)}
-                    className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-[#00ff88] focus:outline-none text-white"
+                    className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-[#00FFA3] focus:outline-none text-white"
                   />
                   <span className="text-[#6b7280]">-</span>
                   <input
@@ -129,7 +129,7 @@ export function AdvancedFilters({ onFilterChange, userTier }: AdvancedFiltersPro
                     max="100"
                     value={filters.progressMax || ''}
                     onChange={(e) => handleFilterChange('progressMax', e.target.value ? Number(e.target.value) : undefined)}
-                    className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-[#00ff88] focus:outline-none text-white"
+                    className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-[#00FFA3] focus:outline-none text-white"
                   />
                 </div>
               </div>
@@ -153,7 +153,7 @@ export function AdvancedFilters({ onFilterChange, userTier }: AdvancedFiltersPro
                     type="checkbox"
                     checked={filters.whaleOnly || false}
                     onChange={(e) => handleFilterChange('whaleOnly', e.target.checked)}
-                    className="w-4 h-4 rounded bg-white/5 border-white/10 text-[#00ff88] focus:ring-[#00ff88]"
+                    className="w-4 h-4 rounded bg-white/5 border-white/10 text-[#00FFA3] focus:ring-[#00FFA3]"
                   />
                   <span className="text-sm font-semibold text-[#b8c5d6]">
                     Only tokens with whale activity (3+ whales)
@@ -165,7 +165,7 @@ export function AdvancedFilters({ onFilterChange, userTier }: AdvancedFiltersPro
             {Object.keys(filters).length > 0 && (
               <button
                 onClick={clearFilters}
-                className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-[#ff006e]/20 text-[#ff006e] hover:bg-[#ff006e]/30 transition-colors"
+                className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-[#FF2E86]/20 text-[#FF2E86] hover:bg-[#FF2E86]/30 transition-colors"
               >
                 <X className="h-4 w-4" />
                 <span>Clear Filters</span>

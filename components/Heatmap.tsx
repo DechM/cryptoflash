@@ -23,11 +23,11 @@ export function Heatmap({ tokens }: HeatmapProps) {
   }, [tokens])
 
   const getColor = (score: number) => {
-    if (score >= 90) return '#00ff88' // Green
-    if (score >= 75) return '#00d9ff' // Cyan
+    if (score >= 90) return '#00FFA3' // Mint
+    if (score >= 75) return '#00D1FF' // Cyan
     if (score >= 60) return '#ffd700' // Yellow
     if (score >= 45) return '#ff6b35' // Orange
-    return '#ff006e' // Pink/Red
+    return '#FF2E86' // Magenta
   }
 
   const CustomTooltip = ({ active, payload }: any) => {
@@ -70,7 +70,7 @@ export function Heatmap({ tokens }: HeatmapProps) {
             />
             <ZAxis type="number" dataKey="z" range={[100, 1000]} name="Score" />
             <Tooltip content={<CustomTooltip />} />
-            <Scatter name="Tokens" data={data} fill="#00ff88">
+            <Scatter name="Tokens" data={data} fill="#00FFA3">
               {data.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={getColor(entry.z)} />
               ))}
@@ -80,11 +80,11 @@ export function Heatmap({ tokens }: HeatmapProps) {
       </div>
       <div className="mt-4 flex items-center justify-center space-x-6 text-sm">
         <div className="flex items-center space-x-2">
-          <div className="w-3 h-3 rounded-full bg-[#00ff88]"></div>
+          <div className="w-3 h-3 rounded-full bg-[#00FFA3]"></div>
           <span className="text-[#b8c5d6]">High Score (90+)</span>
         </div>
         <div className="flex items-center space-x-2">
-          <div className="w-3 h-3 rounded-full bg-[#00d9ff]"></div>
+          <div className="w-3 h-3 rounded-full bg-[#00D1FF]"></div>
           <span className="text-[#b8c5d6]">Good (75-89)</span>
         </div>
         <div className="flex items-center space-x-2">
@@ -92,7 +92,7 @@ export function Heatmap({ tokens }: HeatmapProps) {
           <span className="text-[#b8c5d6]">Medium (60-74)</span>
         </div>
         <div className="flex items-center space-x-2">
-          <div className="w-3 h-3 rounded-full bg-[#ff006e]"></div>
+          <div className="w-3 h-3 rounded-full bg-[#FF2E86]"></div>
           <span className="text-[#b8c5d6]">Low (&lt;60)</span>
         </div>
       </div>
