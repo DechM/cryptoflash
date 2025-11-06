@@ -21,9 +21,10 @@ export const metadata: Metadata = {
     siteName: siteName,
   },
   twitter: {
-    card: "summary_large_image",
+    card: "summary",
     title: "CryptoFlash",
     description: "Real-time KOTH tracker for Pump.fun",
+    images: ["https://cryptoflash.app/favicon.ico"],
   },
 };
 
