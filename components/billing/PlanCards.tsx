@@ -238,6 +238,10 @@ export default function PlanCards() {
             <Sparkles className="h-4 w-4 text-[#ff006e]" />
             <span>10s Refresh</span>
           </div>
+          <div className="flex items-center space-x-2">
+            <Sparkles className="h-4 w-4 text-[#ff006e]" />
+            <span>Test Alert</span>
+          </div>
         </Card>
       </div>
 

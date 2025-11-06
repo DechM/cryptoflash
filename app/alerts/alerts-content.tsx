@@ -313,44 +313,51 @@ OR manually:
             </motion.div>
           )}
 
-          {telegramLinked === true && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="mb-6 p-4 rounded-lg bg-[#00ff88]/20 border border-[#00ff88]/30"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Check className="h-5 w-5 text-[#00ff88]" />
-                  <span className="text-sm text-[#00ff88] font-semibold">
-                    ✅ Telegram linked! You'll receive alerts when tokens match your criteria.
-                  </span>
-                </div>
-                <button
-                  onClick={async () => {
-                    try {
-                      const response = await fetch('/api/alerts/test-send', {
-                        method: 'POST'
-                      })
-                      const data = await response.json()
-                      
-                      if (response.ok) {
-                        alert('✅ Test alert sent! Check your Telegram.')
-                      } else {
-                        alert(`❌ ${data.message || data.error || 'Failed to send test alert'}`)
-                      }
-                    } catch (error) {
-                      console.error('Error sending test alert:', error)
-                      alert('❌ Failed to send test alert')
-                    }
-                  }}
-                  className="ml-4 px-4 py-2 rounded-lg bg-[#00ff88]/20 hover:bg-[#00ff88]/30 border border-[#00ff88]/50 text-[#00ff88] font-semibold text-sm transition-colors"
+              {telegramLinked === true && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="mb-6 p-4 rounded-lg bg-[#00ff88]/20 border border-[#00ff88]/30"
                 >
-                  Send Test Alert
-                </button>
-              </div>
-            </motion.div>
-          )}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Check className="h-5 w-5 text-[#00ff88]" />
+                      <span className="text-sm text-[#00ff88] font-semibold">
+                        ✅ Telegram linked! You'll receive alerts when tokens match your criteria.
+                      </span>
+                    </div>
+                    {plan === 'ultimate' ? (
+                      <button
+                        onClick={async () => {
+                          try {
+                            const response = await fetch('/api/alerts/test-send', {
+                              method: 'POST'
+                            })
+                            const data = await response.json()
+                            
+                            if (response.ok) {
+                              alert('✅ Test alert sent! Check your Telegram.')
+                            } else {
+                              alert(`❌ ${data.message || data.error || 'Failed to send test alert'}`)
+                            }
+                          } catch (error) {
+                            console.error('Error sending test alert:', error)
+                            alert('❌ Failed to send test alert')
+                          }
+                        }}
+                        className="ml-4 px-4 py-2 rounded-lg bg-[#00ff88]/20 hover:bg-[#00ff88]/30 border border-[#00ff88]/50 text-[#00ff88] font-semibold text-sm transition-colors"
+                      >
+                        Send Test Alert
+                      </button>
+                    ) : (
+                      <div className="ml-4 px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-xs text-[#6b7280] flex items-center space-x-1">
+                        <Lock className="h-3 w-3" />
+                        <span>Ultimate only</span>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
