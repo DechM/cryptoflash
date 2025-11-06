@@ -127,6 +127,17 @@ export async function getCurrentUser(): Promise<User | null> {
  */
 export async function getCurrentUserFromRequest(request: NextRequest): Promise<User | null> {
   try {
+    // Debug: Check if we have Supabase URL and key
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      console.error('❌ [getCurrentUserFromRequest] Missing Supabase env vars')
+      return null
+    }
+    
+    // Debug: Log cookies
+    const cookies = request.cookies.getAll()
+    const supabaseCookies = cookies.filter(c => c.name.includes('supabase') || c.name.includes('auth'))
+    console.log('🔍 [getCurrentUserFromRequest] Found', supabaseCookies.length, 'Supabase cookies')
+    
     const supabase = createClientFromRequest(request)
     
     // Try getUser directly (this uses the session token from cookies)
@@ -136,21 +147,30 @@ export async function getCurrentUserFromRequest(request: NextRequest): Promise<U
     } = await supabase.auth.getUser()
 
     if (error) {
-      // Don't log "Auth session missing" as error - it's normal for unauthenticated users
-      if (!error.message?.includes('session') && !error.message?.includes('missing')) {
-        console.error('Error getting user from request:', error.message)
-      }
+      // Log all errors for debugging
+      console.error('❌ [getCurrentUserFromRequest] Supabase auth error:', {
+        message: error.message,
+        status: error.status,
+        name: error.name
+      })
       return null
+    }
+
+    if (user) {
+      console.log('✅ [getCurrentUserFromRequest] User found:', user.id, user.email)
+    } else {
+      console.log('⚠️ [getCurrentUserFromRequest] No user returned from Supabase')
     }
 
     return user || null
   } catch (error: any) {
     // Explicitly catch NEXT_REDIRECT errors and prevent them
     if (error?.digest?.includes('NEXT_REDIRECT') || error?.message?.includes('redirect')) {
-      console.error('Blocked redirect in getCurrentUserFromRequest')
+      console.error('❌ [getCurrentUserFromRequest] Blocked redirect')
       return null
     }
-    console.error('Error getting current user from request:', error?.message || error)
+    console.error('❌ [getCurrentUserFromRequest] CRITICAL ERROR:', error?.message || error)
+    console.error('Error stack:', error?.stack)
     return null
   }
 }

@@ -94,9 +94,21 @@ export async function POST(req: NextRequest) {
  */
 export async function GET(req: NextRequest) {
   try {
+    // Debug: Log cookies
+    const cookies = req.cookies.getAll()
+    console.log('🔍 [link-telegram GET] Cookies received:', cookies.length, 'cookies')
+    cookies.forEach(c => {
+      if (c.name.includes('supabase') || c.name.includes('auth')) {
+        console.log(`  Cookie: ${c.name} = ${c.value.substring(0, 20)}...`)
+      }
+    })
+    
     const user = await getCurrentUserFromRequest(req)
     
+    console.log('🔍 [link-telegram GET] User:', user ? `${user.id} (${user.email})` : 'null')
+    
     if (!user) {
+      console.error('❌ [link-telegram GET] No user found - returning 401')
       return NextResponse.json(
         { error: 'Unauthorized', message: 'Please log in' },
         { status: 401 }
@@ -104,6 +116,7 @@ export async function GET(req: NextRequest) {
     }
     
     const userId = user.id
+    console.log('✅ [link-telegram GET] User authenticated:', userId)
 
     const { data: userData, error } = await supabaseAdmin
       .from('users')
@@ -112,12 +125,18 @@ export async function GET(req: NextRequest) {
       .single()
 
     if (error) {
-      console.error('Error fetching telegram link:', error)
+      console.error('❌ [link-telegram GET] Error fetching telegram link:', error)
       return NextResponse.json(
         { error: 'Failed to fetch telegram link' },
         { status: 500 }
       )
     }
+
+    console.log('✅ [link-telegram GET] Telegram status:', {
+      linked: !!userData?.telegram_chat_id,
+      chat_id: userData?.telegram_chat_id || 'null',
+      username: userData?.telegram_username || 'null'
+    })
 
     return NextResponse.json({
       linked: !!userData?.telegram_chat_id,
@@ -125,9 +144,10 @@ export async function GET(req: NextRequest) {
       telegram_username: userData?.telegram_username || null
     })
   } catch (error: any) {
-    console.error('Error in GET link-telegram:', error)
+    console.error('❌ [link-telegram GET] CRITICAL ERROR:', error)
+    console.error('Error stack:', error?.stack)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error?.message },
       { status: 500 }
     )
   }
