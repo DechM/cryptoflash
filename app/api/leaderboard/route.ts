@@ -13,8 +13,8 @@ interface CachedLeaderboard {
 let cache: CachedLeaderboard | null = null
 
 /**
- * Get BG Leaderboard - Real data from alert_history + Dexscreener PnL
- * Filters by Bulgarian wallet labels (simplified - assumes certain wallet patterns or labels)
+ * Get Global Leaderboard - Real data from alert_history + Dexscreener PnL
+ * Shows top wallets worldwide based on alert performance
  */
 export async function GET() {
   try {
@@ -109,18 +109,11 @@ export async function GET() {
       ))
     }
 
-    // Calculate averages and filter by Bulgarian wallets
-    // In production, you would check against a list of known Bulgarian wallet addresses
-    // For now, we'll use all wallets but you can add filtering logic here
+    // Calculate averages - NO FILTERING (show all wallets worldwide)
     const leaderboard = Array.from(userStats.values())
       .map(stats => {
         stats.avgScore = stats.totalScore / stats.snipes
         return stats
-      })
-      .filter(stats => {
-        // Filter by Bulgarian wallets (simplified - check wallet pattern or labels)
-        // In production, you would query a labels database or use a predefined list
-        return isBulgarianWallet(stats.wallet)
       })
       .map(stats => {
         // Calculate profit (simplified - would need historical price data)
@@ -145,7 +138,7 @@ export async function GET() {
         const profitB = parseFloat(b.profit.replace(/[$,]/g, ''))
         return profitB - profitA
       })
-      .slice(0, 10) // Top 10
+      .slice(0, 50) // Top 50 (increased from 10)
       .map((item, index) => ({
         rank: index + 1,
         ...item
@@ -194,19 +187,5 @@ function formatEmailAsWallet(email: string): string {
     return `${username.slice(0, 4)}...${username.slice(-4)}`
   }
   return username
-}
-
-/**
- * Check if wallet is Bulgarian (simplified - in production, use labels database)
- */
-function isBulgarianWallet(wallet: string): boolean {
-  // Simplified filter - in production, you would:
-  // 1. Query a labels database (e.g., Helius, Birdeye)
-  // 2. Check against a predefined list of Bulgarian wallet addresses
-  // 3. Use IP geolocation or other signals
-  
-  // For now, return true for all wallets (show full leaderboard)
-  // You can add filtering logic here based on known Bulgarian wallet patterns
-  return true
 }
 

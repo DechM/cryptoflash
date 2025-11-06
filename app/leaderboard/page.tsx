@@ -3,9 +3,8 @@
 import { Navbar } from '@/components/Navbar'
 import { Trophy, Medal, Award, TrendingUp } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { useEffect, useState } from 'react'
 import useSWR from 'swr'
-import { formatAddress, formatNumber } from '@/lib/utils'
+import { formatAddress } from '@/lib/utils'
 
 interface LeaderboardEntry {
   rank: number
@@ -18,9 +17,9 @@ interface LeaderboardEntry {
 
 const fetcher = (url: string) => fetch(url).then(r => r.json())
 
-export default function BGLeaderboardPage() {
+export default function LeaderboardPage() {
   const { data, error, isLoading } = useSWR<{ leaderboard: LeaderboardEntry[] }>(
-    '/api/leaderboard/bg',
+    '/api/leaderboard',
     fetcher,
     {
       refreshInterval: 5 * 60 * 1000, // Refresh every 5 minutes
@@ -55,10 +54,10 @@ export default function BGLeaderboardPage() {
         >
           <Trophy className="h-16 w-16 mx-auto mb-4 text-[#ffd700]" />
           <h1 className="text-3xl md:text-4xl font-bold gradient-text mb-2">
-            BG Leaderboard
+            Leaderboard
           </h1>
           <p className="text-[#b8c5d6]">
-            Top Bulgarian wallets sniping Pump.fun KOTH tokens
+            Top wallets sniping Pump.fun KOTH tokens
           </p>
         </motion.div>
 
@@ -66,7 +65,7 @@ export default function BGLeaderboardPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="glass rounded-xl p-4 md:p-6 lg:p-8 overflow-x-auto"
+          className="glass-card rounded-xl p-4 md:p-6 lg:p-8 overflow-x-auto"
         >
           <div className="min-w-full">
             <table className="w-full text-sm md:text-base">
@@ -80,10 +79,24 @@ export default function BGLeaderboardPage() {
                 </tr>
               </thead>
             <tbody>
+              {isLoading && (
+                <tr>
+                  <td colSpan={5} className="py-8 text-center text-[#6b7280]">
+                    Loading leaderboard...
+                  </td>
+                </tr>
+              )}
+              {error && (
+                <tr>
+                  <td colSpan={5} className="py-8 text-center text-[#ef4444]">
+                    Error loading leaderboard. Please try again later.
+                  </td>
+                </tr>
+              )}
               {leaderboard.length === 0 && !isLoading && !error && (
                 <tr>
                   <td colSpan={5} className="py-8 text-center text-[#6b7280]">
-                    No leaderboard data available yet. Check back soon!
+                    No leaderboard data available yet. Create alerts to start tracking your snipes!
                   </td>
                 </tr>
               )}
@@ -126,13 +139,13 @@ export default function BGLeaderboardPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          className="mt-8 glass rounded-xl p-6 text-center"
+          className="mt-8 glass-card rounded-xl p-6 text-center"
         >
           <p className="text-[#b8c5d6] mb-4">
             Want to see your wallet on the leaderboard?
           </p>
           <p className="text-sm text-[#6b7280]">
-            Connect your wallet or link your Telegram to start tracking your snipes
+            Create alerts to start tracking your snipes and compete for the top spots
           </p>
         </motion.div>
       </main>

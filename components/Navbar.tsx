@@ -16,7 +16,7 @@ export function Navbar() {
   const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: Zap },
     { href: '/alerts', label: 'Alerts', icon: AlertCircle },
-    { href: '/bg-leaderboard', label: 'BG Leaderboard', icon: Trophy },
+    { href: '/leaderboard', label: 'Leaderboard', icon: Trophy },
     { href: '/premium', label: 'Premium', icon: Crown },
   ]
 
