@@ -107,7 +107,7 @@ export default function BGLeaderboardPage() {
                     <span className="text-[#b8c5d6] font-semibold text-xs md:text-sm">{entry.snipes}</span>
                   </td>
                   <td className="py-3 md:py-4 px-2 md:px-4 text-right">
-                    <span className="text-[#00FFA3] font-bold text-xs md:text-sm">${formatNumber(entry.profit)}</span>
+                    <span className="text-[#00FFA3] font-bold text-xs md:text-sm">{entry.profit}</span>
                   </td>
                   <td className="py-3 md:py-4 px-2 md:px-4 text-right hidden md:table-cell">
                     <div className="flex items-center justify-end space-x-1 md:space-x-2">
@@ -119,6 +119,7 @@ export default function BGLeaderboardPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </motion.div>
 
         <motion.div
