@@ -67,85 +67,96 @@ export async function GET() {
       .map(t => t.tokenAddress)
       .filter((addr): addr is string => !!addr)
 
+    // CHECK WHALE CACHE BEFORE Promise.all (FIX)
+    // This prevents whale tracking from being called every time main cache expires (30s)
+    let cachedWhaleData: Array<{ whaleCount: number; whaleInflows: number; totalVolume: number }> | null = null
+    const whaleTrackingEnabled = process.env.ENABLE_WHALE_TRACKING === 'true'
+    
+    if (whaleCache && Date.now() - whaleCache.timestamp < WHALE_CACHE_DURATION) {
+      const cacheAge = Math.round((Date.now() - whaleCache.timestamp) / 1000)
+      console.log(`✅ Using cached whale data (cache age: ${cacheAge}s)`)
+      cachedWhaleData = tokenAddresses.map(addr => 
+        whaleCache!.data.get(addr) || { whaleCount: 0, whaleInflows: 0, totalVolume: 0 }
+      )
+    } else if (!whaleTrackingEnabled) {
+      console.log('⚠️ Whale tracking disabled (ENABLE_WHALE_TRACKING != true) - returning zeros')
+      cachedWhaleData = tokenAddresses.map(() => ({ whaleCount: 0, whaleInflows: 0, totalVolume: 0 }))
+      // Cache zeros too (to avoid checking env var every time)
+      whaleCache = {
+        data: new Map(tokenAddresses.map((addr, idx) => [addr, cachedWhaleData[idx]])),
+        timestamp: Date.now()
+      }
+    } else {
+      console.log('🔄 Fetching fresh whale data (cache expired or not set)')
+    }
+
     // Fetch additional data in parallel
     const [dexscreenerData, whaleData] = await Promise.all([
       fetchTokenData(tokenAddresses),
-      // Process whale data with optimized rate limiting for Helius free tier
-      // Target: 900k requests/month max (864k with 36k safety margin)
-      (async () => {
-        // Check whale cache first (separate from main cache)
-        if (whaleCache && Date.now() - whaleCache.timestamp < WHALE_CACHE_DURATION) {
-          console.log('Using cached whale data')
-          return tokenAddresses.map(addr => 
-            whaleCache!.data.get(addr) || { whaleCount: 0, whaleInflows: 0, totalVolume: 0 }
-          )
-        }
+      // Use cached data if available, otherwise fetch
+      cachedWhaleData 
+        ? Promise.resolve(cachedWhaleData)
+        : (async () => {
+            console.log(`🚀 Starting whale tracking for ${tokenAddresses.length} tokens (top 30 will be tracked)`)
+            
+            // OPTIMIZATION: Only track whales for top 30 tokens (highest progress)
+            // This reduces API calls while maintaining good coverage
+            const sortedTokens = kothCandidates
+              .map((t, idx) => ({ token: t, address: tokenAddresses[idx] }))
+              .filter(item => item.address)
+              .sort((a, b) => (b.token.progress || 0) - (a.token.progress || 0))
+              .slice(0, 30) // Only top 30 tokens
+            
+            const topTokenAddresses = sortedTokens.map(item => item.address!)
+            console.log(`📊 Tracking whales for top ${topTokenAddresses.length} tokens`)
 
-        // For free tier, skip whale tracking to avoid Helius rate limits
-        // Enable with ENABLE_WHALE_TRACKING=true env var
-        if (process.env.ENABLE_WHALE_TRACKING !== 'true') {
-          console.log('Whale tracking disabled - returning zeros to avoid Helius rate limits')
-          const zeroResults = tokenAddresses.map(() => ({ whaleCount: 0, whaleInflows: 0, totalVolume: 0 }))
-          // Cache zeros too (to avoid checking env var every time)
-          whaleCache = {
-            data: new Map(tokenAddresses.map((addr, idx) => [addr, zeroResults[idx]])),
-            timestamp: Date.now()
-          }
-          return zeroResults
-        }
-
-        // OPTIMIZATION: Only track whales for top 30 tokens (highest progress)
-        // This reduces API calls while maintaining good coverage
-        // Sort tokens by progress and take top 30
-        const sortedTokens = kothCandidates
-          .map((t, idx) => ({ token: t, address: tokenAddresses[idx] }))
-          .filter(item => item.address)
-          .sort((a, b) => (b.token.progress || 0) - (a.token.progress || 0))
-          .slice(0, 30) // Only top 30 tokens
-        
-        const topTokenAddresses = sortedTokens.map(item => item.address!)
-
-        const whaleResults: Array<{ whaleCount: number; whaleInflows: number; totalVolume: number }> = []
-        
-        // Process 1 token at a time with 1.5s delay = ~0.67 req/sec (well under 10 req/sec)
-        // 30 tokens × 1.5s = 45s total, 60 requests (30 getSignatures + 30 getTransaction batches) = 1.33 req/sec ✅
-        for (let i = 0; i < topTokenAddresses.length; i++) {
-          const addr = topTokenAddresses[i]
-          
-          try {
-            // Fetch 2 signatures per token (better whale detection than 1)
-            const result = await fetchWhaleTransactions(addr, 2)
-            whaleResults.push(result)
-          } catch (error) {
-            console.warn(`Error fetching whale data for ${addr}:`, error)
-            whaleResults.push({ whaleCount: 0, whaleInflows: 0, totalVolume: 0 })
-          }
-          
-          // Rate limit: 1.5s delay between tokens
-          // This ensures we stay well under Helius free tier limit (10 req/sec)
-          if (i + 1 < topTokenAddresses.length) {
-            await new Promise(resolve => setTimeout(resolve, 1500))
-          }
-        }
-        
-        // Map results back to all tokens (top 30 have data, rest are zeros)
-        const whaleDataMap = new Map<string, { whaleCount: number; whaleInflows: number; totalVolume: number }>()
-        sortedTokens.forEach((item, idx) => {
-          whaleDataMap.set(item.address!, whaleResults[idx] || { whaleCount: 0, whaleInflows: 0, totalVolume: 0 })
-        })
-        
-        const finalResults = tokenAddresses.map(addr => 
-          whaleDataMap.get(addr) || { whaleCount: 0, whaleInflows: 0, totalVolume: 0 }
-        )
-        
-        // Cache the results (3 min cache)
-        whaleCache = {
-          data: new Map(tokenAddresses.map((addr, idx) => [addr, finalResults[idx]])),
-          timestamp: Date.now()
-        }
-        
-        return finalResults
-      })()
+            const whaleResults: Array<{ whaleCount: number; whaleInflows: number; totalVolume: number }> = []
+            
+            // Process 1 token at a time with 1.5s delay = ~0.67 req/sec (well under 10 req/sec)
+            // 30 tokens × 1.5s = 45s total, 60 requests (30 getSignatures + 30 getTransaction batches) = 1.33 req/sec ✅
+            for (let i = 0; i < topTokenAddresses.length; i++) {
+              const addr = topTokenAddresses[i]
+              
+              try {
+                // Fetch 2 signatures per token (better whale detection than 1)
+                const result = await fetchWhaleTransactions(addr, 2)
+                whaleResults.push(result)
+                if (result.whaleCount > 0) {
+                  console.log(`🐋 Found ${result.whaleCount} whale(s) for ${addr.substring(0, 8)}... (${result.whaleInflows.toFixed(2)} SOL)`)
+                }
+              } catch (error) {
+                console.warn(`❌ Error fetching whale data for ${addr}:`, error)
+                whaleResults.push({ whaleCount: 0, whaleInflows: 0, totalVolume: 0 })
+              }
+              
+              // Rate limit: 1.5s delay between tokens
+              // This ensures we stay well under Helius free tier limit (10 req/sec)
+              if (i + 1 < topTokenAddresses.length) {
+                await new Promise(resolve => setTimeout(resolve, 1500))
+              }
+            }
+            
+            // Map results back to all tokens (top 30 have data, rest are zeros)
+            const whaleDataMap = new Map<string, { whaleCount: number; whaleInflows: number; totalVolume: number }>()
+            sortedTokens.forEach((item, idx) => {
+              whaleDataMap.set(item.address!, whaleResults[idx] || { whaleCount: 0, whaleInflows: 0, totalVolume: 0 })
+            })
+            
+            const finalResults = tokenAddresses.map(addr => 
+              whaleDataMap.get(addr) || { whaleCount: 0, whaleInflows: 0, totalVolume: 0 }
+            )
+            
+            // Cache the results (3 min cache)
+            whaleCache = {
+              data: new Map(tokenAddresses.map((addr, idx) => [addr, finalResults[idx]])),
+              timestamp: Date.now()
+            }
+            
+            const totalWhales = finalResults.reduce((sum, r) => sum + r.whaleCount, 0)
+            console.log(`✅ Whale tracking complete. Total whales found: ${totalWhales} across ${topTokenAddresses.length} tokens`)
+            
+            return finalResults
+          })()
     ])
 
     // Calculate scores and enrich tokens (async map for rug risk calculation)
