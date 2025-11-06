@@ -76,21 +76,21 @@ export function calculateTokenScore(token: Partial<Token>): number {
  * Get score color based on value
  */
 export function getScoreColor(score: number): string {
-  if (score >= 90) return 'text-green-400' // High score - green
-  if (score >= 75) return 'text-green-300' // Good score
-  if (score >= 60) return 'text-yellow-400' // Medium score - yellow
-  if (score >= 45) return 'text-orange-400' // Low-medium - orange
-  return 'text-red-400' // Low score - red
+  if (score >= 90) return 'text-[#00FFA3]' // High score - Mint
+  if (score >= 75) return 'text-[#00D1FF]' // Good score - Cyan
+  if (score >= 60) return 'text-[#ffd700]' // Medium score - Yellow
+  if (score >= 45) return 'text-[#ff6b35]' // Low-medium - Orange
+  return 'text-[#FF2E86]' // Low score - Magenta
 }
 
 /**
  * Get score background color
  */
 export function getScoreBgColor(score: number): string {
-  if (score >= 90) return 'bg-green-500/20 border-green-500/50'
-  if (score >= 75) return 'bg-green-500/10 border-green-500/30'
-  if (score >= 60) return 'bg-yellow-500/10 border-yellow-500/30'
-  if (score >= 45) return 'bg-orange-500/10 border-orange-500/30'
-  return 'bg-red-500/10 border-red-500/30'
+  if (score >= 90) return 'bg-[#00FFA3]/20 border-[#00FFA3]/50'
+  if (score >= 75) return 'bg-[#00D1FF]/10 border-[#00D1FF]/30'
+  if (score >= 60) return 'bg-[#ffd700]/10 border-[#ffd700]/30'
+  if (score >= 45) return 'bg-[#ff6b35]/10 border-[#ff6b35]/30'
+  return 'bg-[#FF2E86]/10 border-[#FF2E86]/30'
 }
 

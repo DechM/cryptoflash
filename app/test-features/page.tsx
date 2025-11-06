@@ -217,10 +217,10 @@ export default function TestFeaturesPage() {
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="mt-4 inline-flex items-center space-x-2 px-4 py-2 rounded-lg bg-[#00ff88]/20 border border-[#00ff88]/30"
+                className="mt-4 inline-flex items-center space-x-2 px-4 py-2 rounded-lg bg-[#00FFA3]/20 border border-[#00FFA3]/30"
               >
-                <CheckCircle className="h-5 w-5 text-[#00ff88]" />
-                <span className="text-[#00ff88] font-semibold">
+                <CheckCircle className="h-5 w-5 text-[#00FFA3]" />
+                <span className="text-[#00FFA3] font-semibold">
                   All {totalCount} tests passed! ✅
                 </span>
               </motion.div>
@@ -237,7 +237,7 @@ export default function TestFeaturesPage() {
 
             {running ? (
               <div className="text-center py-8">
-                <Loader2 className="h-8 w-8 mx-auto mb-4 text-[#00ff88] animate-spin" />
+                <Loader2 className="h-8 w-8 mx-auto mb-4 text-[#00FFA3] animate-spin" />
                 <p className="text-[#b8c5d6]">Running tests...</p>
               </div>
             ) : (
@@ -250,14 +250,14 @@ export default function TestFeaturesPage() {
                     transition={{ delay: index * 0.05 }}
                     className={`p-4 rounded-lg border ${
                       test.passed
-                        ? 'bg-[#00ff88]/10 border-[#00ff88]/30'
+                        ? 'bg-[#00FFA3]/10 border-[#00FFA3]/30'
                         : 'bg-red-500/10 border-red-500/30'
                     }`}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-start space-x-3 flex-1">
                         {test.passed ? (
-                          <CheckCircle className="h-5 w-5 text-[#00ff88] mt-0.5" />
+                          <CheckCircle className="h-5 w-5 text-[#00FFA3] mt-0.5" />
                         ) : (
                           <XCircle className="h-5 w-5 text-red-400 mt-0.5" />
                         )}
@@ -284,7 +284,7 @@ export default function TestFeaturesPage() {
           <div className="glass rounded-xl p-6">
             <h3 className="text-lg font-bold text-white mb-4">How to Test</h3>
             <ol className="space-y-2 text-sm text-[#b8c5d6] list-decimal list-inside">
-              <li>Go to <a href="/test-payments" className="text-[#00ff88] hover:underline">/test-payments</a> and activate a plan (Free/Pro/Ultimate)</li>
+              <li>Go to <a href="/test-payments" className="text-[#00FFA3] hover:underline">/test-payments</a> and activate a plan (Free/Pro/Ultimate)</li>
               <li>Come back to this page - tests run automatically when plan changes</li>
               <li>Verify all tests pass for your current plan</li>
               <li>Test each plan (Free, Pro, Ultimate) to ensure proper gating</li>

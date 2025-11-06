@@ -105,12 +105,12 @@ export default function BGLeaderboardPage() {
                     <span className="text-[#b8c5d6] font-semibold">{entry.snipes}</span>
                   </td>
                   <td className="py-4 px-4 text-right">
-                    <span className="text-[#00ff88] font-bold">{entry.profit}</span>
+                    <span className="text-[#00FFA3] font-bold">{entry.profit}</span>
                   </td>
                   <td className="py-4 px-4 text-right">
                     <div className="flex items-center justify-end space-x-2">
-                      <TrendingUp className="h-4 w-4 text-[#00ff88]" />
-                      <span className="text-[#00ff88] font-semibold">{entry.success}%</span>
+                      <TrendingUp className="h-4 w-4 text-[#00FFA3]" />
+                      <span className="text-[#00FFA3] font-semibold">{entry.success}%</span>
                     </div>
                   </td>
                 </motion.tr>

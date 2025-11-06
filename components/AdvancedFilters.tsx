@@ -143,7 +143,7 @@ export function AdvancedFilters({ onFilterChange, userTier }: AdvancedFiltersPro
                   placeholder="e.g. 10000"
                   value={filters.volumeMin || ''}
                   onChange={(e) => handleFilterChange('volumeMin', e.target.value ? Number(e.target.value) : undefined)}
-                  className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-[#00ff88] focus:outline-none text-white"
+                  className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-[#00FFA3] focus:outline-none text-white"
                 />
               </div>
 

@@ -195,9 +195,9 @@ export default function TestPaymentsPage() {
             <motion.button
               onClick={() => testPlan('pro')}
               disabled={testing}
-              className="glass rounded-xl p-6 text-center hover:bg-white/10 transition-colors disabled:opacity-50 border border-[#00ff88]/20"
+              className="glass rounded-xl p-6 text-center hover:bg-white/10 transition-colors disabled:opacity-50 border border-[#00FFA3]/20"
             >
-              <CheckCircle className="h-8 w-8 mx-auto mb-2 text-[#00ff88]" />
+              <CheckCircle className="h-8 w-8 mx-auto mb-2 text-[#00FFA3]" />
               <div className="font-semibold text-white">Test PRO</div>
               <div className="text-xs text-[#6b7280] mt-1">19.99 USDC (Mock)</div>
             </motion.button>
@@ -205,9 +205,9 @@ export default function TestPaymentsPage() {
             <motion.button
               onClick={() => testPlan('ultimate')}
               disabled={testing}
-              className="glass rounded-xl p-6 text-center hover:bg-white/10 transition-colors disabled:opacity-50 border border-[#ff006e]/20"
+              className="glass rounded-xl p-6 text-center hover:bg-white/10 transition-colors disabled:opacity-50 border border-[#FF2E86]/20"
             >
-              <Sparkles className="h-8 w-8 mx-auto mb-2 text-[#ff006e]" />
+              <Sparkles className="h-8 w-8 mx-auto mb-2 text-[#FF2E86]" />
               <div className="font-semibold text-white">Test ULTIMATE</div>
               <div className="text-xs text-[#6b7280] mt-1">39.99 USDC (Mock)</div>
             </motion.button>
@@ -215,7 +215,7 @@ export default function TestPaymentsPage() {
 
           {testing && (
             <div className="glass rounded-xl p-8 text-center">
-              <Loader2 className="h-12 w-12 mx-auto mb-4 text-[#00ff88] animate-spin" />
+              <Loader2 className="h-12 w-12 mx-auto mb-4 text-[#00FFA3] animate-spin" />
               <p className="text-[#b8c5d6]">Testing payment flow...</p>
             </div>
           )}
@@ -232,13 +232,13 @@ export default function TestPaymentsPage() {
                   key={index}
                   className={`p-4 rounded-lg ${
                     result.success
-                      ? 'bg-[#00ff88]/10 border border-[#00ff88]/30'
+                      ? 'bg-[#00FFA3]/10 border border-[#00FFA3]/30'
                       : 'bg-red-500/10 border border-red-500/30'
                   }`}
                 >
                   <div className="flex items-start space-x-3">
                     {result.success ? (
-                      <CheckCircle className="h-5 w-5 text-[#00ff88] mt-0.5" />
+                      <CheckCircle className="h-5 w-5 text-[#00FFA3] mt-0.5" />
                     ) : (
                       <XCircle className="h-5 w-5 text-red-400 mt-0.5" />
                     )}
