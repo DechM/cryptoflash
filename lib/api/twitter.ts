@@ -3,6 +3,9 @@
  * For posting KOTH alerts to Twitter/X
  */
 
+import OAuth from 'oauth-1.0a'
+import crypto from 'crypto'
+
 interface TwitterToken {
   name: string
   symbol: string
@@ -50,38 +53,50 @@ ${hashtags}
 
 /**
  * Post a tweet to Twitter/X using API v2
+ * Requires OAuth 1.0a User Context (not Bearer Token)
  */
 export async function postTweet(text: string): Promise<TwitterPostResponse | null> {
-  const bearerToken = process.env.TWITTER_BEARER_TOKEN
   const apiKey = process.env.TWITTER_API_KEY
   const apiSecret = process.env.TWITTER_API_SECRET
   const accessToken = process.env.TWITTER_ACCESS_TOKEN
   const accessTokenSecret = process.env.TWITTER_ACCESS_TOKEN_SECRET
 
-  if (!bearerToken && (!apiKey || !apiSecret || !accessToken || !accessTokenSecret)) {
-    console.error('Twitter API credentials not configured')
+  if (!apiKey || !apiSecret || !accessToken || !accessTokenSecret) {
+    console.error('Twitter OAuth 1.0a credentials not configured. Need: API_KEY, API_SECRET, ACCESS_TOKEN, ACCESS_TOKEN_SECRET')
     return null
   }
 
   try {
-    // Use OAuth 1.0a for posting (more reliable than Bearer Token for write operations)
-    // For simplicity, we'll use Bearer Token if available, otherwise OAuth 1.0a
-    
-    let authHeader: string
-    
-    if (bearerToken) {
-      // Use Bearer Token (simpler, but may have limitations)
-      authHeader = `Bearer ${bearerToken}`
-    } else {
-      // OAuth 1.0a would require crypto library - for now, use Bearer Token approach
-      console.error('OAuth 1.0a not implemented - using Bearer Token only')
-      return null
+    // Create OAuth 1.0a instance
+    const oauth = new OAuth({
+      consumer: {
+        key: apiKey,
+        secret: apiSecret
+      },
+      signature_method: 'HMAC-SHA1',
+      hash_function(baseString, key) {
+        return crypto.createHmac('sha1', key).update(baseString).digest('base64')
+      }
+    })
+
+    const token = {
+      key: accessToken,
+      secret: accessTokenSecret
     }
 
-    const response = await fetch('https://api.twitter.com/2/tweets', {
+    const url = 'https://api.twitter.com/2/tweets'
+    const requestData = {
+      url,
+      method: 'POST'
+    }
+
+    // Generate OAuth 1.0a authorization header
+    const authHeader = oauth.toHeader(oauth.authorize(requestData, token))
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
-        'Authorization': authHeader,
+        'Authorization': authHeader.Authorization,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({

@@ -23,19 +23,22 @@ CryptoFlash automatically posts KOTH alerts to Twitter/X when tokens reach 80%+ 
 
 ### 2. Get API Credentials
 
-After creating your app, you'll need:
+After creating your app, you'll need OAuth 1.0a credentials (required for posting tweets):
 
-- **API Key** (`TWITTER_API_KEY`)
-- **API Secret** (`TWITTER_API_SECRET`)
-- **Bearer Token** (`TWITTER_BEARER_TOKEN`) - Recommended for v2 API
-- **Access Token** (`TWITTER_ACCESS_TOKEN`) - Optional, for OAuth 1.0a
-- **Access Token Secret** (`TWITTER_ACCESS_TOKEN_SECRET`) - Optional
+- **API Key** (`TWITTER_API_KEY`) - Required
+- **API Secret** (`TWITTER_API_SECRET`) - Required
+- **Access Token** (`TWITTER_ACCESS_TOKEN`) - Required
+- **Access Token Secret** (`TWITTER_ACCESS_TOKEN_SECRET`) - Required
 
-**How to get Bearer Token:**
+**How to get OAuth 1.0a credentials:**
 1. In your Twitter App settings
 2. Go to "Keys and tokens" tab
-3. Under "Bearer Token", click "Generate"
-4. Copy the token (starts with `AAAA...`)
+3. Under "Consumer Keys", you'll see:
+   - **API Key** - Copy this
+   - **API Secret** - Click "Generate" or "Regenerate", then copy
+4. Under "Authentication Tokens", click "Generate" or "Regenerate"
+   - **Access Token** - Copy this
+   - **Access Token Secret** - Copy this (shown only once)
 
 ### 3. Set App Permissions
 
@@ -50,10 +53,7 @@ After creating your app, you'll need:
 Go to your Vercel project → Settings → Environment Variables and add:
 
 ```bash
-# Required (at least one method)
-TWITTER_BEARER_TOKEN=AAAA...your_bearer_token_here
-
-# Optional (for OAuth 1.0a - not currently used, but kept for future)
+# Required - OAuth 1.0a credentials (for posting tweets)
 TWITTER_API_KEY=your_api_key_here
 TWITTER_API_SECRET=your_api_secret_here
 TWITTER_ACCESS_TOKEN=your_access_token_here
@@ -62,6 +62,8 @@ TWITTER_ACCESS_TOKEN_SECRET=your_access_token_secret_here
 # Optional: Cron secret for security (recommended)
 CRON_SECRET=your_random_secret_here
 ```
+
+**Important:** All 4 OAuth 1.0a credentials are required. Bearer Token is NOT used for posting tweets.
 
 ### 5. Run Database Migration
 
