@@ -187,7 +187,7 @@ function LoginPageContent() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-[#00ff88] focus:outline-none text-white placeholder-[#6b7280]"
+                    className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-[#00FFA3] focus:outline-none text-white placeholder-[#6b7280]"
                     placeholder="your@email.com"
                   />
                 </div>
@@ -205,7 +205,7 @@ function LoginPageContent() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-[#00ff88] focus:outline-none text-white placeholder-[#6b7280]"
+                    className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-[#00FFA3] focus:outline-none text-white placeholder-[#6b7280]"
                     placeholder="Enter your password"
                   />
                 </div>
@@ -214,7 +214,7 @@ function LoginPageContent() {
               <div className="flex items-center justify-between">
                 <Link
                   href="/forgot-password"
-                  className="text-sm text-[#00ff88] hover:underline"
+                  className="text-sm text-[#00FFA3] hover:underline"
                 >
                   Forgot password?
                 </Link>
@@ -223,7 +223,7 @@ function LoginPageContent() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full px-6 py-3 rounded-lg bg-gradient-to-r from-[#00ff88] to-[#00d9ff] text-black font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                className="w-full px-6 py-3 rounded-lg bg-gradient-to-r from-[#00FFA3] to-[#00D1FF] text-black font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
               >
                 {loading ? (
                   <>
@@ -275,7 +275,7 @@ function LoginPageContent() {
 
             <p className="mt-6 text-center text-sm text-[#6b7280]">
               Don't have an account?{' '}
-              <Link href={`/register?next=${encodeURIComponent(next)}`} className="text-[#00ff88] hover:underline">
+              <Link href={`/register?next=${encodeURIComponent(next)}`} className="text-[#00FFA3] hover:underline">
                 Sign up
               </Link>
             </p>
@@ -291,7 +291,7 @@ export default function LoginPage() {
     <Suspense fallback={
       <div className="min-h-screen bg-gradient-to-br from-[#0a0e27] via-[#1a1f3a] to-[#0a0e27] w-full flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00ff88] mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00FFA3] mx-auto mb-4"></div>
           <p className="text-[#b8c5d6]">Loading...</p>
         </div>
       </div>

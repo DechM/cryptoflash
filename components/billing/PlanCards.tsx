@@ -34,7 +34,7 @@ function Card({
     <div
       className={`rounded-2xl border p-6 w-full flex flex-col ${
         highlight
-          ? "border-[#00ff88]/40 shadow-[0_0_40px_-12px_rgba(0,255,136,.45)] bg-gradient-to-br from-[#00ff88]/10 to-[#00d9ff]/10"
+          ? "border-[#00FFA3]/40 shadow-[0_0_40px_-12px_rgba(0,255,163,.45)] bg-gradient-to-br from-[#00FFA3]/10 to-[#00D1FF]/10"
           : "border-white/10 bg-white/5"
       } backdrop-blur-lg`}
     >
@@ -54,8 +54,8 @@ function Card({
               : disabled
               ? "bg-white/5 cursor-not-allowed text-[#6b7280] border border-white/10"
               : highlight
-              ? "bg-gradient-to-r from-[#00ff88] to-[#00d9ff] text-black hover:opacity-90"
-              : "bg-[#00ff88] text-black hover:bg-[#00ff88]/90"
+              ? "bg-gradient-to-r from-[#00FFA3] to-[#00D1FF] text-black hover:opacity-90"
+              : "bg-[#00FFA3] text-black hover:bg-[#00FFA3]/90"
           }`}
         >
           {current ? "Current Plan" : disabled ? (
@@ -180,27 +180,27 @@ export default function PlanCards() {
           disabledMessage={!user ? "Login required to purchase" : undefined}
         >
           <div className="flex items-center space-x-2">
-            <Check className="h-4 w-4 text-[#00ff88]" />
+            <Check className="h-4 w-4 text-[#00FFA3]" />
             <span>Early Alerts (≥85%)</span>
           </div>
           <div className="flex items-center space-x-2">
-            <Check className="h-4 w-4 text-[#00ff88]" />
+            <Check className="h-4 w-4 text-[#00FFA3]" />
             <span>10 Token Tracking</span>
           </div>
           <div className="flex items-center space-x-2">
-            <Check className="h-4 w-4 text-[#00ff88]" />
+            <Check className="h-4 w-4 text-[#00FFA3]" />
             <span>Advanced Filters</span>
           </div>
           <div className="flex items-center space-x-2">
-            <Check className="h-4 w-4 text-[#00ff88]" />
+            <Check className="h-4 w-4 text-[#00FFA3]" />
             <span>History 30 days</span>
           </div>
           <div className="flex items-center space-x-2">
-            <Check className="h-4 w-4 text-[#00ff88]" />
+            <Check className="h-4 w-4 text-[#00FFA3]" />
             <span>Priority Alerts</span>
           </div>
           <div className="flex items-center space-x-2">
-            <Check className="h-4 w-4 text-[#00ff88]" />
+            <Check className="h-4 w-4 text-[#00FFA3]" />
             <span>15s Refresh</span>
           </div>
         </Card>
@@ -215,31 +215,31 @@ export default function PlanCards() {
           disabledMessage={!user ? "Login required to purchase" : undefined}
         >
           <div className="flex items-center space-x-2">
-            <Sparkles className="h-4 w-4 text-[#ff006e]" />
+            <Sparkles className="h-4 w-4 text-[#FF2E86]" />
             <span>Earliest Alerts (≥80%)</span>
           </div>
           <div className="flex items-center space-x-2">
-            <Sparkles className="h-4 w-4 text-[#ff006e]" />
+            <Sparkles className="h-4 w-4 text-[#FF2E86]" />
             <span>Unlimited Tracking</span>
           </div>
           <div className="flex items-center space-x-2">
-            <Sparkles className="h-4 w-4 text-[#ff006e]" />
+            <Sparkles className="h-4 w-4 text-[#FF2E86]" />
             <span>Whale Alerts</span>
           </div>
           <div className="flex items-center space-x-2">
-            <Sparkles className="h-4 w-4 text-[#ff006e]" />
+            <Sparkles className="h-4 w-4 text-[#FF2E86]" />
             <span>Premium Analytics</span>
           </div>
           <div className="flex items-center space-x-2">
-            <Sparkles className="h-4 w-4 text-[#ff006e]" />
+            <Sparkles className="h-4 w-4 text-[#FF2E86]" />
             <span>History 365 days</span>
           </div>
           <div className="flex items-center space-x-2">
-            <Sparkles className="h-4 w-4 text-[#ff006e]" />
+            <Sparkles className="h-4 w-4 text-[#FF2E86]" />
             <span>10s Refresh</span>
           </div>
           <div className="flex items-center space-x-2">
-            <Sparkles className="h-4 w-4 text-[#ff006e]" />
+            <Sparkles className="h-4 w-4 text-[#FF2E86]" />
             <span>Test Alert</span>
           </div>
         </Card>

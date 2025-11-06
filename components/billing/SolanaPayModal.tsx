@@ -138,7 +138,7 @@ export function SolanaPayModal({
                 <button
                   onClick={handleConfirmPayment}
                   disabled={polling}
-                  className="w-full flex items-center justify-center space-x-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#00ff88] to-[#00d9ff] text-black font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+                  className="w-full flex items-center justify-center space-x-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#00FFA3] to-[#00D1FF] text-black font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
                 >
                   {polling ? (
                     <>
@@ -162,7 +162,7 @@ export function SolanaPayModal({
 
           {status === 'confirming' && (
             <div className="text-center py-8">
-              <Loader2 className="h-12 w-12 mx-auto mb-4 text-[#00ff88] animate-spin" />
+              <Loader2 className="h-12 w-12 mx-auto mb-4 text-[#00FFA3] animate-spin" />
               <p className="text-[#b8c5d6]">Confirming payment...</p>
               <p className="text-sm text-[#6b7280] mt-2">Please wait 5-10 seconds after sending the transaction</p>
             </div>
@@ -170,7 +170,7 @@ export function SolanaPayModal({
 
           {status === 'confirmed' && (
             <div className="text-center py-8">
-              <CheckCircle className="h-16 w-16 mx-auto mb-4 text-[#00ff88]" />
+              <CheckCircle className="h-16 w-16 mx-auto mb-4 text-[#00FFA3]" />
               <h3 className="text-xl font-bold text-white mb-2">Payment Confirmed!</h3>
               <p className="text-[#b8c5d6]">Your subscription is now active</p>
             </div>
@@ -188,7 +188,7 @@ export function SolanaPayModal({
                   setStatus('pending')
                   setError(null)
                 }}
-                className="px-6 py-2 rounded-lg bg-[#00ff88] text-black font-semibold hover:opacity-90"
+                className="px-6 py-2 rounded-lg bg-[#00FFA3] text-black font-semibold hover:opacity-90"
               >
                 Try Again
               </button>

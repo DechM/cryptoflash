@@ -212,8 +212,8 @@ export default function AlertsPageContent() {
               className="mb-6 p-4 rounded-lg bg-[#00ff88]/20 border border-[#00ff88]/30"
             >
               <div className="flex items-center space-x-2">
-                <Check className="h-5 w-5 text-[#00ff88]" />
-                <span className="text-[#00ff88] font-semibold">Alert created successfully!</span>
+                <Check className="h-5 w-5 text-[#00FFA3]" />
+                <span className="text-[#00FFA3] font-semibold">Alert created successfully!</span>
               </div>
             </motion.div>
           )}
@@ -317,12 +317,12 @@ OR manually:
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="mb-6 p-4 rounded-lg bg-[#00ff88]/20 border border-[#00ff88]/30"
+                  className="mb-6 p-4 rounded-lg bg-[#00FFA3]/20 border border-[#00FFA3]/30"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <Check className="h-5 w-5 text-[#00ff88]" />
-                      <span className="text-sm text-[#00ff88] font-semibold">
+                      <Check className="h-5 w-5 text-[#00FFA3]" />
+                      <span className="text-sm text-[#00FFA3] font-semibold">
                         ✅ Telegram linked! You'll receive alerts when tokens match your criteria.
                       </span>
                     </div>
@@ -345,7 +345,7 @@ OR manually:
                             alert('❌ Failed to send test alert')
                           }
                         }}
-                        className="ml-4 px-4 py-2 rounded-lg bg-[#00ff88]/20 hover:bg-[#00ff88]/30 border border-[#00ff88]/50 text-[#00ff88] font-semibold text-sm transition-colors"
+                        className="ml-4 px-4 py-2 rounded-lg bg-[#00FFA3]/20 hover:bg-[#00FFA3]/30 border border-[#00FFA3]/50 text-[#00FFA3] font-semibold text-sm transition-colors"
                       >
                         Send Test Alert
                       </button>
@@ -370,7 +370,7 @@ OR manually:
                 value={tokenAddress}
                 onChange={(e) => setTokenAddress(e.target.value)}
                 placeholder="Leave empty for all tokens"
-                className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-[#00ff88] focus:outline-none text-white placeholder-[#6b7280] font-mono text-sm"
+                className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-[#00FFA3] focus:outline-none text-white placeholder-[#6b7280] font-mono text-sm"
               />
               <p className="mt-2 text-xs text-[#6b7280]">
                 {plan === 'free' 
@@ -422,7 +422,7 @@ OR manually:
             <button
               type="submit"
               disabled={submitting || telegramLinked === false}
-              className="w-full px-6 py-3 rounded-lg bg-gradient-to-r from-[#00ff88] to-[#00d9ff] text-black font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+              className="w-full px-6 py-3 rounded-lg bg-gradient-to-r from-[#00FFA3] to-[#00D1FF] text-black font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
               title={telegramLinked === false ? 'Please link your Telegram account first to receive alerts' : undefined}
             >
               {submitting ? (
@@ -446,7 +446,7 @@ OR manually:
           </form>
 
           {plan === 'free' && (
-            <div className="mt-6 p-4 rounded-lg bg-gradient-to-r from-[#ff006e]/10 to-[#ff6b35]/10 border border-[#ff006e]/30 text-center">
+            <div className="mt-6 p-4 rounded-lg bg-gradient-to-r from-[#FF2E86]/10 to-[#ff6b35]/10 border border-[#FF2E86]/30 text-center">
               <p className="text-sm text-[#b8c5d6] mb-3">
                 <strong className="text-white">Upgrade for more power:</strong>
               </p>
@@ -455,15 +455,15 @@ OR manually:
                   <p className="font-semibold text-white mb-2">Pro - 19.99 USDC/mo</p>
                   <ul className="space-y-1 text-xs text-[#b8c5d6]">
                     <li className="flex items-center space-x-2">
-                      <Check className="h-3 w-3 text-[#00ff88]" />
+                      <Check className="h-3 w-3 text-[#00FFA3]" />
                       <span>10 token tracking</span>
                     </li>
                     <li className="flex items-center space-x-2">
-                      <Check className="h-3 w-3 text-[#00ff88]" />
+                      <Check className="h-3 w-3 text-[#00FFA3]" />
                       <span>Early alerts at 85%</span>
                     </li>
                     <li className="flex items-center space-x-2">
-                      <Check className="h-3 w-3 text-[#00ff88]" />
+                      <Check className="h-3 w-3 text-[#00FFA3]" />
                       <span>Custom thresholds (85-100%)</span>
                     </li>
                   </ul>
@@ -472,15 +472,15 @@ OR manually:
                   <p className="font-semibold text-white mb-2">Ultimate - 39.99 USDC/mo</p>
                   <ul className="space-y-1 text-xs text-[#b8c5d6]">
                     <li className="flex items-center space-x-2">
-                      <Check className="h-3 w-3 text-[#ff006e]" />
+                      <Check className="h-3 w-3 text-[#FF2E86]" />
                       <span>Unlimited tracking</span>
                     </li>
                     <li className="flex items-center space-x-2">
-                      <Check className="h-3 w-3 text-[#ff006e]" />
+                      <Check className="h-3 w-3 text-[#FF2E86]" />
                       <span>Earliest alerts at 80%</span>
                     </li>
                     <li className="flex items-center space-x-2">
-                      <Check className="h-3 w-3 text-[#ff006e]" />
+                      <Check className="h-3 w-3 text-[#FF2E86]" />
                       <span>Whale alerts + API access</span>
                     </li>
                   </ul>
@@ -488,7 +488,7 @@ OR manually:
               </div>
               <Link
                 href="/premium"
-                className="inline-block px-6 py-2 rounded-lg bg-gradient-to-r from-[#ff006e] to-[#ff6b35] text-white font-semibold hover:opacity-90 transition-opacity"
+                className="inline-block px-6 py-2 rounded-lg bg-gradient-to-r from-[#FF2E86] to-[#ff6b35] text-white font-semibold hover:opacity-90 transition-opacity"
               >
                 View Plans →
               </Link>

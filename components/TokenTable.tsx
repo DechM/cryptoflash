@@ -62,13 +62,13 @@ export function TokenTable({ tokens, refreshInterval = 60000 }: TokenTableProps)
                     </span>
                     <button
                       onClick={() => handleCopy(token.tokenAddress)}
-                      className="text-[#6b7280] hover:text-[#00ff88] transition-colors"
+                      className="text-[#6b7280] hover:text-[#00FFA3] transition-colors"
                       title="Copy address"
                     >
                       <Copy className="h-4 w-4" />
                     </button>
                     {copiedAddress === token.tokenAddress && (
-                      <span className="text-xs text-[#00ff88]">Copied!</span>
+                      <span className="text-xs text-[#00FFA3]">Copied!</span>
                     )}
                   </div>
                 </td>
@@ -76,7 +76,7 @@ export function TokenTable({ tokens, refreshInterval = 60000 }: TokenTableProps)
                   <div className="flex items-center justify-end space-x-2">
                     <span className="font-semibold">{token.progress.toFixed(1)}%</span>
                     {token.progress >= 95 && (
-                      <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-[#ff006e]/20 text-[#ff006e] pulse-glow">
+                      <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-[#FF2E86]/20 text-[#FF2E86] pulse-glow">
                         KOTH
                       </span>
                     )}
@@ -100,9 +100,9 @@ export function TokenTable({ tokens, refreshInterval = 60000 }: TokenTableProps)
                   <div className="flex items-center justify-end space-x-1">
                     {token.volumeChange24h !== undefined && (
                       token.volumeChange24h >= 0 ? (
-                        <TrendingUp className="h-4 w-4 text-[#00ff88]" />
+                        <TrendingUp className="h-4 w-4 text-[#00FFA3]" />
                       ) : (
-                        <TrendingDown className="h-4 w-4 text-[#ff006e]" />
+                        <TrendingDown className="h-4 w-4 text-[#FF2E86]" />
                       )
                     )}
                     <span className="text-[#b8c5d6]">
@@ -125,7 +125,7 @@ export function TokenTable({ tokens, refreshInterval = 60000 }: TokenTableProps)
                       }
                       // Always allow navigation - let pump.fun handle invalid addresses
                     }}
-                    className="inline-flex items-center space-x-2 px-4 py-2 rounded-lg bg-gradient-to-r from-[#00ff88] to-[#00d9ff] text-black font-semibold hover:opacity-90 transition-opacity glow-green shadow-lg hover:shadow-[#00ff88]/50"
+                    className="inline-flex items-center space-x-2 px-4 py-2 rounded-lg bg-gradient-to-r from-[#00FFA3] to-[#00D1FF] text-black font-semibold hover:opacity-90 transition-opacity glow-mint shadow-lg hover:shadow-[#00FFA3]/50"
                   >
                     <span>BUY</span>
                     <ExternalLink className="h-4 w-4" />

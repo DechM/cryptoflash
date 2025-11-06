@@ -157,20 +157,20 @@ export default function DashboardPage() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.1 }}
-            className="glass rounded-xl p-4 border border-[#00ff88]/20"
+            className="glass rounded-xl p-4 border border-[#00FFA3]/20"
           >
             <div className="text-sm text-[#b8c5d6] mb-1">Total Tokens</div>
-            <div className="text-2xl font-bold text-[#00ff88]">{tokens.length}</div>
+            <div className="text-2xl font-bold text-[#00FFA3]">{tokens.length}</div>
           </motion.div>
           
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
-            className="glass rounded-xl p-4 border border-[#00d9ff]/20"
+            className="glass rounded-xl p-4 border border-[#00D1FF]/20"
           >
             <div className="text-sm text-[#b8c5d6] mb-1">KOTH Ready</div>
-            <div className="text-2xl font-bold text-[#00d9ff]">
+            <div className="text-2xl font-bold text-[#00D1FF]">
               {tokens.filter(t => t.progress >= 95).length}
             </div>
           </motion.div>
@@ -191,10 +191,10 @@ export default function DashboardPage() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.4 }}
-            className="glass rounded-xl p-4 border border-[#ff006e]/20"
+            className="glass rounded-xl p-4 border border-[#FF2E86]/20"
           >
             <div className="text-sm text-[#b8c5d6] mb-1">Total Whales</div>
-            <div className="text-2xl font-bold text-[#ff006e]">
+            <div className="text-2xl font-bold text-[#FF2E86]">
               {tokens.reduce((sum, t) => sum + t.whaleCount, 0)}
             </div>
           </motion.div>
@@ -219,7 +219,7 @@ export default function DashboardPage() {
             <p className="text-[#b8c5d6] mb-4">Advanced Filters are a Pro/Ultimate feature</p>
             <a
               href="/premium"
-              className="inline-block px-6 py-2 rounded-lg bg-gradient-to-r from-[#ff006e] to-[#ff6b35] text-white font-semibold hover:opacity-90 transition-opacity"
+              className="inline-block px-6 py-2 rounded-lg bg-gradient-to-r from-[#FF2E86] to-[#ff6b35] text-white font-semibold hover:opacity-90 transition-opacity"
             >
               Upgrade to Pro
             </a>
@@ -241,7 +241,7 @@ export default function DashboardPage() {
         {/* Token Table - Full Width */}
         {loading && tokens.length === 0 ? (
           <div className="w-full glass rounded-xl p-12 text-center">
-            <RefreshCw className="h-12 w-12 animate-spin mx-auto mb-4 text-[#00ff88]" />
+            <RefreshCw className="h-12 w-12 animate-spin mx-auto mb-4 text-[#00FFA3]" />
             <p className="text-[#b8c5d6]">Loading KOTH data...</p>
           </div>
         ) : tokens.length === 0 ? (
