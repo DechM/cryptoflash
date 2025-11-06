@@ -77,7 +77,7 @@ export async function POST(req: Request) {
         if (userByUsername && !userByUsername.telegram_chat_id) {
           // Found user by username, link it
           foundUser = userByUsername
-          await supabaseAdmin
+          const { error: updateError } = await supabaseAdmin
             .from('users')
             .update({
               telegram_username: username,
@@ -85,6 +85,13 @@ export async function POST(req: Request) {
               updated_at: new Date().toISOString()
             })
             .eq('id', foundUser.id)
+          
+          if (updateError) {
+            console.error('Error updating telegram_chat_id by username:', updateError)
+            foundUser = null // Reset if update failed
+          } else {
+            console.log(`✅ Successfully linked Telegram chat_id ${chatId} to user ${foundUser.id} by username`)
+          }
         }
       }
 
@@ -115,7 +122,7 @@ export async function POST(req: Request) {
               
               // Link this Telegram account
               foundUser = userByEmail
-              await supabaseAdmin
+              const { error: updateError } = await supabaseAdmin
                 .from('users')
                 .update({
                   telegram_username: username,
@@ -123,6 +130,13 @@ export async function POST(req: Request) {
                   updated_at: new Date().toISOString()
                 })
                 .eq('id', foundUser.id)
+              
+              if (updateError) {
+                console.error('Error updating telegram_chat_id:', updateError)
+                // Continue anyway - we'll try to send the message
+              } else {
+                console.log(`✅ Successfully linked Telegram chat_id ${chatId} to user ${foundUser.id}`)
+              }
             }
           }
         }
@@ -151,6 +165,25 @@ export async function POST(req: Request) {
       }
 
       // Successfully linked - send confirmation
+      // Double-check that the update was successful
+      const { data: verifyUser } = await supabaseAdmin
+        .from('users')
+        .select('telegram_chat_id')
+        .eq('id', foundUser.id)
+        .single()
+      
+      if (verifyUser?.telegram_chat_id !== chatId.toString()) {
+        console.error(`⚠️ Warning: telegram_chat_id mismatch after update. Expected: ${chatId}, Got: ${verifyUser?.telegram_chat_id}`)
+        // Try one more time
+        await supabaseAdmin
+          .from('users')
+          .update({
+            telegram_chat_id: chatId.toString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', foundUser.id)
+      }
+      
       const linkedMessage = `✅ <b>Telegram Account Linked Successfully!</b>
 
 🎉 Your CryptoFlash account is now connected to Telegram.
@@ -170,6 +203,7 @@ You can test if alerts work by clicking "Send Test Alert" on the alerts page.
         text: linkedMessage
       })
 
+      console.log(`✅ Sent linked confirmation message to chat_id ${chatId}`)
       return NextResponse.json({ ok: true })
     }
 
