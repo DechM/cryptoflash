@@ -461,9 +461,28 @@ Create alerts and manage your settings on our website!`
     // Default: acknowledge any other message
     return NextResponse.json({ ok: true })
   } catch (error: any) {
-    console.error('Error processing Telegram webhook:', error)
+    console.error('❌ CRITICAL ERROR in Telegram webhook:', error)
+    console.error('Error type:', typeof error)
+    console.error('Error message:', error?.message)
+    console.error('Error stack:', error?.stack)
+    console.error('Full error:', JSON.stringify(error, null, 2))
+    
+    // Try to send error message to user if we have chatId
+    try {
+      const update = await req.json().catch(() => ({}))
+      const msg = update.message || update.edited_message
+      if (msg?.chat?.id) {
+        await sendTelegramMessage({
+          chat_id: msg.chat.id,
+          text: `⚠️ <b>Internal Error</b>\n\nAn error occurred while processing your request. Please try again later.`
+        })
+      }
+    } catch (sendError) {
+      console.error('Failed to send error message to user:', sendError)
+    }
+    
     return NextResponse.json(
-      { ok: false, error: 'Internal server error' },
+      { ok: false, error: 'Internal server error', details: error?.message },
       { status: 500 }
     )
   }
