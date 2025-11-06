@@ -13,7 +13,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     {
       url: `${siteUrl}/dashboard`,
       lastModified: new Date(),
-      changeFrequency: 'minutely',
+      changeFrequency: 'hourly',
       priority: 1,
     },
     {
