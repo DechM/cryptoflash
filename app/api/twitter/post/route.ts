@@ -18,7 +18,8 @@ import { Token } from '@/lib/types'
  */
 
 // Rate limiting constants
-const MIN_POST_INTERVAL = 30 * 60 * 1000 // 30 minutes
+// TEMP: Reduced to 5 minutes for testing (will change to 20 minutes after testing)
+const MIN_POST_INTERVAL = 5 * 60 * 1000 // 5 minutes (testing) - will be 20 minutes
 const MAX_POSTS_PER_DAY = 15 // Safety margin for 500/month free tier limit
 
 /**
