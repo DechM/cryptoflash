@@ -146,12 +146,15 @@ export async function POST(req: Request) {
       // Format: /start <linking_code> or /start email:<email>
       if (!foundUser && command.startsWith('/start ')) {
         const startParam = command.substring(7).trim() // Get part after "/start "
+        console.log(`🔍 Processing /start parameter: "${startParam}"`)
         
         // Try to find by email if format is /start email:user@example.com
         if (startParam.startsWith('email:')) {
-          const email = startParam.substring(6).trim()
+          let email = startParam.substring(6).trim()
+          // Remove all spaces from email (Telegram sometimes adds spaces in URLs)
+          email = email.replace(/\s+/g, '')
           const normalizedEmail = email.toLowerCase().trim()
-          console.log(`🔍 Looking for user by email: ${email} (normalized: ${normalizedEmail})`)
+          console.log(`🔍 Looking for user by email: "${email}" (normalized: "${normalizedEmail}")`)
           
           if (email) {
             let userByEmail = null
