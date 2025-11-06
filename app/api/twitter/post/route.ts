@@ -110,12 +110,12 @@ async function handleTwitterPost() {
     })))
   }
 
-  // Filter: 70%+ progress, score > 75 (optimized for early alerts)
+  // Filter: 69%+ progress, score > 74 (optimized for early alerts)
   const eligibleTokens = tokens.filter(
-    (token) => (token.progress || 0) >= 70 && (token.score || 0) > 75
+    (token) => (token.progress || 0) >= 69 && (token.score || 0) > 74
   )
 
-  console.log(`[Twitter Post] Found ${eligibleTokens.length} eligible tokens (70%+ progress, score > 75)`)
+  console.log(`[Twitter Post] Found ${eligibleTokens.length} eligible tokens (69%+ progress, score > 74)`)
   
   if (eligibleTokens.length > 0) {
     console.log(`[Twitter Post] Top eligible token: ${eligibleTokens[0].symbol} - Score: ${eligibleTokens[0].score}, Progress: ${eligibleTokens[0].progress}%`)
@@ -136,7 +136,7 @@ async function handleTwitterPost() {
     console.log('[Twitter Post] Token stats:', tokenStats)
     return NextResponse.json({ 
       success: false,
-      message: 'No eligible tokens (70%+ progress, score > 75)',
+      message: 'No eligible tokens (69%+ progress, score > 74)',
       tokenStats,
       eligibleCount: 0
     })
