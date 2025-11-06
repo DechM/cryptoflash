@@ -127,7 +127,7 @@ export default function DashboardPage() {
             {isEnabled('analytics.premium') && (
               <button
                 onClick={handleExport}
-                className="glass px-4 py-2 rounded-lg hover:bg-white/10 transition-colors flex items-center space-x-2"
+                className="btn-secondary flex items-center space-x-2"
                 title="Export to CSV"
               >
                 <Download className="h-4 w-4" />
@@ -137,7 +137,7 @@ export default function DashboardPage() {
             <button
               onClick={fetchKOTHData}
               disabled={loading}
-              className="glass px-4 py-2 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-50 flex items-center space-x-2"
+              className="btn-secondary flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none"
             >
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
               <span>Refresh</span>
@@ -157,7 +157,7 @@ export default function DashboardPage() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.1 }}
-            className="glass rounded-xl p-4 border border-[#00FFA3]/20"
+            className="glass-card rounded-xl p-4 border border-[#00FFA3]/20"
           >
             <div className="text-sm text-[#b8c5d6] mb-1">Total Tokens</div>
             <div className="text-2xl font-bold text-[#00FFA3]">{tokens.length}</div>
@@ -167,7 +167,7 @@ export default function DashboardPage() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
-            className="glass rounded-xl p-4 border border-[#00D1FF]/20"
+            className="glass-card rounded-xl p-4 border border-[#00D1FF]/20"
           >
             <div className="text-sm text-[#b8c5d6] mb-1">KOTH Ready</div>
             <div className="text-2xl font-bold text-[#00D1FF]">
@@ -179,7 +179,7 @@ export default function DashboardPage() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.3 }}
-            className="glass rounded-xl p-4 border border-[#ffd700]/20"
+            className="glass-card rounded-xl p-4 border border-[#ffd700]/20"
           >
             <div className="text-sm text-[#b8c5d6] mb-1">High Score (90+)</div>
             <div className="text-2xl font-bold text-[#ffd700]">
@@ -191,7 +191,7 @@ export default function DashboardPage() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.4 }}
-            className="glass rounded-xl p-4 border border-[#FF2E86]/20"
+            className="glass-card rounded-xl p-4 border border-[#FF2E86]/20"
           >
             <div className="text-sm text-[#b8c5d6] mb-1">Total Whales</div>
             <div className="text-2xl font-bold text-[#FF2E86]">
@@ -214,7 +214,7 @@ export default function DashboardPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-8 glass rounded-xl p-6 border border-[#ffd700]/30 text-center"
+            className="mb-8 glass-card rounded-xl p-6 border border-[#ffd700]/30 text-center"
           >
             <p className="text-[#b8c5d6] mb-4">Advanced Filters are a Pro/Ultimate feature</p>
             <a
@@ -240,12 +240,12 @@ export default function DashboardPage() {
 
         {/* Token Table - Full Width */}
         {loading && tokens.length === 0 ? (
-          <div className="w-full glass rounded-xl p-12 text-center">
+          <div className="w-full glass-card rounded-xl p-12 text-center">
             <RefreshCw className="h-12 w-12 animate-spin mx-auto mb-4 text-[#00FFA3]" />
             <p className="text-[#b8c5d6]">Loading KOTH data...</p>
           </div>
         ) : tokens.length === 0 ? (
-          <div className="w-full glass rounded-xl p-12 text-center">
+          <div className="w-full glass-card rounded-xl p-12 text-center">
             <Zap className="h-12 w-12 mx-auto mb-4 text-[#6b7280]" />
             <p className="text-[#b8c5d6]">No KOTH tokens found</p>
           </div>

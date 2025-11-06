@@ -22,7 +22,7 @@ export function TokenTable({ tokens, refreshInterval = 60000 }: TokenTableProps)
   }
 
   return (
-    <div className="w-full glass rounded-xl p-4 md:p-6 overflow-x-auto">
+    <div className="w-full glass-card rounded-xl p-4 md:p-6 overflow-x-auto">
       <div className="min-w-full">
         <table className="w-full">
           <thead>
