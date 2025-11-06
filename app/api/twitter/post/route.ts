@@ -18,9 +18,8 @@ import { Token } from '@/lib/types'
  */
 
 // Rate limiting constants
-// TEMP: Reduced to 5 minutes for testing (will change to 20 minutes after testing)
-const MIN_POST_INTERVAL = 5 * 60 * 1000 // 5 minutes (testing) - will be 20 minutes
-const MAX_POSTS_PER_DAY = 15 // Safety margin for 500/month free tier limit
+const MIN_POST_INTERVAL = 20 * 60 * 1000 // 20 minutes between posts
+const MAX_POSTS_PER_DAY = 15 // 15 posts/day = 450 posts/month (safe margin for 500/month free tier)
 
 /**
  * Main logic for posting tweets (shared between POST and GET)
@@ -112,12 +111,11 @@ async function handleTwitterPost() {
   }
 
   // Filter: 70%+ progress, score > 75 (optimized for early alerts)
-  // TEMP: Lowered for testing - will restore to 70%+ and score > 75
   const eligibleTokens = tokens.filter(
-    (token) => (token.progress || 0) >= 60 && (token.score || 0) > 70
+    (token) => (token.progress || 0) >= 70 && (token.score || 0) > 75
   )
 
-  console.log(`[Twitter Post] Found ${eligibleTokens.length} eligible tokens (60%+ progress, score > 70)`)
+  console.log(`[Twitter Post] Found ${eligibleTokens.length} eligible tokens (70%+ progress, score > 75)`)
   
   if (eligibleTokens.length > 0) {
     console.log(`[Twitter Post] Top eligible token: ${eligibleTokens[0].symbol} - Score: ${eligibleTokens[0].score}, Progress: ${eligibleTokens[0].progress}%`)
@@ -138,7 +136,7 @@ async function handleTwitterPost() {
     console.log('[Twitter Post] Token stats:', tokenStats)
     return NextResponse.json({ 
       success: false,
-      message: 'No eligible tokens (60%+ progress, score > 70)',
+      message: 'No eligible tokens (70%+ progress, score > 75)',
       tokenStats,
       eligibleCount: 0
     })
