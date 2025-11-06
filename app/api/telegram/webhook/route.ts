@@ -144,14 +144,25 @@ export async function POST(req: Request) {
         // Try to find by email if format is /start email:user@example.com
         if (startParam.startsWith('email:')) {
           const email = startParam.substring(6).trim()
+          console.log(`🔍 Looking for user by email: ${email}`)
+          
           if (email) {
-            const { data: userByEmail } = await supabaseAdmin
+            const { data: userByEmail, error: emailError } = await supabaseAdmin
               .from('users')
               .select('id, email, telegram_chat_id')
               .eq('email', email)
               .single()
             
+            if (emailError) {
+              console.error(`❌ Error finding user by email ${email}:`, emailError)
+              if (emailError.code === 'PGRST116') {
+                // No user found
+                console.log(`⚠️ No user found with email: ${email}`)
+              }
+            }
+            
             if (userByEmail) {
+              console.log(`✅ Found user by email: ${userByEmail.id}, current telegram_chat_id: ${userByEmail.telegram_chat_id || 'NULL'}`)
               if (userByEmail.telegram_chat_id && userByEmail.telegram_chat_id !== chatId.toString()) {
                 // Already linked to different Telegram account
                 await sendTelegramMessage({
@@ -163,21 +174,26 @@ export async function POST(req: Request) {
               
               // Link this Telegram account
               foundUser = userByEmail
+              console.log(`🔗 Attempting to link chat_id ${chatId} (type: ${typeof chatId}) to user ${foundUser.id}`)
+              
               const { error: updateError, data: updateData } = await supabaseAdmin
                 .from('users')
                 .update({
                   telegram_username: username,
-                  telegram_chat_id: chatId.toString()
+                  telegram_chat_id: String(chatId) // Explicit string conversion
                 })
                 .eq('id', foundUser.id)
-                .select('telegram_chat_id')
+                .select('telegram_chat_id, telegram_username')
                 .single()
               
               if (updateError) {
                 console.error('❌ Error updating telegram_chat_id:', updateError)
+                console.error('Error code:', updateError.code)
+                console.error('Error message:', updateError.message)
                 console.error('Error details:', JSON.stringify(updateError, null, 2))
+                console.error(`User ID: ${foundUser.id}, Chat ID: ${chatId}, Chat ID type: ${typeof chatId}`)
+                
                 // Don't spam - only send error message once
-                // Check if we already sent an error for this chat recently
                 const errorKey = `error-${chatId}`
                 const lastError = processedUpdates.get(errorKey)
                 if (!lastError || (now - lastError) > 60000) { // 1 minute cooldown
@@ -190,29 +206,53 @@ export async function POST(req: Request) {
                 return NextResponse.json({ ok: false, error: updateError.message }, { status: 500 })
               }
               
+              console.log(`📝 Update response data:`, JSON.stringify(updateData, null, 2))
+              
               // Verify the update was successful
-              if (updateData?.telegram_chat_id !== chatId.toString()) {
-                console.error(`⚠️ Warning: telegram_chat_id mismatch after update. Expected: ${chatId.toString()}, Got: ${updateData?.telegram_chat_id}`)
-                // Try one more time with explicit cast
-                const { error: retryError } = await supabaseAdmin
+              if (!updateData || updateData.telegram_chat_id !== String(chatId)) {
+                console.error(`⚠️ Warning: telegram_chat_id mismatch after update.`)
+                console.error(`Expected: ${String(chatId)} (type: ${typeof String(chatId)})`)
+                console.error(`Got: ${updateData?.telegram_chat_id || 'null'} (type: ${typeof updateData?.telegram_chat_id})`)
+                console.error(`User ID: ${foundUser.id}`)
+                
+                // Try one more time with explicit string conversion and verify column exists
+                const { error: retryError, data: retryData } = await supabaseAdmin
                   .from('users')
                   .update({
                     telegram_chat_id: String(chatId)
                   })
                   .eq('id', foundUser.id)
+                  .select('telegram_chat_id')
+                  .single()
                 
                 if (retryError) {
                   console.error('❌ Retry update also failed:', retryError)
+                  console.error('Retry error details:', JSON.stringify(retryError, null, 2))
                   await sendTelegramMessage({
                     chat_id: chatId,
                     text: `⚠️ <b>Error Linking Account</b>\n\nThere was an error saving your Telegram link. Please try again or contact support.`
                   })
                   return NextResponse.json({ ok: false, error: retryError.message }, { status: 500 })
                 }
+                
+                console.log(`🔄 Retry update response:`, JSON.stringify(retryData, null, 2))
+                
+                if (retryData?.telegram_chat_id !== String(chatId)) {
+                  console.error(`❌ CRITICAL: Even retry failed to save correctly!`)
+                  console.error(`Expected: ${String(chatId)}, Got: ${retryData?.telegram_chat_id}`)
+                } else {
+                  console.log(`✅ Retry successful: telegram_chat_id saved correctly`)
+                }
+              } else {
+                console.log(`✅ Update successful: telegram_chat_id ${updateData.telegram_chat_id} saved for user ${foundUser.id}`)
               }
               
               console.log(`✅ Successfully linked Telegram chat_id ${chatId} to user ${foundUser.id} (email: ${userByEmail.email})`)
+            } else {
+              console.log(`⚠️ No user found with email: ${email}`)
             }
+          } else {
+            console.log(`⚠️ Empty email in /start command`)
           }
         }
       }
