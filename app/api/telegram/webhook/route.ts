@@ -117,13 +117,40 @@ export async function POST(req: Request) {
           foundUser = null
         } else {
           // Same user or no email parameter - just update and send welcome
-          await supabaseAdmin
+          const { error: updateError } = await supabaseAdmin
             .from('users')
             .update({
               telegram_username: username,
               telegram_chat_id: chatId.toString()
             })
             .eq('id', existingUser.id)
+          
+          if (updateError) {
+            console.error('❌ Error updating existing user telegram info:', updateError)
+            await sendTelegramMessage({
+              chat_id: chatId,
+              text: `⚠️ <b>Error</b>\n\nThere was an error updating your Telegram link. Please try again or contact support.`
+            })
+            return NextResponse.json({ ok: false, error: updateError.message }, { status: 500 })
+          }
+          
+          // Verify the update was successful
+          const { data: verifyData, error: verifyError } = await supabaseAdmin
+            .from('users')
+            .select('telegram_chat_id')
+            .eq('id', existingUser.id)
+            .single()
+          
+          if (verifyError || !verifyData || verifyData.telegram_chat_id !== chatId.toString()) {
+            console.error('❌ Verification failed after update:', verifyError || 'telegram_chat_id mismatch')
+            await sendTelegramMessage({
+              chat_id: chatId,
+              text: `⚠️ <b>Verification Error</b>\n\nThere was an error verifying your Telegram link. Please try again.`
+            })
+            return NextResponse.json({ ok: false, error: 'Verification failed' }, { status: 500 })
+          }
+          
+          console.log(`✅ Successfully updated and verified telegram_chat_id ${chatId.toString()} for user ${existingUser.id}`)
 
           const welcomeMessage = `✅ <b>CryptoFlash Alerts Activated!</b>
 

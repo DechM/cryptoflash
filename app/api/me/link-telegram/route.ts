@@ -63,8 +63,7 @@ export async function POST(req: Request) {
       .from('users')
       .update({
         telegram_chat_id: chatId.toString(),
-        telegram_username: username || null,
-        updated_at: new Date().toISOString()
+        telegram_username: username || null
       })
       .eq('id', userId)
 
