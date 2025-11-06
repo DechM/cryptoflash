@@ -29,12 +29,17 @@ export function formatTwitterPost(token: TwitterToken): string {
   // Hashtags in exact order for optimal reach
   const hashtags = "#PumpFun #KOTH #Solana #Memecoin #SolanaGems"
   
+  // Safely format price - check if it's a number
+  const priceText = token.priceUsd && typeof token.priceUsd === 'number' 
+    ? `💵 Price: $${token.priceUsd.toFixed(6)}` 
+    : ''
+  
   return `🚨 KOTH Alert!
 
 💰 ${token.name} ($${token.symbol})
 📊 Score: ${token.score.toFixed(1)}/100
 📈 Progress: ${token.progress.toFixed(1)}%
-${token.priceUsd ? `💵 Price: $${token.priceUsd.toFixed(6)}` : ''}
+${priceText}
 
 🔍 ${siteLink}
 
