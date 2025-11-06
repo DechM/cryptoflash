@@ -7,6 +7,10 @@ import { sendTelegramMessage } from '@/lib/api/telegram'
  * Handles incoming messages from Telegram Bot API
  * Set webhook URL in Telegram: https://api.telegram.org/bot<TOKEN>/setWebhook?url=<YOUR_DOMAIN>/api/telegram/webhook
  */
+// In-memory cache to prevent duplicate processing (simple rate limiting)
+const processedUpdates = new Map<string, number>()
+const PROCESSING_WINDOW = 5000 // 5 seconds
+
 export async function POST(req: Request) {
   try {
     const update = await req.json().catch(() => ({}))
@@ -25,6 +29,27 @@ export async function POST(req: Request) {
     const lastName = msg.from?.last_name || null
     const text = msg.text || ''
     const command = text.toLowerCase().trim()
+    const messageId = msg.message_id
+    
+    // Prevent duplicate processing (simple rate limiting)
+    const updateKey = `${chatId}-${messageId}`
+    const lastProcessed = processedUpdates.get(updateKey)
+    const now = Date.now()
+    
+    if (lastProcessed && (now - lastProcessed) < PROCESSING_WINDOW) {
+      console.log(`⏭️ Skipping duplicate update: ${updateKey}`)
+      return NextResponse.json({ ok: true, skipped: true })
+    }
+    
+    processedUpdates.set(updateKey, now)
+    
+    // Clean up old entries (keep last 1000)
+    if (processedUpdates.size > 1000) {
+      const entries = Array.from(processedUpdates.entries())
+      entries.sort((a, b) => b[1] - a[1])
+      processedUpdates.clear()
+      entries.slice(0, 500).forEach(([key, time]) => processedUpdates.set(key, time))
+    }
 
     // Handle /start command
     if (command === '/start' || command.startsWith('/start ')) {
@@ -41,8 +66,7 @@ export async function POST(req: Request) {
           .from('users')
           .update({
             telegram_username: username,
-            telegram_chat_id: chatId.toString(),
-            updated_at: new Date().toISOString()
+            telegram_chat_id: chatId.toString()
           })
           .eq('id', existingUser.id)
 
@@ -81,8 +105,7 @@ export async function POST(req: Request) {
             .from('users')
             .update({
               telegram_username: username,
-              telegram_chat_id: chatId.toString(),
-              updated_at: new Date().toISOString()
+              telegram_chat_id: chatId.toString()
             })
             .eq('id', foundUser.id)
             .select('telegram_chat_id')
@@ -97,8 +120,7 @@ export async function POST(req: Request) {
             const { error: retryError } = await supabaseAdmin
               .from('users')
               .update({
-                telegram_chat_id: String(chatId),
-                updated_at: new Date().toISOString()
+                telegram_chat_id: String(chatId)
               })
               .eq('id', foundUser.id)
             
@@ -145,8 +167,7 @@ export async function POST(req: Request) {
                 .from('users')
                 .update({
                   telegram_username: username,
-                  telegram_chat_id: chatId.toString(),
-                  updated_at: new Date().toISOString()
+                  telegram_chat_id: chatId.toString()
                 })
                 .eq('id', foundUser.id)
                 .select('telegram_chat_id')
@@ -155,11 +176,17 @@ export async function POST(req: Request) {
               if (updateError) {
                 console.error('❌ Error updating telegram_chat_id:', updateError)
                 console.error('Error details:', JSON.stringify(updateError, null, 2))
-                // Don't continue - return error message
-                await sendTelegramMessage({
-                  chat_id: chatId,
-                  text: `⚠️ <b>Error Linking Account</b>\n\nThere was an error linking your account. Please try again or contact support.\n\nError: ${updateError.message || 'Unknown error'}`
-                })
+                // Don't spam - only send error message once
+                // Check if we already sent an error for this chat recently
+                const errorKey = `error-${chatId}`
+                const lastError = processedUpdates.get(errorKey)
+                if (!lastError || (now - lastError) > 60000) { // 1 minute cooldown
+                  await sendTelegramMessage({
+                    chat_id: chatId,
+                    text: `⚠️ <b>Error Linking Account</b>\n\nThere was an error linking your account. Please try again or contact support.\n\nError: ${updateError.message || 'Unknown error'}`
+                  })
+                  processedUpdates.set(errorKey, now)
+                }
                 return NextResponse.json({ ok: false, error: updateError.message }, { status: 500 })
               }
               
@@ -170,8 +197,7 @@ export async function POST(req: Request) {
                 const { error: retryError } = await supabaseAdmin
                   .from('users')
                   .update({
-                    telegram_chat_id: String(chatId),
-                    updated_at: new Date().toISOString()
+                    telegram_chat_id: String(chatId)
                   })
                   .eq('id', foundUser.id)
                 
@@ -237,8 +263,7 @@ export async function POST(req: Request) {
         const { error: finalRetryError } = await supabaseAdmin
           .from('users')
           .update({
-            telegram_chat_id: String(chatId),
-            updated_at: new Date().toISOString()
+            telegram_chat_id: String(chatId)
           })
           .eq('id', foundUser.id)
         
