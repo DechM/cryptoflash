@@ -19,7 +19,7 @@ interface TwitterPostResponse {
 
 /**
  * Format Twitter post message (NO direct pump.fun links for safety)
- * No website link - users will click through Twitter profile
+ * Includes link to our website for traffic
  */
 export function formatTwitterPost(token: TwitterToken): string {
   return `🚨 KOTH Alert!
@@ -28,6 +28,8 @@ export function formatTwitterPost(token: TwitterToken): string {
 📊 Score: ${token.score.toFixed(1)}/100
 📈 Progress: ${token.progress.toFixed(1)}%
 ${token.priceUsd ? `💵 Price: $${token.priceUsd.toFixed(6)}` : ''}
+
+🔍 cryptoflash.app
 
 ⚠️ DYOR - Not financial advice`
 }
