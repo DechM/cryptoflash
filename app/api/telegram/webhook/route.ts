@@ -76,16 +76,53 @@ export async function POST(req: Request) {
       }
 
       if (existingUser) {
-        // User already linked - update info and send welcome message
-        await supabaseAdmin
-          .from('users')
-          .update({
-            telegram_username: username,
-            telegram_chat_id: chatId.toString()
-          })
-          .eq('id', existingUser.id)
+        console.log(`✅ Found existing user: ${existingUser.id}, email: ${existingUser.email}`)
+        
+        // Check if user is trying to link a different email
+        // If command has email parameter, check if it matches existing user
+        let shouldUnlink = false
+        let newUserEmail = null
+        
+        if (command.startsWith('/start email:')) {
+          const startParam = command.substring(7).trim()
+          if (startParam.startsWith('email:')) {
+            let email = startParam.substring(6).trim()
+            email = email.replace(/\s+/g, '') // Remove spaces
+            newUserEmail = email.toLowerCase().trim()
+            
+            console.log(`🔍 User wants to link email: ${newUserEmail}, existing user email: ${existingUser.email}`)
+            
+            if (newUserEmail && existingUser.email && newUserEmail !== existingUser.email.toLowerCase()) {
+              // Different email - need to unlink old and link new
+              console.log(`⚠️ Different email detected! Unlinking old user ${existingUser.id} and linking new email ${newUserEmail}`)
+              shouldUnlink = true
+            }
+          }
+        }
+        
+        if (shouldUnlink && newUserEmail) {
+          // Unlink old user and find new user by email
+          console.log(`🔄 Unlinking old user ${existingUser.id} from telegram_chat_id ${chatId}`)
+          await supabaseAdmin
+            .from('users')
+            .update({
+              telegram_chat_id: null
+            })
+            .eq('id', existingUser.id)
+          
+          // Continue to find new user by email (will happen below)
+          foundUser = null
+        } else {
+          // Same user or no email parameter - just update and send welcome
+          await supabaseAdmin
+            .from('users')
+            .update({
+              telegram_username: username,
+              telegram_chat_id: chatId.toString()
+            })
+            .eq('id', existingUser.id)
 
-        const welcomeMessage = `✅ <b>CryptoFlash Alerts Activated!</b>
+          const welcomeMessage = `✅ <b>CryptoFlash Alerts Activated!</b>
 
 🚀 You will now receive KOTH alert signals here when tokens match your criteria.
 
@@ -96,12 +133,13 @@ export async function POST(req: Request) {
 
 ⚠️ <i>DYOR - This is not financial advice</i>`
 
-        await sendTelegramMessage({
-          chat_id: chatId,
-          text: welcomeMessage
-        })
+          await sendTelegramMessage({
+            chat_id: chatId,
+            text: welcomeMessage
+          })
 
-        return NextResponse.json({ ok: true })
+          return NextResponse.json({ ok: true })
+        }
       }
 
       // Try to find user by telegram_username if provided
