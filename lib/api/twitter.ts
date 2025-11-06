@@ -39,7 +39,7 @@ export function formatTwitterPost(token: TwitterToken): string {
   
   return `🚨 KOTH Alert!
 
-💰 ${token.name} ($${token.symbol})
+💰 ${token.name} $${token.symbol}
 📊 Score: ${token.score.toFixed(1)}/100
 📈 Progress: ${token.progress.toFixed(1)}%
 ${priceText}
