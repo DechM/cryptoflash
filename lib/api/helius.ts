@@ -70,70 +70,72 @@ export async function fetchWhaleTransactions(
       return { whaleCount: 0, whaleInflows: 0, totalVolume: 0 }
     }
 
-    // Fetch transaction details for signatures (batch request - only 2 transactions)
-    const batchRequests = signatures.map((sig: any, index: number) => ({
-      jsonrpc: '2.0',
-      id: `tx-${index}`,
-      method: 'getTransaction',
-      params: [
-        sig.signature,
-        {
-          maxSupportedTransactionVersion: 0
-        }
-      ]
-    }))
-
-    const batchResponse = await axios.post(
-      HELIUS_BASE_URL,
-      batchRequests,
-      {
-        timeout: 8000
-      }
-    )
-
-    // Check for RPC errors in batch response
-    const batchResults = Array.isArray(batchResponse.data) 
-      ? batchResponse.data 
-      : [batchResponse.data]
-    
-    // Check if any request in batch failed
-    const hasErrors = batchResults.some((r: any) => r.error)
-    if (hasErrors) {
-      console.warn(`Helius batch request errors for ${tokenAddress}, processing valid results only`)
-    }
-
-    // Process transactions
+    // Fetch transaction details ONE BY ONE (instead of batch) to avoid network errors
+    // Batch requests seem to cause network errors, so we fetch sequentially with delays
     let whaleCount = 0
     let whaleInflows = 0
     let totalVolume = 0
 
-    for (const result of batchResults) {
-      if (result.error) {
-        console.warn(`⚠️ Helius: Transaction error for ${tokenAddress.substring(0, 12)}...:`, result.error)
-        continue // Skip failed requests
-      }
+    for (let i = 0; i < signatures.length; i++) {
+      const sig = signatures[i]
       
-      if (result.result) {
-        const tx = result.result
+      try {
+        console.log(`📡 [HELIUS] Fetching transaction ${i + 1}/${signatures.length} for ${tokenAddress.substring(0, 12)}... (sig: ${sig.signature.substring(0, 12)}...)`)
+        
+        const txResponse = await axios.post(
+          HELIUS_BASE_URL,
+          {
+            jsonrpc: '2.0',
+            id: `tx-${i}`,
+            method: 'getTransaction',
+            params: [
+              sig.signature,
+              {
+                maxSupportedTransactionVersion: 0
+              }
+            ]
+          },
+          {
+            timeout: 10000 // Increased timeout from 8000 to 10000
+          }
+        )
+
+        if (txResponse.data.error) {
+          console.warn(`⚠️ Helius: Transaction error for ${tokenAddress.substring(0, 12)}... (sig ${i + 1}):`, txResponse.data.error)
+          continue // Skip this transaction, continue with next
+        }
+
+        const tx = txResponse.data.result
+        if (!tx) {
+          console.warn(`⚠️ Helius: No result for transaction ${sig.signature.substring(0, 12)}...`)
+          continue
+        }
+
         // Extract SOL transfer amount from transaction
         const amount = parseTransactionAmount(tx)
         
         // Detailed logging
         if (amount > 0) {
-          console.log(`💰 Helius: Parsed amount for ${tokenAddress.substring(0, 12)}...: ${amount.toFixed(4)} SOL`)
+          console.log(`💰 Helius: Parsed amount for ${tokenAddress.substring(0, 12)}... (tx ${i + 1}): ${amount.toFixed(4)} SOL`)
         }
         
         if (amount >= 0.5) { // Whale = 0.5+ SOL (reduced from 1 SOL for pump.fun tokens)
           whaleCount++
           whaleInflows += amount
-          console.log(`🐋 Helius: WHALE DETECTED! ${amount.toFixed(2)} SOL for ${tokenAddress.substring(0, 12)}...`)
+          console.log(`🐋 Helius: WHALE DETECTED! ${amount.toFixed(2)} SOL for ${tokenAddress.substring(0, 12)}... (tx ${i + 1})`)
         } else if (amount > 0) {
-          console.log(`💧 Helius: Small transaction ${amount.toFixed(4)} SOL (< 0.5 SOL threshold) for ${tokenAddress.substring(0, 12)}...`)
+          console.log(`💧 Helius: Small transaction ${amount.toFixed(4)} SOL (< 0.5 SOL threshold) for ${tokenAddress.substring(0, 12)}... (tx ${i + 1})`)
         }
         
         totalVolume += amount || 0
-      } else {
-        console.warn(`⚠️ Helius: No result in transaction for ${tokenAddress.substring(0, 12)}...`)
+
+        // Small delay between transactions to avoid rate limits
+        if (i + 1 < signatures.length) {
+          await new Promise(resolve => setTimeout(resolve, 300)) // 300ms delay between transactions
+        }
+      } catch (error: any) {
+        console.warn(`⚠️ Helius: Error fetching transaction ${sig.signature.substring(0, 12)}... (tx ${i + 1}):`, error.message || error.code)
+        continue // Skip this transaction, continue with next
       }
     }
 
