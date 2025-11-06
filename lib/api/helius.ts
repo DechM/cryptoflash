@@ -13,7 +13,7 @@ export interface WhaleTransaction {
 
 /**
  * Fetch whale transactions for a token
- * Whale = transaction > 1 SOL
+ * Whale = transaction >= 0.5 SOL (reduced from 1 SOL for pump.fun tokens)
  */
 export async function fetchWhaleTransactions(
   tokenAddress: string,
@@ -57,7 +57,10 @@ export async function fetchWhaleTransactions(
     // Get transaction details for signatures
     const signatures = response.data.result || []
     
+    console.log(`🔍 Helius: Found ${signatures.length} signatures for ${tokenAddress.substring(0, 12)}...`)
+    
     if (signatures.length === 0) {
+      console.log(`⚠️ Helius: No signatures found for ${tokenAddress.substring(0, 12)}...`)
       return { whaleCount: 0, whaleInflows: 0, totalVolume: 0 }
     }
 
@@ -100,6 +103,7 @@ export async function fetchWhaleTransactions(
 
     for (const result of batchResults) {
       if (result.error) {
+        console.warn(`⚠️ Helius: Transaction error for ${tokenAddress.substring(0, 12)}...:`, result.error)
         continue // Skip failed requests
       }
       
@@ -108,13 +112,26 @@ export async function fetchWhaleTransactions(
         // Extract SOL transfer amount from transaction
         const amount = parseTransactionAmount(tx)
         
-        if (amount >= 1.0) { // Whale = 1+ SOL
+        // Detailed logging
+        if (amount > 0) {
+          console.log(`💰 Helius: Parsed amount for ${tokenAddress.substring(0, 12)}...: ${amount.toFixed(4)} SOL`)
+        }
+        
+        if (amount >= 0.5) { // Whale = 0.5+ SOL (reduced from 1 SOL for pump.fun tokens)
           whaleCount++
           whaleInflows += amount
+          console.log(`🐋 Helius: WHALE DETECTED! ${amount.toFixed(2)} SOL for ${tokenAddress.substring(0, 12)}...`)
+        } else if (amount > 0) {
+          console.log(`💧 Helius: Small transaction ${amount.toFixed(4)} SOL (< 0.5 SOL threshold) for ${tokenAddress.substring(0, 12)}...`)
         }
+        
         totalVolume += amount || 0
+      } else {
+        console.warn(`⚠️ Helius: No result in transaction for ${tokenAddress.substring(0, 12)}...`)
       }
     }
+
+    console.log(`📊 Helius: Final result for ${tokenAddress.substring(0, 12)}...: whales=${whaleCount}, inflows=${whaleInflows.toFixed(2)} SOL, volume=${totalVolume.toFixed(2)} SOL`)
 
     return {
       whaleCount,
@@ -149,18 +166,23 @@ function parseTransactionAmount(transaction: any): number {
     // Solana transactions have meta.preBalances and meta.postBalances
     // These are in lamports (1 SOL = 1e9 lamports)
     const meta = transaction.meta
-    if (!meta) return 0
+    if (!meta) {
+      console.warn('⚠️ parseTransactionAmount: No meta in transaction')
+      return 0
+    }
 
     const preBalances = meta.preBalances || []
     const postBalances = meta.postBalances || []
     
     if (preBalances.length === 0 || postBalances.length === 0) {
+      console.warn('⚠️ parseTransactionAmount: Empty balances (pre:', preBalances.length, 'post:', postBalances.length, ')')
       return 0
     }
 
     // Calculate total SOL change across all accounts
     // For pump.fun, we're interested in SOL transfers (buys)
     let totalInflow = 0
+    let balanceChanges: number[] = []
     
     for (let i = 0; i < Math.min(preBalances.length, postBalances.length); i++) {
       const change = (postBalances[i] - preBalances[i]) / 1e9 // Convert lamports to SOL
@@ -169,7 +191,12 @@ function parseTransactionAmount(transaction: any): number {
       // Negative changes are outflows (sells), we ignore those for whale tracking
       if (change > 0.01) {
         totalInflow += change
+        balanceChanges.push(change)
       }
+    }
+
+    if (balanceChanges.length > 0) {
+      console.log(`  💵 parseTransactionAmount: ${balanceChanges.length} balance changes, total: ${totalInflow.toFixed(4)} SOL`)
     }
 
     return Math.max(0, totalInflow) // Return positive flows only

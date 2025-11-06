@@ -153,8 +153,14 @@ export async function GET() {
                 // Fetch 2 signatures per token (better whale detection than 1)
                 const result = await fetchWhaleTransactions(addr, 2)
                 whaleResults.push(result)
+                
+                // Detailed logging
+                console.log(`📈 Token ${addr.substring(0, 12)}...: whaleCount=${result.whaleCount}, whaleInflows=${result.whaleInflows.toFixed(2)} SOL, totalVolume=${result.totalVolume.toFixed(2)} SOL`)
+                
                 if (result.whaleCount > 0) {
-                  console.log(`🐋 Found ${result.whaleCount} whale(s) for ${addr.substring(0, 8)}... (${result.whaleInflows.toFixed(2)} SOL)`)
+                  console.log(`🐋 Found ${result.whaleCount} whale(s) for ${addr.substring(0, 12)}... (${result.whaleInflows.toFixed(2)} SOL)`)
+                } else if (result.totalVolume > 0) {
+                  console.log(`💧 Token ${addr.substring(0, 12)}... has volume ${result.totalVolume.toFixed(2)} SOL but no whales (threshold: 0.5 SOL)`)
                 }
               } catch (error) {
                 console.warn(`❌ Error fetching whale data for ${addr}:`, error)
@@ -267,6 +273,17 @@ export async function GET() {
 
     // Optionally save to Supabase for persistence
     try {
+      // Log whale data before saving
+      const tokensWithWhales = topTokens.filter(t => t.whaleCount > 0)
+      if (tokensWithWhales.length > 0) {
+        console.log(`💾 Saving to Supabase: ${topTokens.length} tokens, ${tokensWithWhales.length} with whales`)
+        tokensWithWhales.forEach(t => {
+          console.log(`  🐋 ${t.name} (${t.tokenAddress.substring(0, 12)}...): whaleCount=${t.whaleCount}, whaleInflows=${t.whaleInflows.toFixed(2)} SOL`)
+        })
+      } else {
+        console.log(`💾 Saving to Supabase: ${topTokens.length} tokens, 0 with whales (all have whaleCount=0)`)
+      }
+      
       // Store in Supabase for historical tracking
       await supabase
         .from('koth_tokens')
@@ -277,14 +294,16 @@ export async function GET() {
             symbol: t.symbol,
             progress: t.progress,
             score: t.score,
-            data: t,
+            data: t, // This includes whaleCount, whaleInflows, totalVolume
             updated_at: new Date().toISOString()
           })),
           { onConflict: 'token_address' }
         )
+      
+      console.log(`✅ Successfully saved ${topTokens.length} tokens to Supabase`)
     } catch (dbError) {
       // Don't fail if DB write fails
-      console.error('Error saving to database:', dbError)
+      console.error('❌ Error saving to database:', dbError)
     }
 
     return NextResponse.json({ tokens: topTokens })
