@@ -134,9 +134,7 @@ export default function RootLayout({
               "logo": `${siteUrl}/favicon.ico`,
               "description": "The FIRST automated real-time KOTH tracker for Pump.fun",
               "sameAs": [
-                // Add social media links when available
-                // "https://twitter.com/cryptoflash",
-                // "https://t.me/cryptoflash"
+                "https://x.com/CryptoFlashGuru"
               ]
             })
           }}

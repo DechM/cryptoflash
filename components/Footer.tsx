@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Zap, Twitter, Mail, Github } from 'lucide-react'
+import { Zap, Twitter } from 'lucide-react'
 
 export function Footer() {
   const currentYear = new Date().getFullYear()
@@ -26,29 +26,13 @@ export function Footer() {
               {/* Social Links */}
               <div className="flex items-center space-x-4">
                 <a
-                  href="https://twitter.com/cryptoflash"
+                  href="https://x.com/CryptoFlashGuru"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-[#94A3B8] hover:text-[#00FFA3] transition-colors"
-                  aria-label="Twitter"
+                  aria-label="Twitter/X"
                 >
                   <Twitter className="h-5 w-5" />
-                </a>
-                <a
-                  href="mailto:support@cryptoflash.app"
-                  className="text-[#94A3B8] hover:text-[#00FFA3] transition-colors"
-                  aria-label="Email"
-                >
-                  <Mail className="h-5 w-5" />
-                </a>
-                <a
-                  href="https://github.com/cryptoflash"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#94A3B8] hover:text-[#00FFA3] transition-colors"
-                  aria-label="GitHub"
-                >
-                  <Github className="h-5 w-5" />
                 </a>
               </div>
             </div>

@@ -1,6 +1,6 @@
 import { Metadata } from 'next'
 import { Navbar } from '@/components/Navbar'
-import { Mail, Twitter, Github } from 'lucide-react'
+import { Twitter } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Contact Us | CryptoFlash',
@@ -24,51 +24,18 @@ export default function ContactPage() {
           </p>
 
           <div className="space-y-8">
-            {/* Email */}
-            <div className="glass-card rounded-xl p-6">
-              <div className="flex items-start space-x-4">
-                <div className="p-3 bg-[#00FFA3]/10 rounded-lg">
-                  <Mail className="h-6 w-6 text-[#00FFA3]" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-[#F8FAFC] mb-2">Email Support</h2>
-                  <p className="text-[#b8c5d6] mb-4">
-                    For general inquiries, support, or business inquiries:
-                  </p>
-                  <a
-                    href="mailto:support@cryptoflash.app"
-                    className="text-[#00FFA3] hover:text-[#00D1FF] transition-colors text-lg font-semibold"
-                  >
-                    support@cryptoflash.app
-                  </a>
-                  <p className="text-sm text-[#94A3B8] mt-2">
-                    We typically respond within 24-48 hours.
-                  </p>
-                </div>
-              </div>
-            </div>
-
             {/* Social Media */}
             <div className="glass-card rounded-xl p-6">
               <h2 className="text-xl font-bold text-[#F8FAFC] mb-4">Follow Us</h2>
               <div className="space-y-4">
                 <a
-                  href="https://twitter.com/cryptoflash"
+                  href="https://x.com/CryptoFlashGuru"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center space-x-3 text-[#b8c5d6] hover:text-[#00FFA3] transition-colors"
                 >
                   <Twitter className="h-5 w-5" />
-                  <span>@cryptoflash</span>
-                </a>
-                <a
-                  href="https://github.com/cryptoflash"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center space-x-3 text-[#b8c5d6] hover:text-[#00FFA3] transition-colors"
-                >
-                  <Github className="h-5 w-5" />
-                  <span>GitHub</span>
+                  <span>@CryptoFlashGuru</span>
                 </a>
               </div>
             </div>
