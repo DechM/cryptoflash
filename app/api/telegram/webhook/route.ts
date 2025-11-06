@@ -55,6 +55,9 @@ export async function POST(req: Request) {
     if (command === '/start' || command.startsWith('/start ')) {
       console.log(`📨 Received /start command from chat_id: ${chatId}, username: ${username || 'none'}, command: ${command}`)
       
+      // Declare foundUser early so it can be used in the unlink logic
+      let foundUser = null
+      
       // Try to find existing user by telegram_chat_id
       console.log(`🔍 Step 1: Checking for existing user with telegram_chat_id: ${chatId.toString()}`)
       const { data: existingUser, error: existingUserError } = await supabaseAdmin
@@ -143,7 +146,6 @@ export async function POST(req: Request) {
       }
 
       // Try to find user by telegram_username if provided
-      let foundUser = null
       console.log(`🔍 Checking username matching. Username: ${username || 'none'}, foundUser before: ${foundUser}`)
       
       if (username) {
