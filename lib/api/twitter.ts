@@ -26,8 +26,9 @@ interface TwitterPostResponse {
  * Includes hashtags for better reach and engagement
  */
 export function formatTwitterPost(token: TwitterToken): string {
-  // Simple link to our website (no tracking parameters)
-  const siteLink = "https://cryptoflash.app"
+  // Simple link to our website (no https:// to prevent preview card)
+  // Twitter will still make it clickable, but won't generate preview card
+  const siteLink = "cryptoflash.app"
   
   // Hashtags in exact order for optimal reach
   const hashtags = "#PumpFun #KOTH #Solana #Memecoin #SolanaGems"

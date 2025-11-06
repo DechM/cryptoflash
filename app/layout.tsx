@@ -20,12 +20,6 @@ export const metadata: Metadata = {
     type: "website",
     siteName: siteName,
   },
-  twitter: {
-    card: "summary",
-    title: "CryptoFlash",
-    description: "Real-time KOTH tracker for Pump.fun",
-    images: ["https://cryptoflash.app/favicon.ico"],
-  },
 };
 
 export default function RootLayout({
