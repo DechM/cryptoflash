@@ -48,14 +48,14 @@ function Card({
           disabled={current || disabled}
           onClick={onClick}
           title={disabled ? disabledMessage : undefined}
-          className={`mt-4 w-full h-11 md:h-12 rounded-xl font-semibold text-sm md:text-base transition-all min-h-[44px] ${
+          className={`mt-4 w-full rounded-xl font-semibold transition-all ${
             current
-              ? "bg-white/10 cursor-not-allowed text-[#6b7280]"
+              ? "bg-white/10 cursor-not-allowed text-[#6b7280] min-h-[44px] h-11 md:h-12"
               : disabled
-              ? "bg-white/5 cursor-not-allowed text-[#6b7280] border border-white/10"
+              ? "bg-white/5 cursor-not-allowed text-[#6b7280] border border-white/10 min-h-[36px] md:min-h-[44px] h-9 md:h-11"
               : highlight
-              ? "bg-gradient-to-r from-[#00FFA3] to-[#00D1FF] text-black hover:opacity-90"
-              : "bg-[#00FFA3] text-black hover:bg-[#00FFA3]/90"
+              ? "btn-cta-upgrade"
+              : "btn-cta-premium"
           }`}
         >
           {current ? "Current Plan" : disabled ? (

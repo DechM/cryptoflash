@@ -422,17 +422,17 @@ OR manually:
             <button
               type="submit"
               disabled={submitting || telegramLinked === false}
-              className="w-full px-6 py-3 rounded-lg bg-gradient-to-r from-[#00FFA3] to-[#00D1FF] text-black font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+              className="btn-cta-upgrade w-full disabled:opacity-50 disabled:cursor-not-allowed"
               title={telegramLinked === false ? 'Please link your Telegram account first to receive alerts' : undefined}
             >
               {submitting ? (
                 <>
-                  <AlertCircle className="h-5 w-5 animate-spin" />
+                  <AlertCircle className="h-4 w-4 animate-spin" />
                   <span>Creating Alert...</span>
                 </>
               ) : (
                 <>
-                  <AlertCircle className="h-5 w-5" />
+                  <AlertCircle className="h-4 w-4" />
                   <span>Create Alert</span>
                 </>
               )}

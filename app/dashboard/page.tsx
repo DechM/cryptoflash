@@ -219,7 +219,7 @@ export default function DashboardPage() {
             <p className="text-[#b8c5d6] mb-4">Advanced Filters are a Pro/Ultimate feature</p>
             <a
               href="/premium"
-              className="inline-block px-6 py-2 rounded-lg bg-gradient-to-r from-[#FF2E86] to-[#ff6b35] text-white font-semibold hover:opacity-90 transition-opacity"
+              className="btn-cta-upgrade inline-block"
             >
               Upgrade to Pro
             </a>

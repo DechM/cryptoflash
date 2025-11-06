@@ -34,7 +34,7 @@ export function AdvancedFilters({ onFilterChange, userTier }: AdvancedFiltersPro
         </p>
         <a
           href="/premium"
-          className="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-gradient-to-r from-[#FF2E86] to-[#ff6b35] text-white font-semibold text-sm md:text-base hover:opacity-90 transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg shadow-[#FF2E86]/20 hover:shadow-[#FF2E86]/40 min-h-[44px]"
+          className="btn-cta-upgrade"
         >
           Upgrade to Pro
         </a>

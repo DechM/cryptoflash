@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Zap, AlertCircle, Crown, Trophy, LogOut, User } from 'lucide-react'
+import { Zap, AlertCircle, Crown, Trophy, LogOut, User, LogIn } from 'lucide-react'
 import { useSession } from '@/hooks/useSession'
 import { useState } from 'react'
 
@@ -95,9 +95,10 @@ export function Navbar() {
               ) : (
                 <Link
                   href={`/login?next=${encodeURIComponent(pathname || '/dashboard')}`}
-                  className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15 border border-white/20 text-white font-medium text-sm transition-all duration-200 hover:scale-105"
+                  className="btn-cta-login"
                 >
-                  Login
+                  <LogIn className="h-4 w-4" />
+                  <span>Login</span>
                 </Link>
               )}
             </div>
@@ -108,9 +109,10 @@ export function Navbar() {
             {!sessionLoading && !user && (
               <Link
                 href={`/login?next=${encodeURIComponent(pathname || '/dashboard')}`}
-                className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 border border-white/20 text-white text-sm font-medium transition-all duration-200"
+                className="btn-cta-login"
               >
-                Login
+                <LogIn className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Login</span>
               </Link>
             )}
             {user && (
