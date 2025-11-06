@@ -104,17 +104,16 @@ export async function POST(req: Request) {
         }
         
         if (shouldUnlink && newUserEmail) {
-          // Unlink old user and find new user by email
-          console.log(`🔄 Unlinking old user ${existingUser.id} from telegram_chat_id ${chatId}`)
-          await supabaseAdmin
-            .from('users')
-            .update({
-              telegram_chat_id: null
-            })
-            .eq('id', existingUser.id)
+          // Different email detected - warn user and prevent automatic unlinking
+          // This prevents accidental account switching
+          console.log(`⚠️ Different email detected! Telegram ${chatId} is already linked to ${existingUser.email}, but user wants to link to ${newUserEmail}`)
           
-          // Continue to find new user by email (will happen below)
-          foundUser = null
+          await sendTelegramMessage({
+            chat_id: chatId,
+            text: `⚠️ <b>Telegram Already Linked</b>\n\nThis Telegram account is already linked to:\n<b>${existingUser.email}</b>\n\nYou're trying to link it to:\n<b>${newUserEmail}</b>\n\n<i>For security reasons, you cannot automatically switch accounts. Please contact support if you need to change the linked account.</i>`
+          })
+          
+          return NextResponse.json({ ok: true, message: 'Telegram already linked to different account' })
         } else {
           // Same user or no email parameter - just update and send welcome
           const { error: updateError } = await supabaseAdmin
