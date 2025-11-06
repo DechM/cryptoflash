@@ -11,6 +11,7 @@ import { useFeature } from '@/hooks/useFeature'
 import { RefreshCw, Zap, Download } from 'lucide-react'
 import { motion } from 'framer-motion'
 import useSWR from 'swr'
+import Script from 'next/script'
 
 const fetcher = (url: string) => fetch(url).then(res => res.json())
 
@@ -107,8 +108,29 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B1020] w-full">
-      <Navbar />
+    <>
+      {/* SEO Structured Data for Dashboard */}
+      <Script
+        id="dashboard-structured-data"
+        type="application/ld+json"
+        strategy="afterInteractive"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebPage",
+            "name": "Live KOTH Dashboard - Real-time Pump.fun Tracker",
+            "description": "Live dashboard tracking Pump.fun KOTH tokens in real-time. See bonding curve progress, AI Snipe Scores, whale activity, and volume.",
+            "url": `${process.env.NEXT_PUBLIC_SITE_URL || 'https://cryptoflash.app'}/dashboard`,
+            "mainEntity": {
+              "@type": "DataCatalog",
+              "name": "KOTH Token Tracker",
+              "description": "Real-time tracking of Pump.fun tokens in bonding curve phase"
+            }
+          })
+        }}
+      />
+      <div className="min-h-screen bg-[#0B1020] w-full">
+        <Navbar />
       
       <main className="w-full px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
@@ -261,6 +283,7 @@ export default function DashboardPage() {
         )}
       </main>
     </div>
+    </>
   )
 }
 
