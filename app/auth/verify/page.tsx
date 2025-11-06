@@ -147,7 +147,7 @@ export default function VerifyPage() {
     <Suspense fallback={
       <div className="min-h-screen bg-[#0B1020] w-full flex items-center justify-center">
         <div className="glass rounded-2xl p-8 border border-white/10 text-center max-w-md">
-          <Loader2 className="h-12 w-12 text-[#00ff88] animate-spin mx-auto mb-4" />
+          <Loader2 className="h-12 w-12 text-[#00FFA3] animate-spin mx-auto mb-4" />
           <h1 className="text-2xl font-bold gradient-text mb-2">Loading...</h1>
         </div>
       </div>
