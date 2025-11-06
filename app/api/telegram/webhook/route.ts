@@ -144,21 +144,45 @@ export async function POST(req: Request) {
         // Try to find by email if format is /start email:user@example.com
         if (startParam.startsWith('email:')) {
           const email = startParam.substring(6).trim()
-          console.log(`🔍 Looking for user by email: ${email}`)
+          const normalizedEmail = email.toLowerCase().trim()
+          console.log(`🔍 Looking for user by email: ${email} (normalized: ${normalizedEmail})`)
           
           if (email) {
-            const { data: userByEmail, error: emailError } = await supabaseAdmin
+            let userByEmail = null
+            let emailError = null
+            
+            // Try case-insensitive search first
+            const { data: userByEmailIlike, error: ilikeError } = await supabaseAdmin
               .from('users')
               .select('id, email, telegram_chat_id')
-              .eq('email', email)
+              .ilike('email', normalizedEmail)
               .single()
             
-            if (emailError) {
-              console.error(`❌ Error finding user by email ${email}:`, emailError)
-              if (emailError.code === 'PGRST116') {
-                // No user found
-                console.log(`⚠️ No user found with email: ${email}`)
+            if (ilikeError && ilikeError.code === 'PGRST116') {
+              // No user found with ilike, try exact match as fallback
+              console.log(`⚠️ No user found with ilike, trying exact match...`)
+              const { data: userByEmailExact, error: exactError } = await supabaseAdmin
+                .from('users')
+                .select('id, email, telegram_chat_id')
+                .eq('email', normalizedEmail)
+                .single()
+              
+              if (exactError) {
+                emailError = exactError
+                console.error(`❌ Error finding user by email (exact match) ${normalizedEmail}:`, exactError)
+                if (exactError.code === 'PGRST116') {
+                  console.log(`⚠️ No user found with exact match either for email: ${normalizedEmail}`)
+                }
+              } else {
+                userByEmail = userByEmailExact
+                console.log(`✅ Found user with exact match: ${userByEmailExact?.id}`)
               }
+            } else if (ilikeError) {
+              emailError = ilikeError
+              console.error(`❌ Error finding user by email (ilike) ${normalizedEmail}:`, ilikeError)
+            } else {
+              userByEmail = userByEmailIlike
+              console.log(`✅ Found user with ilike match: ${userByEmailIlike?.id}`)
             }
             
             if (userByEmail) {
