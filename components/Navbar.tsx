@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Zap, AlertCircle, Crown, Trophy, LogOut, User, LogIn } from 'lucide-react'
+import { Zap, AlertCircle, Crown, Trophy, Waves, LogOut, User, LogIn } from 'lucide-react'
 import { useSession } from '@/hooks/useSession'
 import { useState } from 'react'
 
@@ -16,6 +16,7 @@ export function Navbar() {
   const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: Zap },
     { href: '/alerts', label: 'Alerts', icon: AlertCircle },
+    { href: '/whale-alerts', label: 'Whales', icon: Waves },
     { href: '/leaderboard', label: 'Leaderboard', icon: Trophy },
     { href: '/premium', label: 'Premium', icon: Crown },
   ]

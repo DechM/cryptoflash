@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { postTweet, formatTwitterPost } from '@/lib/api/twitter'
-import { Token } from '@/lib/types'
+import { postTweet, formatTwitterPost, formatWhaleTweet } from '@/lib/api/twitter'
+import { Token, WhaleEvent } from '@/lib/types'
+import { MIN_WHALE_ALERT_USD } from '@/lib/whales'
 
 /**
  * Twitter Post Endpoint
@@ -75,6 +76,72 @@ async function handleTwitterPost() {
     }
   } else {
     console.log('[Twitter Post] No previous posts found')
+  }
+
+
+  // Check for pending whale events before KOTH tweets
+  const { data: pendingWhale } = await supabaseAdmin
+    .from('whale_events')
+    .select('*')
+    .eq('posted_to_twitter', false)
+    .order('block_time', { ascending: false })
+    .limit(1)
+    .maybeSingle<WhaleEvent>()
+
+  if (pendingWhale && (pendingWhale.amount_usd || 0) >= MIN_WHALE_ALERT_USD) {
+    console.log('[Twitter Post] Found whale event candidate:', pendingWhale.tx_hash, 'USD', pendingWhale.amount_usd)
+    const tweetText = formatWhaleTweet(pendingWhale)
+    const tweetResult = await postTweet(tweetText)
+
+    if (tweetResult && 'rateLimited' in tweetResult) {
+      console.warn('[Twitter Post] Twitter rate limit during whale post. Skipping rest of job.')
+      return NextResponse.json({
+        success: false,
+        rateLimited: true,
+        rateLimitedUntil: tweetResult.resetAt || null,
+        message: 'Twitter rate limit hit while posting whale event'
+      })
+    }
+
+    if (tweetResult) {
+      console.log('[Twitter Post] Posted whale alert tweet:', tweetResult.id)
+
+      const updatePromises = []
+      updatePromises.push(
+        supabaseAdmin
+          .from('whale_events')
+          .update({ posted_to_twitter: true, tweet_id: tweetResult.id })
+          .eq('id', pendingWhale.id)
+      )
+
+      updatePromises.push(
+        supabaseAdmin.from('twitter_posts').insert({
+          token_address: pendingWhale.tx_hash,
+          token_name: pendingWhale.token_name || pendingWhale.token_symbol || pendingWhale.token_address,
+          token_symbol: pendingWhale.token_symbol,
+          score: pendingWhale.amount_usd || null,
+          progress: null,
+          tweet_id: tweetResult.id,
+          posted_at: new Date().toISOString()
+        })
+      )
+
+      const updateResults = await Promise.allSettled(updatePromises)
+      updateResults.forEach((result, idx) => {
+        if (result.status === 'rejected') {
+          console.error('[Twitter Post] Failed to persist whale tweet metadata', idx, result.reason)
+        }
+      })
+
+      return NextResponse.json({
+        success: true,
+        postedWhale: true,
+        tweetId: tweetResult.id,
+        whaleEventId: pendingWhale.id
+      })
+    } else {
+      console.error('[Twitter Post] Failed to post whale tweet - postTweet returned null/undefined')
+    }
   }
 
   // Fetch latest KOTH tokens
@@ -269,12 +336,13 @@ export async function POST(request: Request) {
     }
 
     return await handleTwitterPost()
-  } catch (error: any) {
-    console.error('Error in Twitter post endpoint (POST):', error)
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.error('Error in Twitter post endpoint (POST):', message)
     return NextResponse.json(
       {
         error: 'Failed to post to Twitter',
-        message: error.message
+        message
       },
       { status: 500 }
     )
@@ -291,14 +359,15 @@ export async function GET() {
       return NextResponse.json({ error: 'No response from handler' }, { status: 500 })
     }
     return result
-  } catch (error: any) {
-    console.error('[Twitter Post] Error in GET endpoint:', error)
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.error('[Twitter Post] Error in GET endpoint:', message)
     return NextResponse.json(
       {
         success: false,
         error: 'Failed to post to Twitter',
-        message: error.message,
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        message,
+        stack: process.env.NODE_ENV === 'development' && error instanceof Error ? error.stack : undefined
       },
       { status: 500 }
     )

@@ -167,3 +167,43 @@ CREATE TRIGGER update_user_alerts_updated_at BEFORE UPDATE ON user_alerts
 CREATE TRIGGER update_crypto_payments_updated_at BEFORE UPDATE ON crypto_payments
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+-- Whale Alerts: Top tokens snapshot from DexScreener
+CREATE TABLE IF NOT EXISTS whale_top_tokens (
+  token_address TEXT PRIMARY KEY,
+  token_symbol TEXT,
+  token_name TEXT,
+  price_usd NUMERIC,
+  liquidity_usd NUMERIC,
+  volume_24h_usd NUMERIC,
+  txns_24h INTEGER,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Whale Alerts: Detected whale transfer events
+CREATE TABLE IF NOT EXISTS whale_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  token_address TEXT NOT NULL,
+  token_symbol TEXT,
+  token_name TEXT,
+  event_type TEXT NOT NULL,
+  amount_tokens NUMERIC,
+  amount_usd NUMERIC,
+  price_usd NUMERIC,
+  liquidity_usd NUMERIC,
+  volume_24h_usd NUMERIC,
+  sender TEXT,
+  sender_label TEXT,
+  receiver TEXT,
+  receiver_label TEXT,
+  tx_hash TEXT NOT NULL,
+  tx_url TEXT,
+  event_data JSONB,
+  block_time TIMESTAMPTZ,
+  fee NUMERIC,
+  posted_to_twitter BOOLEAN DEFAULT FALSE,
+  tweet_id TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_whale_events_tx_hash ON whale_events(tx_hash);
+CREATE INDEX IF NOT EXISTS idx_whale_events_block_time ON whale_events(block_time DESC);

@@ -1,6 +1,8 @@
 {
   "framework": "nextjs",
-  "regions": ["iad1"],
+  "regions": [
+    "iad1"
+  ],
   "crons": [
     {
       "path": "/api/alerts/send",
@@ -9,6 +11,14 @@
     {
       "path": "/api/twitter/post",
       "schedule": "*/20 * * * *"
+    },
+    {
+      "path": "/api/cron/whales/top",
+      "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/cron/whales/detect",
+      "schedule": "*/15 * * * *"
     }
   ]
 }

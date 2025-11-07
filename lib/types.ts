@@ -62,3 +62,33 @@ export interface WatchlistItem {
   added_at: string
 }
 
+export interface WhaleEventBreakdown {
+  senders?: Array<{ owner: string; amount: number }>
+  receivers?: Array<{ owner: string; amount: number }>
+}
+
+export interface WhaleEvent {
+  id: string
+  token_address: string
+  token_symbol?: string | null
+  token_name?: string | null
+  event_type: 'transfer' | 'mint' | 'burn' | 'exchange'
+  amount_tokens?: number | null
+  amount_usd?: number | null
+  price_usd?: number | null
+  liquidity_usd?: number | null
+  volume_24h_usd?: number | null
+  sender?: string | null
+  sender_label?: string | null
+  receiver?: string | null
+  receiver_label?: string | null
+  tx_hash: string
+  tx_url?: string | null
+  event_data?: WhaleEventBreakdown | null
+  block_time?: string | null
+  fee?: number | null
+  posted_to_twitter: boolean
+  tweet_id?: string | null
+  created_at: string
+}
+

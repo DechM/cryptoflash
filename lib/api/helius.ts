@@ -3,6 +3,100 @@ import axios from 'axios'
 const HELIUS_API_KEY = process.env.HELIUS_API_KEY || ''
 const HELIUS_BASE_URL = `https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`
 
+export const HELIUS_API_AVAILABLE = !!HELIUS_API_KEY
+
+function hasResponseStatus(error: unknown, status: number): boolean {
+  if (typeof error !== 'object' || error === null) {
+    return false
+  }
+  if (!('response' in error)) {
+    return false
+  }
+  const resp = (error as { response?: { status?: number } }).response
+  return typeof resp?.status === 'number' && resp.status === status
+}
+
+function isTimeoutError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false
+  }
+  const code = (error as { code?: string }).code
+  return code === 'ECONNABORTED' || error.message?.includes('timeout')
+}
+
+export async function getSignaturesForAddress(address: string, limit: number = 5): Promise<Array<{ signature: string; blockTime?: number }>> {
+  if (!HELIUS_API_KEY) {
+    return []
+  }
+  try {
+    const response = await axios.post(
+      HELIUS_BASE_URL,
+      {
+        jsonrpc: '2.0',
+        id: 'whale-signatures',
+        method: 'getSignaturesForAddress',
+        params: [address, { limit }]
+      },
+      { timeout: 8000 }
+    )
+
+    if (response.data?.error) {
+      console.warn(`[Helius] getSignaturesForAddress RPC error for ${address.substring(0, 12)}...:`, response.data.error)
+      return []
+    }
+
+    return response.data?.result || []
+  } catch (error: unknown) {
+    if (hasResponseStatus(error, 429)) {
+      console.warn(`[Helius] Rate limit hit fetching signatures for ${address.substring(0, 12)}...`)
+    } else if (isTimeoutError(error)) {
+      console.warn(`[Helius] Timeout fetching signatures for ${address.substring(0, 12)}...`)
+    } else {
+      const message = error instanceof Error ? error.message : String(error)
+      console.warn(`[Helius] Error fetching signatures for ${address.substring(0, 12)}...:`, message)
+    }
+    return []
+  }
+}
+
+export async function getTransactionBySignature(signature: string): Promise<any | null> {
+  if (!HELIUS_API_KEY) {
+    return null
+  }
+  try {
+    const response = await axios.post(
+      HELIUS_BASE_URL,
+      {
+        jsonrpc: '2.0',
+        id: `tx-${signature.substring(0, 10)}`,
+        method: 'getTransaction',
+        params: [
+          signature,
+          { maxSupportedTransactionVersion: 0 }
+        ]
+      },
+      { timeout: 10000 }
+    )
+
+    if (response.data?.error) {
+      console.warn(`[Helius] getTransaction RPC error for ${signature.substring(0, 12)}...:`, response.data.error)
+      return null
+    }
+
+    return response.data?.result || null
+  } catch (error: unknown) {
+    if (hasResponseStatus(error, 429)) {
+      console.warn(`[Helius] Rate limit hit fetching transaction ${signature.substring(0, 12)}...`)
+    } else if (isTimeoutError(error)) {
+      console.warn(`[Helius] Timeout fetching transaction ${signature.substring(0, 12)}...`)
+    } else {
+      const message = error instanceof Error ? error.message : String(error)
+      console.warn(`[Helius] Error fetching transaction ${signature.substring(0, 12)}...:`, message)
+    }
+    return null
+  }
+}
+
 export interface WhaleTransaction {
   signature: string
   amount: number // SOL amount

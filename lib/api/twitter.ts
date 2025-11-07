@@ -6,6 +6,8 @@
 import OAuth from 'oauth-1.0a'
 import crypto from 'crypto'
 
+import { WhaleEvent } from '@/lib/types'
+
 interface TwitterToken {
   name: string
   symbol: string
@@ -18,6 +20,63 @@ interface TwitterToken {
 interface TwitterPostResponse {
   id: string
   text: string
+}
+
+
+function shortAddress(address?: string | null, chars: number = 4) {
+  if (!address) return 'Unknown'
+  if (address.length <= chars * 2) return address
+  return `${address.slice(0, chars)}...${address.slice(-chars)}`
+}
+
+function formatUsdCompact(amount?: number | null) {
+  if (!amount || !isFinite(amount)) return '$0'
+  if (amount >= 1_000_000_000) return `$${(amount / 1_000_000_000).toFixed(1)}B`
+  if (amount >= 1_000_000) return `$${(amount / 1_000_000).toFixed(1)}M`
+  if (amount >= 1_000) return `$${(amount / 1_000).toFixed(1)}K`
+  return `$${amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+}
+
+function formatTokenCompact(amount?: number | null) {
+  if (!amount || !isFinite(amount)) return ''
+  if (amount >= 1_000_000) return `${(amount / 1_000_000).toFixed(1)}M`
+  if (amount >= 1_000) return `${(amount / 1_000).toFixed(1)}K`
+  return amount.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 })
+}
+
+export function formatWhaleTweet(event: WhaleEvent): string {
+  const tokenName = event.token_name || ''
+  const tokenSymbol = event.token_symbol ? `$${event.token_symbol}` : ''
+  const headline = `${tokenName} ${tokenSymbol}`.trim() || `$${shortAddress(event.token_address, 4)}`
+
+  const valuePart = formatUsdCompact(event.amount_usd)
+  const tokenAmount = formatTokenCompact(event.amount_tokens)
+  const amountLine = tokenAmount ? `${valuePart} • ${tokenAmount} tokens` : valuePart
+
+  let descriptor = '🔁 Whale transfer'
+  if (event.event_type === 'mint') descriptor = '🪙 Minted supply'
+  if (event.event_type === 'burn') descriptor = '🔥 Supply burned'
+  if (event.event_type === 'exchange') descriptor = '🏛️ Exchange flow'
+
+  const sender = shortAddress(event.sender, 4)
+  const receiver = shortAddress(event.receiver, 4)
+  const movementLine = `From ${sender} → ${receiver}`
+
+  const siteLink = 'cryptoflash.app/whale-alerts'
+  const hashtags = '#Solana #WhaleAlert #CryptoFlash'
+
+  return `🐳 Whale Alert!
+
+${headline}
+💰 ${amountLine}
+${descriptor}
+${movementLine}
+
+👉 Watch live: ${siteLink}
+
+${hashtags}
+
+⚠️ DYOR • NFA`
 }
 
 /**
