@@ -22,12 +22,20 @@ const REFRESH_INTERVAL = Number(process.env.NEXT_PUBLIC_WHALE_REFRESH_MS || 6000
 const MIN_WHALE_THRESHOLD = Number(process.env.NEXT_PUBLIC_WHALE_MIN_USD || process.env.WHALE_ALERT_MIN_USD || '10000')
 
 type FeedFilter = 'all' | 'transfer' | 'mint' | 'burn'
+type TimeFilter = '1h' | '6h' | '24h' | 'all'
 
 const FILTER_LABELS: Record<FeedFilter, string> = {
   all: 'All Events',
   transfer: 'Large Transfers',
   mint: 'Newly Minted',
   burn: 'Burned Supply'
+}
+
+const TIME_FILTER_LABELS: Record<TimeFilter, string> = {
+  '1h': 'Last 1h',
+  '6h': 'Last 6h',
+  '24h': 'Last 24h',
+  all: 'All Time'
 }
 
 const EVENT_BADGES: Record<string, { label: string; color: string }> = {
@@ -82,6 +90,7 @@ async function safeCopy(value: string) {
 export default function WhaleAlertsPage() {
   const [events, setEvents] = useState<WhaleEvent[]>([])
   const [filter, setFilter] = useState<FeedFilter>('all')
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>('24h')
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -125,7 +134,46 @@ export default function WhaleAlertsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter])
 
-  const filteredEvents = useMemo(() => events, [events])
+  const filteredEvents = useMemo(() => {
+    if (!events?.length) return []
+
+    const now = Date.now()
+    const horizonMs: Record<Exclude<TimeFilter, 'all'>, number> = {
+      '1h': 60 * 60 * 1000,
+      '6h': 6 * 60 * 60 * 1000,
+      '24h': 24 * 60 * 60 * 1000
+    }
+
+    return events.filter(event => {
+      if (timeFilter === 'all') return true
+      if (!event.block_time) return true
+      const blockTs = new Date(event.block_time).getTime()
+      if (Number.isNaN(blockTs)) return true
+      return now - blockTs <= horizonMs[timeFilter]
+    })
+  }, [events, timeFilter])
+
+  const summary = useMemo(() => {
+    if (!events?.length) {
+      return {
+        count: 0,
+        volumeUsd: 0,
+        largestUsd: 0,
+        uniqueTokens: 0
+      }
+    }
+
+    const volumeUsd = events.reduce((acc, event) => acc + (event.amount_usd ?? 0), 0)
+    const largestUsd = events.reduce((max, event) => Math.max(max, event.amount_usd ?? 0), 0)
+    const uniqueTokens = new Set(events.map(event => event.token_address)).size
+
+    return {
+      count: events.length,
+      volumeUsd,
+      largestUsd,
+      uniqueTokens
+    }
+  }, [events])
 
   return (
     <div className="min-h-screen bg-[#050712] w-full flex flex-col">
@@ -188,7 +236,47 @@ export default function WhaleAlertsPage() {
                 </button>
               </div>
             </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {(Object.keys(TIME_FILTER_LABELS) as TimeFilter[]).map(option => (
+                <button
+                  key={option}
+                  onClick={() => setTimeFilter(option)}
+                  className={cn(
+                    'px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border border-transparent',
+                    timeFilter === option
+                      ? 'bg-white/10 text-white border-white/20 shadow-[0_0_12px_rgba(0,209,255,0.35)]'
+                      : 'text-[#8091a7] hover:text-white hover:border-white/10'
+                  )}
+                >
+                  {TIME_FILTER_LABELS[option]}
+                </button>
+              ))}
+            </div>
           </header>
+
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="glass-card rounded-2xl border border-white/10 p-4">
+              <p className="text-xs uppercase tracking-widest text-[#64748b]">Total Alerts</p>
+              <p className="mt-2 text-2xl font-bold text-white">{summary.count}</p>
+              <p className="text-xs text-[#6b7280]">Loaded in the current session</p>
+            </div>
+            <div className="glass-card rounded-2xl border border-white/10 p-4">
+              <p className="text-xs uppercase tracking-widest text-[#64748b]">Aggregated Volume</p>
+              <p className="mt-2 text-2xl font-bold text-[#00FFA3]">{summary.volumeUsd ? formatUsd(summary.volumeUsd) : '$0'}</p>
+              <p className="text-xs text-[#6b7280]">Across all displayed alerts</p>
+            </div>
+            <div className="glass-card rounded-2xl border border-white/10 p-4">
+              <p className="text-xs uppercase tracking-widest text-[#64748b]">Largest Whale</p>
+              <p className="mt-2 text-2xl font-bold text-white">{summary.largestUsd ? formatUsd(summary.largestUsd) : '$0'}</p>
+              <p className="text-xs text-[#6b7280]">Biggest single transfer</p>
+            </div>
+            <div className="glass-card rounded-2xl border border-white/10 p-4">
+              <p className="text-xs uppercase tracking-widest text-[#64748b]">Unique Tokens</p>
+              <p className="mt-2 text-2xl font-bold text-white">{summary.uniqueTokens}</p>
+              <p className="text-xs text-[#6b7280]">Represented in this feed</p>
+            </div>
+          </div>
 
           {loading ? (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
