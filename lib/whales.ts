@@ -4,7 +4,7 @@ import { getSignaturesForAddress, getTransactionBySignature } from './api/helius
 import { LAMPORTS_PER_SOL } from './utils'
 
 const DEXSCREENER_TRENDING_URL = 'https://api.dexscreener.com/latest/dex/pairs/trending'
-const DEXSCREENER_SOLANA_URL = 'https://api.dexscreener.com/latest/dex/pairs/solana'
+const DEXSCREENER_SOLANA_URL = 'https://api.dexscreener.com/latest/dex/tokens/solana'
 const SOLANA_CHAIN_ID = 'solana'
 
 export const MIN_WHALE_ALERT_USD = Number(process.env.WHALE_ALERT_MIN_USD || '10000')
@@ -117,8 +117,15 @@ export async function fetchTrendingSolanaPairs(limit = 60): Promise<DexScreenerP
 
   if (!pairs.length) {
     try {
-      const fallbackResponse = await axios.get<DexScreenerTrendingResponse>(DEXSCREENER_SOLANA_URL, { timeout: 8000 })
-      pairs = fallbackResponse.data?.pairs || []
+      const fallbackResponse = await axios.get(DEXSCREENER_SOLANA_URL, { timeout: 8000 })
+      const fallbackPairs = fallbackResponse.data?.pairs || []
+      if (Array.isArray(fallbackPairs)) {
+        pairs = fallbackPairs
+      } else if (fallbackResponse.data) {
+        // tokens endpoint returns object keyed by token address
+        pairs = Object.values(fallbackResponse.data as Record<string, { pairs?: DexScreenerPair[] }>)
+          .flatMap((entry) => entry?.pairs || [])
+      }
     } catch (fallbackError) {
       const message = fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
       console.error('[Whale] Failed to fetch DexScreener solana pairs:', message)
