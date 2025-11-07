@@ -173,14 +173,17 @@ async function handleTwitterPost() {
     })
   }
 
-  // Sort by score DESC and take top 1-2 tokens
+  const MAX_TOKENS_PER_RUN = 1
+
+  // Sort by score DESC and take top tokens (rate limit safe)
   const topTokens = newTokens
     .sort((a, b) => b.score - a.score)
-    .slice(0, 2) // Post max 2 tokens per run
+    .slice(0, MAX_TOKENS_PER_RUN)
 
-  console.log(`[Twitter Post] Will post ${topTokens.length} token(s):`, topTokens.map(t => `${t.symbol} (score: ${t.score}, progress: ${t.progress}%)`))
+  console.log(`[Twitter Post] Will post ${topTokens.length} token(s) (max per run: ${MAX_TOKENS_PER_RUN}):`, topTokens.map(t => `${t.symbol} (score: ${t.score}, progress: ${t.progress}%)`))
 
   const postedTweets: Array<{ token: string; tweetId: string | null }> = []
+  let rateLimitedUntil: number | null = null
 
   // Post each token
   for (const token of topTokens) {
@@ -201,6 +204,13 @@ async function handleTwitterPost() {
     })
 
     const tweetResult = await postTweet(tweetText)
+
+    if (tweetResult && 'rateLimited' in tweetResult) {
+      rateLimitedUntil = tweetResult.resetAt || null
+      const resetDate = rateLimitedUntil ? new Date(rateLimitedUntil * 1000).toISOString() : 'unknown'
+      console.warn(`[Twitter Post] Rate limited by Twitter. Reset at: ${resetDate}. Skipping remaining posts.`)
+      break
+    }
 
     if (tweetResult) {
       console.log(`[Twitter Post] Successfully posted tweet for ${token.symbol}: ${tweetResult.id}`)
@@ -241,7 +251,8 @@ async function handleTwitterPost() {
     postedCount: postedTweets.length,
     postedTweets,
     todayTotal: (todayCount || 0) + postedTweets.length,
-    dailyLimit: MAX_POSTS_PER_DAY
+    dailyLimit: MAX_POSTS_PER_DAY,
+    rateLimitedUntil
   }
 
   console.log(`[Twitter Post] Job completed:`, result)

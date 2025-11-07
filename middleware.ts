@@ -2,7 +2,20 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({
+  const userAgent = request.headers.get('user-agent')?.toLowerCase() || ''
+
+  if (userAgent.includes('twitterbot')) {
+    // Return minimal HTML without meta tags so Twitter/X cannot generate a preview card
+    return new NextResponse(`<!DOCTYPE html><html><head><meta name="robots" content="noindex,nofollow" /></head><body></body></html>`, {
+      status: 200,
+      headers: {
+        'content-type': 'text/html; charset=utf-8',
+        'x-robots-tag': 'noindex, nofollow'
+      }
+    })
+  }
+
+  const response = NextResponse.next({
     request: {
       headers: request.headers,
     },

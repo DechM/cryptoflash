@@ -44,13 +44,13 @@ export function formatTwitterPost(token: TwitterToken): string {
   const score = token.score || 0
   
   // Urgency indicator for high progress tokens
-  let urgencyText = ''
+  let urgencyLabel = ''
   if (progress >= 99) {
-    urgencyText = ' ⚡ (Almost KOTH!)'
+    urgencyLabel = '⚡ Almost KOTH!'
   } else if (progress >= 95) {
-    urgencyText = ' ⚡ (Very Close!)'
+    urgencyLabel = '⚡ Very Close!'
   } else if (progress >= 90) {
-    urgencyText = ' 🔥 (KOTH Zone!)'
+    urgencyLabel = '🔥 KOTH Zone!'
   }
   
   // Score badge for high-scoring tokens
@@ -63,13 +63,17 @@ export function formatTwitterPost(token: TwitterToken): string {
     scoreBadge = ' ⭐ (Top 10%)'
   }
   
+  const progressLine = urgencyLabel
+    ? `📈 Progress: ${token.progress.toFixed(1)}% • ${urgencyLabel}`
+    : `📈 Progress: ${token.progress.toFixed(1)}%`
+  
   // Optimized template with urgency and value indicators
   // Format: Urgency + Data + CTA + Hashtags (algorithm-friendly)
-  return `🚨 KOTH Alert!${urgencyText}
+  return `🚨 KOTH Alert!
 
 💰 ${token.name} $${token.symbol}
 📊 Score: ${token.score.toFixed(1)}/100${scoreBadge}
-📈 Progress: ${token.progress.toFixed(1)}%${urgencyText}
+${progressLine}
 ${priceText}
 
 👉 Track live: ${siteLink}
@@ -83,7 +87,7 @@ ${hashtags}
  * Post a tweet to Twitter/X using API v2
  * Requires OAuth 1.0a User Context (not Bearer Token)
  */
-export async function postTweet(text: string): Promise<TwitterPostResponse | null> {
+export async function postTweet(text: string): Promise<TwitterPostResponse | { rateLimited: true; resetAt: number | null } | null> {
   const apiKey = process.env.TWITTER_API_KEY
   const apiSecret = process.env.TWITTER_API_SECRET
   const accessToken = process.env.TWITTER_ACCESS_TOKEN
@@ -132,9 +136,22 @@ export async function postTweet(text: string): Promise<TwitterPostResponse | nul
       })
     })
 
+    const remaining = response.headers.get('x-rate-limit-remaining')
+    const reset = response.headers.get('x-rate-limit-reset')
+    if (remaining !== null) {
+      const resetTime = reset ? new Date(parseInt(reset, 10) * 1000).toISOString() : 'unknown'
+      console.log(`[Twitter API] Rate limit remaining: ${remaining}, reset at: ${resetTime}`)
+    }
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
       console.error('Twitter API error:', response.status, errorData)
+
+      if (response.status === 429) {
+        const resetSeconds = reset ? parseInt(reset, 10) : null
+        return { rateLimited: true, resetAt: resetSeconds }
+      }
+
       return null
     }
 
