@@ -17,14 +17,48 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const pairs = await fetchTrendingSolanaPairs(80)
-    if (!pairs.length) {
-      return NextResponse.json({ success: false, message: 'No trending pairs fetched' })
+    const limit = 80
+    const pairs = await fetchTrendingSolanaPairs(limit)
+
+    let tokens = pairs.length ? mapPairsToTopTokens(pairs) : []
+
+    if (!tokens.length) {
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL || 'http://localhost:3000'
+        const fallbackResponse = await fetch(`${baseUrl}/api/koth-data`, {
+          headers: { 'Content-Type': 'application/json' },
+          cache: 'no-store'
+        })
+
+        if (fallbackResponse.ok) {
+          const { tokens: kothTokens } = await fallbackResponse.json() as {
+            tokens: Array<{ tokenAddress: string; symbol?: string; name?: string; priceUsd?: number; liquidity?: number; volume24h?: number }>
+          }
+
+          if (Array.isArray(kothTokens) && kothTokens.length) {
+            tokens = kothTokens.slice(0, limit).map((token) => ({
+              token_address: token.tokenAddress,
+              token_symbol: token.symbol || null,
+              token_name: token.name || null,
+              price_usd: typeof token.priceUsd === 'number' ? token.priceUsd : null,
+              liquidity_usd: typeof token.liquidity === 'number' ? token.liquidity : null,
+              volume_24h_usd: typeof token.volume24h === 'number' ? token.volume24h : null,
+              txns_24h: null,
+              updated_at: new Date().toISOString()
+            }))
+            console.warn('[Whale Cron] Falling back to KOTH tokens due to DexScreener unavailability')
+          }
+        } else {
+          console.warn('[Whale Cron] KOTH fallback request failed:', fallbackResponse.status)
+        }
+      } catch (fallbackError) {
+        const message = fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
+        console.error('[Whale Cron] Fallback to KOTH tokens failed:', message)
+      }
     }
 
-    const tokens = mapPairsToTopTokens(pairs)
     if (!tokens.length) {
-      return NextResponse.json({ success: false, message: 'No Solana tokens mapped from DexScreener response' })
+      return NextResponse.json({ success: false, message: 'No token sources available (DexScreener + fallback failed)' })
     }
 
     const { error } = await supabaseAdmin
@@ -36,7 +70,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to upsert whale_top_tokens' }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, updated: tokens.length })
+    return NextResponse.json({ success: true, updated: tokens.length, source: pairs.length ? 'dexscreener' : 'koth' })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error)
     console.error('[Whale Cron] Unexpected error in top tokens job:', message)
