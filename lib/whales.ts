@@ -1,5 +1,6 @@
 import axios from 'axios'
 
+import { supabaseAdmin } from './supabase'
 import { getSignaturesForAddress, getTransactionBySignature } from './api/helius'
 import { LAMPORTS_PER_SOL } from './utils'
 
@@ -390,3 +391,29 @@ export async function detectWhaleTransfersForToken(
 export function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
+export async function getWhaleSubscription(userId: string) {
+  const { data } = await supabaseAdmin
+    .from('whale_subscribers')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  return data
+}
+
+export async function upsertWhaleSubscription(userId: string, values: Partial<import('./types').WhaleSubscriber>) {
+  return supabaseAdmin
+    .from('whale_subscribers')
+    .upsert({ user_id: userId, ...values }, { onConflict: 'user_id' })
+}
+
+export async function getDiscordLinkRecord(userId: string) {
+  const { data } = await supabaseAdmin
+    .from('discord_links')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  return data
+}
+

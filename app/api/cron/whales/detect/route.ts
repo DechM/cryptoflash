@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import { HELIUS_API_AVAILABLE } from '@/lib/api/helius'
+import { sendWhaleEventToDiscord } from '@/lib/discord'
 import { supabaseAdmin, isSupabaseConfigured } from '@/lib/supabase'
 import { detectWhaleTransfersForToken, delay, MIN_WHALE_ALERT_USD, MAX_WHALE_SIGNATURES, TopTokenRecord } from '@/lib/whales'
 
@@ -93,6 +94,18 @@ export async function GET(request: NextRequest) {
           summary.errors.push(`Insert failed for ${token.token_symbol || token.token_address.substring(0, 6)}: ${insertError.message}`)
         } else {
           summary.inserted += payload.length
+          for (const item of freshEvents) {
+            try {
+            await sendWhaleEventToDiscord({
+              id: crypto.randomUUID(),
+              created_at: new Date().toISOString(),
+              posted_to_twitter: false,
+              ...item.event
+            })
+            } catch (discordError) {
+              console.warn('[Whale Detect] Failed to post to Discord:', discordError)
+            }
+          }
         }
       } catch (tokenError: unknown) {
         const message = tokenError instanceof Error ? tokenError.message : String(tokenError)

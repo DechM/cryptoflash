@@ -222,3 +222,73 @@ CREATE TRIGGER update_twitter_rate_limits_updated_at BEFORE UPDATE ON twitter_ra
 
 ALTER TABLE alert_history
   ADD COLUMN IF NOT EXISTS token_symbol TEXT;
+
+
+-- Whale Alerts Subscriptions
+CREATE TABLE IF NOT EXISTS whale_subscribers (
+  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'inactive' CHECK (status IN ('inactive', 'active', 'canceled')),
+  plan TEXT NOT NULL DEFAULT 'standard',
+  started_at TIMESTAMPTZ DEFAULT NOW(),
+  expires_at TIMESTAMPTZ,
+  cancel_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS discord_links (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  discord_user_id TEXT NOT NULL,
+  discord_username TEXT,
+  access_token TEXT,
+  refresh_token TEXT,
+  token_expires_at TIMESTAMPTZ,
+  refresh_token_expires_at TIMESTAMPTZ,
+  scope TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_discord_links_user_id ON discord_links(user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_discord_links_discord_user_id ON discord_links(discord_user_id);
+
+CREATE TABLE IF NOT EXISTS discord_oauth_states (
+  state TEXT PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  used_at TIMESTAMPTZ
+);
+
+CREATE TRIGGER update_whale_subscribers_updated_at BEFORE UPDATE ON whale_subscribers
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_discord_links_updated_at BEFORE UPDATE ON discord_links
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+ALTER TABLE IF NOT EXISTS whale_subscribers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF NOT EXISTS discord_links ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF NOT EXISTS discord_oauth_states ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY IF NOT EXISTS select_own_whale_subscription ON whale_subscribers
+  FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY IF NOT EXISTS update_own_whale_subscription ON whale_subscribers
+  FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY IF NOT EXISTS insert_own_whale_subscription ON whale_subscribers
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY IF NOT EXISTS select_own_discord_link ON discord_links
+  FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY IF NOT EXISTS delete_own_discord_link ON discord_links
+  FOR DELETE USING (auth.uid() = user_id);
+CREATE POLICY IF NOT EXISTS insert_own_discord_link ON discord_links
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY IF NOT EXISTS update_own_discord_link ON discord_links
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY IF NOT EXISTS select_own_oauth_state ON discord_oauth_states
+  FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY IF NOT EXISTS delete_own_oauth_state ON discord_oauth_states
+  FOR DELETE USING (auth.uid() = user_id);
+

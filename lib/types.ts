@@ -91,4 +91,28 @@ export interface WhaleEvent {
   tweet_id?: string | null
   created_at: string
 }
+export interface WhaleSubscriber {
+  user_id: string
+  status: 'inactive' | 'active' | 'canceled'
+  plan: string
+  started_at?: string
+  expires_at?: string
+  cancel_at?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface DiscordLink {
+  id: string
+  user_id: string
+  discord_user_id: string
+  discord_username?: string | null
+  access_token?: string | null
+  refresh_token?: string | null
+  token_expires_at?: string | null
+  refresh_token_expires_at?: string | null
+  scope?: string | null
+  created_at: string
+  updated_at: string
+}
 
