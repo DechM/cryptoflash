@@ -49,6 +49,12 @@ CREATE TABLE IF NOT EXISTS alert_history (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+ALTER TABLE alert_history
+  ADD COLUMN IF NOT EXISTS alert_score NUMERIC;
+
+ALTER TABLE alert_history
+  ADD COLUMN IF NOT EXISTS alert_progress NUMERIC;
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_alert_history_user_id ON alert_history(user_id);
 CREATE INDEX IF NOT EXISTS idx_alert_history_created_at ON alert_history(created_at);
