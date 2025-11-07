@@ -220,3 +220,5 @@ CREATE TABLE IF NOT EXISTS twitter_rate_limits (
 CREATE TRIGGER update_twitter_rate_limits_updated_at BEFORE UPDATE ON twitter_rate_limits
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+ALTER TABLE alert_history
+  ADD COLUMN IF NOT EXISTS token_symbol TEXT;
