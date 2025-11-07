@@ -49,7 +49,7 @@ export async function GET() {
 
       try {
         const { data: cachedTokens } = await supabase
-          .from<{ data: Token; updated_at: string }>('koth_tokens')
+          .from('koth_tokens')
           .select('data, updated_at')
           .order('updated_at', { ascending: false })
           .limit(50)
