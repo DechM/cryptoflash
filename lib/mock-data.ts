@@ -59,17 +59,20 @@ export function generateMockTokens(): Token[] {
  * PRODUCTION: Must have real API keys configured
  */
 export function shouldUseMockData(): boolean {
-  const hasMoralisKey = !!process.env.MORALIS_API_KEY && process.env.MORALIS_API_KEY !== '' && process.env.MORALIS_API_KEY !== 'placeholder'
+  const moralisKeysEnv = (process.env.MORALIS_API_KEYS || process.env.MORALIS_API_KEY || '')
+  const moralisKeys = moralisKeysEnv
+    .split(',')
+    .map(key => key.trim())
+    .filter(key => key && key !== 'placeholder')
+
+  const hasMoralisKey = moralisKeys.length > 0
   const hasDexscreener = true // Dexscreener is public API, no key needed
   const hasHeliusKey = !!process.env.HELIUS_API_KEY && process.env.HELIUS_API_KEY !== '' && process.env.HELIUS_API_KEY !== 'placeholder'
-  
-  // Only use mock if Moralis is missing (primary data source)
-  // In production, Moralis key is REQUIRED
+
   if (process.env.NODE_ENV === 'production') {
     return !hasMoralisKey
   }
-  
-  // Development: allow mock if keys are missing
+
   return !hasMoralisKey
 }
 
