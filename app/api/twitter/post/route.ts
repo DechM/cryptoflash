@@ -22,6 +22,33 @@ import { MIN_WHALE_ALERT_USD } from '@/lib/whales'
 const MIN_POST_INTERVAL = 20 * 60 * 1000 // 20 minutes between posts
 const MAX_POSTS_PER_DAY = 15 // 15 posts/day = 450 posts/month (safe margin for 500/month free tier)
 
+async function getStoredResumeAt(): Promise<Date | null> {
+  const { data } = await supabaseAdmin
+    .from('twitter_rate_limits')
+    .select('resume_at')
+    .eq('key', 'global')
+    .maybeSingle<{ resume_at: string | null }>()
+
+  if (!data?.resume_at) {
+    return null
+  }
+
+  const resumeAt = new Date(data.resume_at)
+  return Number.isNaN(resumeAt.getTime()) ? null : resumeAt
+}
+
+async function setStoredResumeAt(unixSeconds: number | null) {
+  const resumeAt = unixSeconds ? new Date(unixSeconds * 1000) : null
+  const iso = resumeAt && Number.isFinite(resumeAt.getTime()) ? resumeAt.toISOString() : null
+  const { error } = await supabaseAdmin
+    .from('twitter_rate_limits')
+    .upsert({ key: 'global', resume_at: iso }, { onConflict: 'key' })
+
+  if (error) {
+    console.error('[Twitter Post] Failed to persist rate limit resume_at:', error)
+  }
+}
+
 /**
  * Main logic for posting tweets (shared between POST and GET)
  */
@@ -45,6 +72,18 @@ async function handleTwitterPost() {
       success: false,
       message: 'Daily post limit reached',
       todayCount
+    })
+  }
+
+  const storedResumeAt = await getStoredResumeAt()
+  if (storedResumeAt && storedResumeAt.getTime() > Date.now()) {
+    const minutesRemaining = Math.max(0, Math.ceil((storedResumeAt.getTime() - Date.now()) / 60000))
+    console.warn(`[Twitter Post] Stored rate limit active until ${storedResumeAt.toISOString()} (${minutesRemaining} min left)`)
+    return NextResponse.json({
+      success: false,
+      message: 'Twitter rate limit active',
+      resumeAt: storedResumeAt.toISOString(),
+      minutesRemaining
     })
   }
 
@@ -95,6 +134,8 @@ async function handleTwitterPost() {
 
     if (tweetResult && 'rateLimited' in tweetResult) {
       console.warn('[Twitter Post] Twitter rate limit during whale post. Skipping rest of job.')
+      const fallbackReset = Math.floor(Date.now() / 1000) + (20 * 60)
+      await setStoredResumeAt(tweetResult.resetAt || fallbackReset)
       return NextResponse.json({
         success: false,
         rateLimited: true,
@@ -133,6 +174,8 @@ async function handleTwitterPost() {
         }
       })
 
+      await setStoredResumeAt(null)
+
       return NextResponse.json({
         success: true,
         postedWhale: true,
@@ -145,7 +188,7 @@ async function handleTwitterPost() {
   }
 
   // Fetch latest KOTH tokens
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL || 'http://localhost:3000'
+  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/g, '') || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')).replace(/\/$/, '')
   const kothResponse = await fetch(`${baseUrl}/api/koth-data`, {
     headers: {
       'Content-Type': 'application/json'
@@ -274,6 +317,8 @@ async function handleTwitterPost() {
 
     if (tweetResult && 'rateLimited' in tweetResult) {
       rateLimitedUntil = tweetResult.resetAt || null
+      const fallbackReset = Math.floor(Date.now() / 1000) + (20 * 60)
+      await setStoredResumeAt(rateLimitedUntil || fallbackReset)
       const resetDate = rateLimitedUntil ? new Date(rateLimitedUntil * 1000).toISOString() : 'unknown'
       console.warn(`[Twitter Post] Rate limited by Twitter. Reset at: ${resetDate}. Skipping remaining posts.`)
       break
@@ -311,6 +356,13 @@ async function handleTwitterPost() {
     } else {
       console.error(`[Twitter Post] Failed to post tweet for ${token.symbol} - postTweet returned null/undefined`)
     }
+  }
+
+  if (postedTweets.length > 0) {
+    await setStoredResumeAt(null)
+  } else if (rateLimitedUntil) {
+    const fallbackReset = Math.floor(Date.now() / 1000) + (20 * 60)
+    await setStoredResumeAt(rateLimitedUntil || fallbackReset)
   }
 
   const result = {

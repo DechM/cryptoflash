@@ -207,3 +207,16 @@ CREATE TABLE IF NOT EXISTS whale_events (
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_whale_events_tx_hash ON whale_events(tx_hash);
 CREATE INDEX IF NOT EXISTS idx_whale_events_block_time ON whale_events(block_time DESC);
+
+
+-- Twitter Rate Limit State
+CREATE TABLE IF NOT EXISTS twitter_rate_limits (
+  key TEXT PRIMARY KEY,
+  resume_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TRIGGER update_twitter_rate_limits_updated_at BEFORE UPDATE ON twitter_rate_limits
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
