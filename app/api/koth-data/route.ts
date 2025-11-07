@@ -43,8 +43,31 @@ export async function GET() {
     let bondingTokens: Partial<Token>[] = []
     try {
       bondingTokens = await fetchBondingTokens()
-    } catch (error: any) {
-      console.error('Moralis API failed, using mock data:', error.message)
+    } catch (error: unknown) {
+      const moralisMessage = error instanceof Error ? error.message : String(error)
+      console.error('Moralis API failed:', moralisMessage)
+
+      try {
+        const { data: cachedTokens } = await supabase
+          .from<{ data: Token; updated_at: string }>('koth_tokens')
+          .select('data, updated_at')
+          .order('updated_at', { ascending: false })
+          .limit(50)
+
+        if (cachedTokens && cachedTokens.length) {
+          const tokens = cachedTokens.map((row) => row.data as Token)
+          console.warn('[KOTH] Using cached koth_tokens fallback due to Moralis failure')
+          cache = {
+            tokens,
+            timestamp: Date.now()
+          }
+          return NextResponse.json({ tokens })
+        }
+      } catch (cacheError) {
+        const message = cacheError instanceof Error ? cacheError.message : String(cacheError)
+        console.error('[KOTH] Failed to read cached tokens:', message)
+      }
+
       const mockTokens = generateMockTokens()
       cache = {
         tokens: mockTokens,
@@ -89,7 +112,7 @@ export async function GET() {
             // Build map from cached data
             const whaleDataMap = new Map<string, { whaleCount: number; whaleInflows: number; totalVolume: number }>()
             freshTokens.forEach(t => {
-              const tokenData = t.data as any
+              const tokenData = t.data as { whaleCount?: number; whaleInflows?: number; totalVolume?: number } | null
               if (tokenData) {
                 whaleDataMap.set(t.token_address, {
                   whaleCount: tokenData.whaleCount || 0,
@@ -309,10 +332,10 @@ export async function GET() {
     }
 
     return NextResponse.json({ tokens: topTokens })
-  } catch (error: any) {
-    console.error('Error fetching KOTH data:', error)
-    
-    // Return cached data if available, even if expired
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.error('Error fetching KOTH data:', message)
+
     if (cache) {
       return NextResponse.json({ tokens: cache.tokens })
     }
