@@ -3,7 +3,8 @@ import axios from 'axios'
 import { getSignaturesForAddress, getTransactionBySignature } from './api/helius'
 import { LAMPORTS_PER_SOL } from './utils'
 
-const DEXSCREENER_TRENDING_URL = 'https://api.dexscreener.com/latest/dex/pairs/trending?limit=100'
+const DEXSCREENER_TRENDING_URL = 'https://api.dexscreener.com/latest/dex/pairs/trending'
+const DEXSCREENER_SOLANA_URL = 'https://api.dexscreener.com/latest/dex/pairs/solana'
 const SOLANA_CHAIN_ID = 'solana'
 
 export const MIN_WHALE_ALERT_USD = Number(process.env.WHALE_ALERT_MIN_USD || '10000')
@@ -104,16 +105,29 @@ export interface TokenTransferInsight {
 const KNOWN_ADDRESS_LABELS: Record<string, string> = {}
 
 export async function fetchTrendingSolanaPairs(limit = 60): Promise<DexScreenerPair[]> {
+  let pairs: DexScreenerPair[] = []
+
   try {
-    const response = await axios.get<DexScreenerTrendingResponse>(DEXSCREENER_TRENDING_URL, { timeout: 8000 })
-    const pairs = response.data?.pairs || []
-    const solanaPairs = pairs.filter(pair => pair.chainId?.toLowerCase() === SOLANA_CHAIN_ID)
-    return solanaPairs.slice(0, limit)
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error)
-    console.error('[Whale] Failed to fetch DexScreener trending pairs:', message)
-    return []
+    const response = await axios.get<DexScreenerTrendingResponse>(`${DEXSCREENER_TRENDING_URL}?limit=${Math.max(limit * 2, 100)}`, { timeout: 8000 })
+    pairs = response.data?.pairs || []
+  } catch (error) {
+    const status = axios.isAxiosError(error) ? error.response?.status : undefined
+    console.warn(`[Whale] Failed to fetch DexScreener trending pairs (status: ${status ?? 'unknown'}) - falling back to Solana pairs`)
   }
+
+  if (!pairs.length) {
+    try {
+      const fallbackResponse = await axios.get<DexScreenerTrendingResponse>(DEXSCREENER_SOLANA_URL, { timeout: 8000 })
+      pairs = fallbackResponse.data?.pairs || []
+    } catch (fallbackError) {
+      const message = fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
+      console.error('[Whale] Failed to fetch DexScreener solana pairs:', message)
+      return []
+    }
+  }
+
+  const solanaPairs = pairs.filter(pair => pair.chainId?.toLowerCase() === SOLANA_CHAIN_ID)
+  return solanaPairs.slice(0, limit)
 }
 
 export function mapPairsToTopTokens(pairs: DexScreenerPair[]): TopTokenRecord[] {
