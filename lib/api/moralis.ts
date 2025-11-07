@@ -30,6 +30,7 @@ export interface MoralisBondingToken {
   name: string
   symbol: string
   priceNative: number
+  progress?: number
   priceUsd?: number
   liquidity: number
   fullyDilutedValuation?: number
