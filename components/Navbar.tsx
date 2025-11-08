@@ -6,6 +6,7 @@ import { Zap, AlertCircle, Crown, Trophy, Waves, ShieldCheck, LogOut, User, LogI
 import { useSession } from '@/hooks/useSession'
 import { useState } from 'react'
 import { isAdminEmail } from '@/lib/admin'
+import { cn } from '@/lib/utils'
 
 export function Navbar() {
   const pathname = usePathname()
@@ -161,27 +162,12 @@ export function Navbar() {
         {showMobileMenu && (
           <div className="md:hidden border-t border-white/10 bg-[#0B1020]/95 backdrop-blur-xl">
             <div className="px-4 py-3 space-y-1">
-            {navItems.map((item) => {
+              {navItems.map((item) => {
                 const Icon = item.icon
                 const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
                 return (
                   <Link
                     key={item.href}
-            {isAdminEmail(user?.email) && (
-              <Link
-                href="/monitoring"
-                onClick={() => setShowMobileMenu(false)}
-                className={cn(
-                  'flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200',
-                  pathname === '/monitoring'
-                    ? 'bg-gradient-to-r from-[#00FFA3]/20 to-[#00D1FF]/20 text-[#00FFA3] border border-[#00FFA3]/30'
-                    : 'text-[#b8c5d6] hover:bg-white/10 hover:text-white'
-                )}
-              >
-                <Gauge className="h-5 w-5" />
-                <span className="font-medium">Monitoring</span>
-              </Link>
-            )}
                     href={item.href}
                     onClick={() => setShowMobileMenu(false)}
                     className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
@@ -195,6 +181,22 @@ export function Navbar() {
                   </Link>
                 )
               })}
+
+              {isAdminEmail(user?.email) && (
+                <Link
+                  href="/monitoring"
+                  onClick={() => setShowMobileMenu(false)}
+                  className={cn(
+                    'flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200',
+                    pathname === '/monitoring'
+                      ? 'bg-gradient-to-r from-[#00FFA3]/20 to-[#00D1FF]/20 text-[#00FFA3] border border-[#00FFA3]/30'
+                      : 'text-[#b8c5d6] hover:bg-white/10 hover:text-white'
+                  )}
+                >
+                  <Gauge className="h-5 w-5" />
+                  <span className="font-medium">Monitoring</span>
+                </Link>
+              )}
             </div>
           </div>
         )}
