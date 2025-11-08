@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { fetchBondingTokens } from '@/lib/api/moralis'
 import { fetchTokenData } from '@/lib/api/dexscreener'
 import { fetchWhaleTransactions, calculateRugRisk } from '@/lib/api/helius'
+import { MIN_WHALE_ALERT_USD } from '@/lib/whales'
 import { calculateTokenScore } from '@/lib/score'
 import { Token } from '@/lib/types'
 import { supabase } from '@/lib/supabase'
@@ -175,8 +176,12 @@ export async function GET() {
               const addr = topTokenAddresses[i]
               
               try {
-                // Fetch 2 signatures per token (better whale detection than 1)
-                const result = await fetchWhaleTransactions(addr, 2)
+                const tokenPrice = sortedTokens[i].token.priceUsd || sortedTokens[i].token.priceUsd || 0
+                const result = await fetchWhaleTransactions(addr, {
+                  limit: Number(process.env.WHALE_ALERT_TRANSACTIONS_LIMIT || '3'),
+                  minUsd: MIN_WHALE_ALERT_USD,
+                  priceUsd: tokenPrice
+                })
                 whaleResults.push(result)
                 
                 // Detailed logging

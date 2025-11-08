@@ -1,353 +1,230 @@
 import axios from 'axios'
 
+import { LAMPORTS_PER_SOL } from '@/lib/utils'
+
 const HELIUS_API_KEY = process.env.HELIUS_API_KEY || ''
-const HELIUS_BASE_URL = `https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`
+const HELIUS_RPC_URL = `https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`
+const HELIUS_DAS_URL = `https://api.helius.xyz/v0/addresses/transactions?api-key=${HELIUS_API_KEY}`
 
 export const HELIUS_API_AVAILABLE = !!HELIUS_API_KEY
+
 const MAX_RETRIES = Number(process.env.HELIUS_MAX_RETRIES || '3')
 const RETRY_DELAY_MS = Number(process.env.HELIUS_RETRY_DELAY_MS || '800')
 
 function hasResponseStatus(error: unknown, status: number): boolean {
-  if (typeof error !== 'object' || error === null) {
-    return false
-  }
-  if (!('response' in error)) {
-    return false
-  }
+  if (typeof error !== 'object' || error === null) return false
+  if (!('response' in error)) return false
   const resp = (error as { response?: { status?: number } }).response
   return typeof resp?.status === 'number' && resp.status === status
 }
 
 function isTimeoutError(error: unknown): boolean {
-  if (!(error instanceof Error)) {
-    return false
-  }
+  if (!(error instanceof Error)) return false
   const code = (error as { code?: string }).code
   return code === 'ECONNABORTED' || error.message?.includes('timeout')
-}
-
-export async function getSignaturesForAddress(address: string, limit: number = 5): Promise<Array<{ signature: string; blockTime?: number }>> {
-  if (!HELIUS_API_KEY) {
-    return []
-  }
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    try {
-      const response = await axios.post(
-        HELIUS_BASE_URL,
-        {
-          jsonrpc: '2.0',
-          id: 'whale-signatures',
-          method: 'getSignaturesForAddress',
-          params: [address, { limit }]
-        },
-        { timeout: 8000 }
-      )
-
-      if (response.data?.error) {
-        console.warn(`[Helius] getSignaturesForAddress RPC error for ${address.substring(0, 12)}...:`, response.data.error)
-        return []
-      }
-
-      return response.data?.result || []
-    } catch (error: unknown) {
-      if (hasResponseStatus(error, 429)) {
-        console.warn(`[Helius] Rate limit hit fetching signatures for ${address.substring(0, 12)}... (attempt ${attempt + 1}/${MAX_RETRIES})`)
-        await delay(RETRY_DELAY_MS * (attempt + 1))
-        continue
-      } else if (isTimeoutError(error)) {
-        console.warn(`[Helius] Timeout fetching signatures for ${address.substring(0, 12)}... (attempt ${attempt + 1}/${MAX_RETRIES})`)
-        await delay(RETRY_DELAY_MS * (attempt + 1))
-        continue
-      } else {
-        const message = error instanceof Error ? error.message : String(error)
-        console.warn(`[Helius] Error fetching signatures for ${address.substring(0, 12)}...:`, message)
-        return []
-      }
-    }
-  }
-  return []
-}
-
-export async function getTransactionBySignature(signature: string): Promise<any | null> {
-  if (!HELIUS_API_KEY) {
-    return null
-  }
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    try {
-      const response = await axios.post(
-        HELIUS_BASE_URL,
-        {
-          jsonrpc: '2.0',
-          id: `tx-${signature.substring(0, 10)}`,
-          method: 'getTransaction',
-          params: [
-            signature,
-            { maxSupportedTransactionVersion: 0 }
-          ]
-        },
-        { timeout: 10000 }
-      )
-
-      if (response.data?.error) {
-        console.warn(`[Helius] getTransaction RPC error for ${signature.substring(0, 12)}...:`, response.data.error)
-        return null
-      }
-
-      return response.data?.result || null
-    } catch (error: unknown) {
-      if (hasResponseStatus(error, 429)) {
-        console.warn(`[Helius] Rate limit hit fetching transaction ${signature.substring(0, 12)}... (attempt ${attempt + 1}/${MAX_RETRIES})`)
-        await delay(RETRY_DELAY_MS * (attempt + 1))
-        continue
-      } else if (isTimeoutError(error)) {
-        console.warn(`[Helius] Timeout fetching transaction ${signature.substring(0, 12)}... (attempt ${attempt + 1}/${MAX_RETRIES})`)
-        await delay(RETRY_DELAY_MS * (attempt + 1))
-        continue
-      } else {
-        const message = error instanceof Error ? error.message : String(error)
-        console.warn(`[Helius] Error fetching transaction ${signature.substring(0, 12)}...:`, message)
-        return null
-      }
-    }
-  }
-  return null
 }
 
 async function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-export interface WhaleTransaction {
-  signature: string
-  amount: number // SOL amount
-  timestamp: number
-  from: string
-  to: string
+async function postWithRetry<T>(url: string, payload: unknown, timeout = 10000): Promise<T | null> {
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      const response = await axios.post<T>(url, payload, { timeout })
+      return response.data
+    } catch (error: unknown) {
+      if (hasResponseStatus(error, 429)) {
+        await delay(RETRY_DELAY_MS * (attempt + 1))
+        continue
+      }
+      if (isTimeoutError(error)) {
+        await delay(RETRY_DELAY_MS * (attempt + 1))
+        continue
+      }
+      const message = error instanceof Error ? error.message : String(error)
+      console.warn('[Helius] request failed:', message)
+      return null
+    }
+  }
+  return null
 }
 
-/**
- * Fetch whale transactions for a token
- * Whale = transaction >= 0.5 SOL (reduced from 1 SOL for pump.fun tokens)
- */
+export async function getSignaturesForAddress(address: string, limit: number = 5): Promise<Array<{ signature: string; blockTime?: number }>> {
+  if (!HELIUS_API_KEY) return []
+
+  const payload = {
+    jsonrpc: '2.0',
+    id: 'getSignaturesForAddress',
+    method: 'getSignaturesForAddress',
+    params: [address, { limit }]
+  }
+
+  const data = await postWithRetry<{ result?: Array<{ signature: string; blockTime?: number }> }>(HELIUS_RPC_URL, payload, 8000)
+  if (!data?.result) return []
+  return data.result
+}
+
+export async function getTransactionBySignature(signature: string): Promise<any | null> {
+  if (!HELIUS_API_KEY) return null
+
+  const payload = {
+    jsonrpc: '2.0',
+    id: `getTransaction-${signature.substring(0, 12)}`,
+    method: 'getTransaction',
+    params: [
+      signature,
+      { maxSupportedTransactionVersion: 0 }
+    ]
+  }
+
+  const data = await postWithRetry<{ result?: any }>(HELIUS_RPC_URL, payload, 10000)
+  return data?.result || null
+}
+
+export interface HeliusDasTokenAmount {
+  amount?: string
+  decimals?: number
+  uiAmount?: number
+  uiAmountString?: string
+}
+
+export interface HeliusDasTokenTransfer {
+  mint: string
+  fromUserAccount?: string | null
+  toUserAccount?: string | null
+  tokenAmount?: HeliusDasTokenAmount | null
+  type?: string | null
+}
+
+export interface HeliusDasTransaction {
+  signature: string
+  timestamp?: number
+  fee?: number
+  tokenTransfers?: HeliusDasTokenTransfer[]
+}
+
+function parseTokenTransferAmount(transfer?: HeliusDasTokenTransfer | null): number {
+  if (!transfer?.tokenAmount) return 0
+  const amt = transfer.tokenAmount
+  if (typeof amt.uiAmount === 'number' && !Number.isNaN(amt.uiAmount)) return amt.uiAmount
+  if (amt.uiAmountString) {
+    const parsed = Number(amt.uiAmountString)
+    if (!Number.isNaN(parsed)) return parsed
+  }
+  if (amt.amount !== undefined && amt.decimals !== undefined) {
+    const raw = Number(amt.amount)
+    if (!Number.isNaN(raw) && typeof amt.decimals === 'number') {
+      return raw / Math.pow(10, amt.decimals)
+    }
+  }
+  return 0
+}
+
+function mapTransferType(type?: string | null): 'transfer' | 'mint' | 'burn' {
+  switch (type?.toUpperCase()) {
+    case 'MINT':
+      return 'mint'
+    case 'BURN':
+      return 'burn'
+    default:
+      return 'transfer'
+  }
+}
+
+export async function fetchTransactionsForAddress(address: string, limit: number = 5): Promise<HeliusDasTransaction[]> {
+  if (!HELIUS_API_KEY) return []
+
+  const payload = {
+    addresses: [address],
+    types: ['TRANSFER', 'SWAP', 'BURN', 'MINT'],
+    options: {
+      commitment: 'finalized',
+      limit,
+    }
+  }
+
+  const data = await postWithRetry<{ transactions?: HeliusDasTransaction[] } | HeliusDasTransaction[]>(HELIUS_DAS_URL, payload, 15000)
+  if (!data) return []
+  if (Array.isArray(data)) return data
+  if (Array.isArray(data.transactions)) return data.transactions
+  return []
+}
+
 export async function fetchWhaleTransactions(
   tokenAddress: string,
-  limit: number = 2 // 2 signatures for better whale detection (optimized for 900k/month limit)
-): Promise<{
-  whaleCount: number
-  whaleInflows: number
-  totalVolume: number
-}> {
-  console.log(`🔍 [HELIUS START] fetchWhaleTransactions called for ${tokenAddress.substring(0, 12)}... with limit=${limit}`)
-  console.log(`🔧 HELIUS_API_KEY exists: ${!!HELIUS_API_KEY}`)
-  console.log(`🔧 HELIUS_BASE_URL: ${HELIUS_BASE_URL.substring(0, 50)}...`)
-  
-  // Skip if no API key
-  if (!HELIUS_API_KEY || HELIUS_API_KEY === '') {
-    console.warn(`⚠️ [HELIUS] No API key, returning zeros for ${tokenAddress.substring(0, 12)}...`)
+  options: { limit?: number; priceUsd?: number | null; minUsd?: number } = {}
+): Promise<{ whaleCount: number; whaleInflows: number; totalVolume: number }> {
+  const limit = options.limit ?? 5
+  const priceUsd = typeof options.priceUsd === 'number' ? options.priceUsd : 0
+  const minUsd = typeof options.minUsd === 'number' ? options.minUsd : 0
+
+  const transactions = await fetchTransactionsForAddress(tokenAddress, limit)
+  if (!transactions.length) {
     return { whaleCount: 0, whaleInflows: 0, totalVolume: 0 }
   }
 
-  try {
-    console.log(`📡 [HELIUS] Calling getSignaturesForAddress for ${tokenAddress.substring(0, 12)}...`)
-    // Get signatures (limit = 2)
-    const response = await axios.post(
-      HELIUS_BASE_URL,
-      {
-        jsonrpc: '2.0',
-        id: 'whale-tracking',
-        method: 'getSignaturesForAddress',
-        params: [
-          tokenAddress,
-          {
-            limit
-          }
-        ]
-      },
-      {
-        timeout: 8000
-      }
-    )
+  let whaleCount = 0
+  let whaleInflows = 0
+  let totalVolume = 0
 
-    // Check for RPC errors in response
-    if (response.data.error) {
-      console.warn(`Helius RPC error for ${tokenAddress}:`, response.data.error.message)
-      return { whaleCount: 0, whaleInflows: 0, totalVolume: 0 }
+  for (const tx of transactions) {
+    const transfers = tx.tokenTransfers?.filter(t => t.mint === tokenAddress) ?? []
+    for (const transfer of transfers) {
+      const amountTokens = parseTokenTransferAmount(transfer)
+      if (!amountTokens) continue
+
+      const usdValue = priceUsd ? amountTokens * priceUsd : 0
+      totalVolume += usdValue
+
+      if (minUsd && usdValue < minUsd) continue
+
+      whaleCount += 1
+      whaleInflows += usdValue
     }
+  }
 
-    // Get transaction details for signatures
-    const signatures = response.data.result || []
-    
-    console.log(`🔍 Helius: Found ${signatures.length} signatures for ${tokenAddress.substring(0, 12)}...`)
-    
-    if (signatures.length === 0) {
-      console.log(`⚠️ Helius: No signatures found for ${tokenAddress.substring(0, 12)}...`)
-      return { whaleCount: 0, whaleInflows: 0, totalVolume: 0 }
+  return { whaleCount, whaleInflows, totalVolume }
+}
+
+export function toWhaleEvent(
+  tokenAddress: string,
+  tokenSymbol: string | null,
+  tokenName: string | null,
+  priceUsd: number | null,
+  tx: HeliusDasTransaction,
+  transfer: HeliusDasTokenTransfer
+) {
+  const amountTokens = parseTokenTransferAmount(transfer)
+  const amountUsd = priceUsd ? amountTokens * priceUsd : null
+  const fee = typeof tx.fee === 'number' ? tx.fee / LAMPORTS_PER_SOL : null
+  const blockTime = tx.timestamp ? new Date(tx.timestamp * 1000).toISOString() : null
+
+  return {
+    signature: tx.signature,
+    event: {
+      token_address: tokenAddress,
+      token_symbol: tokenSymbol,
+      token_name: tokenName,
+      event_type: mapTransferType(transfer.type),
+      amount_tokens: amountTokens,
+      amount_usd: amountUsd ?? 0,
+      price_usd: priceUsd,
+      liquidity_usd: null,
+      volume_24h_usd: null,
+      sender: transfer.fromUserAccount || null,
+      sender_label: null,
+      receiver: transfer.toUserAccount || null,
+      receiver_label: null,
+      tx_hash: tx.signature,
+      tx_url: `https://solscan.io/tx/${tx.signature}`,
+      event_data: transfer,
+      block_time: blockTime,
+      fee,
     }
-
-    // Fetch transaction details ONE BY ONE (instead of batch) to avoid network errors
-    // Batch requests seem to cause network errors, so we fetch sequentially with delays
-    let whaleCount = 0
-    let whaleInflows = 0
-    let totalVolume = 0
-
-    for (let i = 0; i < signatures.length; i++) {
-      const sig = signatures[i]
-      
-      try {
-        console.log(`📡 [HELIUS] Fetching transaction ${i + 1}/${signatures.length} for ${tokenAddress.substring(0, 12)}... (sig: ${sig.signature.substring(0, 12)}...)`)
-        
-        const txResponse = await axios.post(
-          HELIUS_BASE_URL,
-          {
-            jsonrpc: '2.0',
-            id: `tx-${i}`,
-            method: 'getTransaction',
-            params: [
-              sig.signature,
-              {
-                maxSupportedTransactionVersion: 0
-              }
-            ]
-          },
-          {
-            timeout: 10000 // Increased timeout from 8000 to 10000
-          }
-        )
-
-        if (txResponse.data.error) {
-          console.warn(`⚠️ Helius: Transaction error for ${tokenAddress.substring(0, 12)}... (sig ${i + 1}):`, txResponse.data.error)
-          continue // Skip this transaction, continue with next
-        }
-
-        const tx = txResponse.data.result
-        if (!tx) {
-          console.warn(`⚠️ Helius: No result for transaction ${sig.signature.substring(0, 12)}...`)
-          continue
-        }
-
-        // Extract SOL transfer amount from transaction
-        const amount = parseTransactionAmount(tx)
-        
-        // Detailed logging
-        if (amount > 0) {
-          console.log(`💰 Helius: Parsed amount for ${tokenAddress.substring(0, 12)}... (tx ${i + 1}): ${amount.toFixed(4)} SOL`)
-        }
-        
-        if (amount >= 0.5) { // Whale = 0.5+ SOL (reduced from 1 SOL for pump.fun tokens)
-          whaleCount++
-          whaleInflows += amount
-          console.log(`🐋 Helius: WHALE DETECTED! ${amount.toFixed(2)} SOL for ${tokenAddress.substring(0, 12)}... (tx ${i + 1})`)
-        } else if (amount > 0) {
-          console.log(`💧 Helius: Small transaction ${amount.toFixed(4)} SOL (< 0.5 SOL threshold) for ${tokenAddress.substring(0, 12)}... (tx ${i + 1})`)
-        }
-        
-        totalVolume += amount || 0
-
-        // Small delay between transactions to avoid rate limits
-        if (i + 1 < signatures.length) {
-          await new Promise(resolve => setTimeout(resolve, 300)) // 300ms delay between transactions
-        }
-      } catch (error: any) {
-        console.warn(`⚠️ Helius: Error fetching transaction ${sig.signature.substring(0, 12)}... (tx ${i + 1}):`, error.message || error.code)
-        continue // Skip this transaction, continue with next
-      }
-    }
-
-    console.log(`📊 Helius: Final result for ${tokenAddress.substring(0, 12)}...: whales=${whaleCount}, inflows=${whaleInflows.toFixed(2)} SOL, volume=${totalVolume.toFixed(2)} SOL`)
-
-    return {
-      whaleCount,
-      whaleInflows,
-      totalVolume
-    }
-  } catch (error: any) {
-    // Handle rate limit errors gracefully (429 = Too Many Requests)
-    if (error.response?.status === 429) {
-      console.warn(`Helius rate limit hit for ${tokenAddress}, returning zeros`)
-    } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-      // Timeout - don't log as error, just return zeros
-      console.warn(`Helius timeout for ${tokenAddress}, returning zeros`)
-    } else if (error.message?.includes('Request fail') || error.message?.includes('Network')) {
-      // Network errors - don't spam logs
-      console.warn(`Helius network error for ${tokenAddress}, returning zeros`)
-    } else {
-      // Only log unexpected errors
-      console.error('Error fetching Helius whale data:', error.message || error.code)
-    }
-    // Return zeros on error - graceful degradation (app continues working)
-    return { whaleCount: 0, whaleInflows: 0, totalVolume: 0 }
   }
 }
 
-/**
- * Parse transaction amount from Solana transaction
- * Extracts SOL transfer amounts from balance changes
- */
-function parseTransactionAmount(transaction: any): number {
-  try {
-    // Solana transactions have meta.preBalances and meta.postBalances
-    // These are in lamports (1 SOL = 1e9 lamports)
-    const meta = transaction.meta
-    if (!meta) {
-      console.warn('⚠️ parseTransactionAmount: No meta in transaction')
-      return 0
-    }
-
-    const preBalances = meta.preBalances || []
-    const postBalances = meta.postBalances || []
-    
-    if (preBalances.length === 0 || postBalances.length === 0) {
-      console.warn('⚠️ parseTransactionAmount: Empty balances (pre:', preBalances.length, 'post:', postBalances.length, ')')
-      return 0
-    }
-
-    // Calculate total SOL change across all accounts
-    // For pump.fun, we're interested in SOL transfers (buys)
-    let totalInflow = 0
-    let balanceChanges: number[] = []
-    
-    for (let i = 0; i < Math.min(preBalances.length, postBalances.length); i++) {
-      const change = (postBalances[i] - preBalances[i]) / 1e9 // Convert lamports to SOL
-      
-      // Only count positive changes (inflows) and significant amounts (> 0.01 SOL)
-      // Negative changes are outflows (sells), we ignore those for whale tracking
-      if (change > 0.01) {
-        totalInflow += change
-        balanceChanges.push(change)
-      }
-    }
-
-    if (balanceChanges.length > 0) {
-      console.log(`  💵 parseTransactionAmount: ${balanceChanges.length} balance changes, total: ${totalInflow.toFixed(4)} SOL`)
-    }
-
-    return Math.max(0, totalInflow) // Return positive flows only
-  } catch (error) {
-    console.warn('Error parsing transaction amount:', error)
-    return 0
-  }
+export async function calculateRugRisk(_tokenAddress: string): Promise<number> {
+  return 50
 }
-
-/**
- * Calculate rug risk based on dev holdings
- * Check if dev wallet holds > 20% of supply
- */
-export async function calculateRugRisk(tokenAddress: string): Promise<number> {
-  try {
-    // This would require checking token supply distribution
-    // For MVP, we'll use a simplified approach
-    // Real implementation would:
-    // 1. Get token supply
-    // 2. Check top holders
-    // 3. Identify dev wallets (common patterns)
-    // 4. Calculate risk score
-    
-    // Placeholder: return medium risk
-    // TODO: Implement proper rug risk calculation
-    return 50 // 0-100, where 100 = safe, 0 = high risk
-  } catch (error) {
-    console.error('Error calculating rug risk:', error)
-    return 50 // Default medium risk
-  }
-}
-

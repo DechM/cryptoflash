@@ -1,7 +1,12 @@
 import axios from 'axios'
 
 import { supabaseAdmin } from './supabase'
-import { getSignaturesForAddress, getTransactionBySignature } from './api/helius'
+import {
+  fetchTransactionsForAddress,
+  HeliusDasTransaction,
+  HeliusDasTokenTransfer,
+  toWhaleEvent
+} from './api/helius'
 import { LAMPORTS_PER_SOL } from './utils'
 
 const DEXSCREENER_TRENDING_URL = 'https://api.dexscreener.com/latest/dex/pairs/trending'
@@ -9,7 +14,7 @@ const DEXSCREENER_SOLANA_URL = 'https://api.dexscreener.com/latest/dex/tokens/so
 const SOLANA_CHAIN_ID = 'solana'
 
 export const MIN_WHALE_ALERT_USD = Number(process.env.WHALE_ALERT_MIN_USD || '5000')
-export const MAX_WHALE_SIGNATURES = Number(process.env.WHALE_ALERT_SIGNATURE_LIMIT || '1')
+export const MAX_WHALE_TRANSACTIONS = Number(process.env.WHALE_ALERT_TRANSACTIONS_LIMIT || '3')
 
 interface DexScreenerVolumeStats {
   h24?: string | number | null
@@ -327,60 +332,44 @@ interface WhaleDetectionResult {
 
 export async function detectWhaleTransfersForToken(
   token: TopTokenRecord,
-  options: { minUsd?: number; maxSignatures?: number } = {}
+  options: { minUsd?: number; maxTransactions?: number } = {}
 ): Promise<WhaleDetectionResult[]> {
   const minUsd = options.minUsd ?? MIN_WHALE_ALERT_USD
-  const maxSignatures = options.maxSignatures ?? MAX_WHALE_SIGNATURES
+  const maxTransactions = options.maxTransactions ?? MAX_WHALE_TRANSACTIONS
   const results: WhaleDetectionResult[] = []
 
   if (!token.token_address) {
     return results
   }
 
-  const signatures = await getSignaturesForAddress(token.token_address, maxSignatures)
-  if (!signatures || signatures.length === 0) {
+  const transactions = await fetchTransactionsForAddress(token.token_address, maxTransactions)
+  if (!transactions.length) {
     return results
   }
 
-  for (const sig of signatures) {
-    const signature = typeof sig === 'string' ? sig : sig.signature
-    if (!signature) continue
+  for (const tx of transactions) {
+    const bestTransfer = selectBestTransfer(tx, token.token_address, token.price_usd || 0, minUsd)
+    if (!bestTransfer) continue
 
-    const tx = (await getTransactionBySignature(signature)) as ParsedTransaction | null
-    if (!tx) continue
+    const whaleEvent = toWhaleEvent(
+      token.token_address,
+      token.token_symbol || null,
+      token.token_name || null,
+      token.price_usd ?? null,
+      tx,
+      bestTransfer.transfer
+    )
 
-    const transfer = extractTokenTransfer(tx, token.token_address)
-    if (!transfer || transfer.amountTokens <= 0) {
-      continue
-    }
-
-    const price = token.price_usd || 0
-    const amountUsd = price * transfer.amountTokens
-    if (!price || !Number.isFinite(amountUsd) || amountUsd < minUsd) {
+    if (!Number.isFinite(whaleEvent.event.amount_usd) || whaleEvent.event.amount_usd < minUsd) {
       continue
     }
 
     results.push({
-      signature,
+      signature: tx.signature,
       event: {
-        token_address: token.token_address,
-        token_symbol: token.token_symbol,
-        token_name: token.token_name,
-        event_type: transfer.eventType,
-        amount_tokens: transfer.amountTokens,
-        amount_usd: amountUsd,
-        price_usd: token.price_usd,
+        ...whaleEvent.event,
         liquidity_usd: token.liquidity_usd,
-        volume_24h_usd: token.volume_24h_usd,
-        sender: transfer.sender,
-        sender_label: transfer.senderLabel || null,
-        receiver: transfer.receiver,
-        receiver_label: transfer.receiverLabel || null,
-        tx_hash: signature,
-        tx_url: `https://solscan.io/tx/${signature}`,
-        event_data: transfer.rawDiff,
-        block_time: transfer.blockTime || (tx.blockTime ? new Date(tx.blockTime * 1000).toISOString() : null),
-        fee: transfer.fee ?? null
+        volume_24h_usd: token.volume_24h_usd
       }
     })
   }
@@ -390,6 +379,30 @@ export async function detectWhaleTransfersForToken(
 
 export function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+function selectBestTransfer(
+  tx: HeliusDasTransaction,
+  tokenAddress: string,
+  priceUsd: number,
+  minUsd: number
+): { transfer: HeliusDasTokenTransfer; amountUsd: number } | null {
+  const transfers = tx.tokenTransfers?.filter(t => t.mint === tokenAddress) ?? []
+  if (!transfers.length) return null
+
+  let best: { transfer: HeliusDasTokenTransfer; amountUsd: number } | null = null
+
+  for (const transfer of transfers) {
+    const event = toWhaleEvent(tokenAddress, null, null, priceUsd, tx, transfer)
+    const amountUsd = event.event.amount_usd
+    if (!Number.isFinite(amountUsd) || amountUsd < minUsd) continue
+
+    if (!best || amountUsd > best.amountUsd) {
+      best = { transfer, amountUsd }
+    }
+  }
+
+  return best
 }
 export async function getWhaleSubscription(userId: string) {
   const { data } = await supabaseAdmin

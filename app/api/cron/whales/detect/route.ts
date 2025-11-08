@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { HELIUS_API_AVAILABLE } from '@/lib/api/helius'
 import { sendWhaleEventToDiscord } from '@/lib/discord'
 import { supabaseAdmin, isSupabaseConfigured } from '@/lib/supabase'
-import { detectWhaleTransfersForToken, delay, MIN_WHALE_ALERT_USD, MAX_WHALE_SIGNATURES, TopTokenRecord } from '@/lib/whales'
+import { detectWhaleTransfersForToken, delay, MIN_WHALE_ALERT_USD, MAX_WHALE_TRANSACTIONS, TopTokenRecord } from '@/lib/whales'
 import { recordCronFailure, recordCronSuccess } from '@/lib/cron'
 
 export const runtime = 'nodejs'
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
       inserted: 0,
       skippedExisting: 0,
       minUsd: MIN_WHALE_ALERT_USD,
-      maxSignatures: MAX_WHALE_SIGNATURES,
+      maxTransactions: MAX_WHALE_TRANSACTIONS,
       errors: [] as string[]
     }
 
