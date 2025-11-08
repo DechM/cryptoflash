@@ -53,19 +53,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
     {
-      url: `${siteUrl}/blog/what-is-koth-complete-guide`,
+      url: `${siteUrl}/blog/koth-progression-playbook`,
       lastModified: new Date('2024-11-06'),
       changeFrequency: 'monthly',
       priority: 0.7,
     },
     {
-      url: `${siteUrl}/blog/how-to-snipe-pump-fun-tokens-early`,
+      url: `${siteUrl}/blog/cryptoflash-sniper-workflow`,
       lastModified: new Date('2024-11-05'),
       changeFrequency: 'monthly',
       priority: 0.7,
     },
     {
-      url: `${siteUrl}/blog/pump-fun-bonding-curve-explained`,
+      url: `${siteUrl}/blog/solana-bonding-curve-economics`,
       lastModified: new Date('2024-11-04'),
       changeFrequency: 'monthly',
       priority: 0.7,
