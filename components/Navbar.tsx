@@ -4,8 +4,8 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { Zap, AlertCircle, Crown, Trophy, Waves, ShieldCheck, LogOut, User, LogIn, Gauge } from 'lucide-react'
 import { useSession } from '@/hooks/useSession'
-import { usePlan } from '@/hooks/usePlan'
 import { useState } from 'react'
+import { isAdminEmail } from '@/lib/admin'
 
 export function Navbar() {
   const pathname = usePathname()
@@ -14,15 +14,12 @@ export function Navbar() {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showMobileMenu, setShowMobileMenu] = useState(false)
 
-  const { plan } = usePlan()
-
   const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: Zap },
     { href: '/alerts', label: 'Alerts', icon: AlertCircle },
     { href: '/alerts/whales', label: 'Whale Add-on', icon: ShieldCheck },
     { href: '/whale-alerts', label: 'Whales', icon: Waves },
     { href: '/leaderboard', label: 'Leaderboard', icon: Trophy },
-    { href: '/monitoring', label: 'Monitoring', icon: Gauge, requiresPlan: 'ultimate' as const },
     { href: '/premium', label: 'Premium', icon: Crown },
   ]
 
@@ -36,9 +33,7 @@ export function Navbar() {
           </Link>
 
           <div className="hidden md:flex items-center space-x-2">
-            {navItems
-              .filter(item => !item.requiresPlan || plan === item.requiresPlan)
-              .map((item) => {
+            {navItems.map((item) => {
               const Icon = item.icon
               const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
               return (
@@ -58,6 +53,22 @@ export function Navbar() {
                 </Link>
               )
             })}
+
+            {isAdminEmail(user?.email) && (
+              <Link
+                href="/monitoring"
+                className={`px-4 md:px-5 py-2 md:py-2.5 rounded-xl transition-all duration-200 font-medium min-w-[100px] md:min-w-[120px] text-center text-sm md:text-base ${
+                  pathname === '/monitoring'
+                    ? 'bg-gradient-to-r from-[#00FFA3]/20 to-[#00D1FF]/20 text-[#00FFA3] border border-[#00FFA3]/30 shadow-lg shadow-[#00FFA3]/20 hover:scale-105'
+                    : 'text-[#b8c5d6] hover:bg-white/10 hover:text-white border border-transparent hover:border-white/10 hover:scale-105'
+                }`}
+              >
+                <div className="flex items-center justify-center space-x-1.5 md:space-x-2">
+                  <Gauge className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                  <span>Monitoring</span>
+                </div>
+              </Link>
+            )}
 
             {/* Auth UI - integrated with nav items */}
             {sessionLoading ? (
@@ -150,14 +161,27 @@ export function Navbar() {
         {showMobileMenu && (
           <div className="md:hidden border-t border-white/10 bg-[#0B1020]/95 backdrop-blur-xl">
             <div className="px-4 py-3 space-y-1">
-            {navItems
-              .filter(item => !item.requiresPlan || plan === item.requiresPlan)
-              .map((item) => {
+            {navItems.map((item) => {
                 const Icon = item.icon
                 const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
                 return (
                   <Link
                     key={item.href}
+            {isAdminEmail(user?.email) && (
+              <Link
+                href="/monitoring"
+                onClick={() => setShowMobileMenu(false)}
+                className={cn(
+                  'flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200',
+                  pathname === '/monitoring'
+                    ? 'bg-gradient-to-r from-[#00FFA3]/20 to-[#00D1FF]/20 text-[#00FFA3] border border-[#00FFA3]/30'
+                    : 'text-[#b8c5d6] hover:bg-white/10 hover:text-white'
+                )}
+              >
+                <Gauge className="h-5 w-5" />
+                <span className="font-medium">Monitoring</span>
+              </Link>
+            )}
                     href={item.href}
                     onClick={() => setShowMobileMenu(false)}
                     className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 
-import { getCurrentUser, getUserPlan } from '@/lib/auth'
+import { getCurrentUser } from '@/lib/auth'
+import { isAdminEmail } from '@/lib/admin'
 import MonitoringDashboard from './MonitoringDashboard'
 
 export const dynamic = 'force-dynamic'
@@ -12,8 +13,7 @@ export default async function MonitoringPage() {
     redirect(`/login?next=${encodeURIComponent('/monitoring')}`)
   }
 
-  const plan = await getUserPlan(user.id)
-  if (plan !== 'ultimate') {
+  if (!isAdminEmail(user.email)) {
     redirect('/dashboard')
   }
 

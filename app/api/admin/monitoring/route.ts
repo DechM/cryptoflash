@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import { getCurrentUserFromRequest, getUserPlan } from '@/lib/auth'
+import { getCurrentUserFromRequest } from '@/lib/auth'
 import { getMoralisStatus } from '@/lib/api/moralis'
 import { supabaseAdmin, isSupabaseConfigured } from '@/lib/supabase'
+import { isAdminEmail } from '@/lib/admin'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -17,8 +18,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const plan = await getUserPlan(user.id)
-  if (plan !== 'ultimate') {
+  if (!isAdminEmail(user.email)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
