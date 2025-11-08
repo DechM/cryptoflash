@@ -13,175 +13,149 @@ const blogPosts: Record<string, {
   date: string
   readTime: string
 }> = {
-  'what-is-koth-complete-guide': {
-    title: 'What is KOTH? Complete Guide to King of the Hill on Pump.fun',
-    description: 'Learn everything about KOTH (King of the Hill) on Pump.fun. Understand bonding curves, when tokens hit KOTH, and how to track them early.',
+  'koth-progression-playbook': {
+    title: 'KOTH Progression Playbook: Reading Solana Bonding Curves',
+    description: 'Learn how to interpret bonding-curve progress, spot confidence signals and react before a token graduates to open liquidity.',
     date: '2024-11-06',
-    readTime: '5 min read',
+    readTime: '6 min read',
     content: `
-# What is KOTH? Complete Guide to King of the Hill on Pump.fun
+# KOTH Progression Playbook: Reading Solana Bonding Curves
 
-KOTH (King of the Hill) is a critical milestone for tokens launched on Pump.fun. Understanding KOTH is essential for successful memecoin trading.
+Solana bonding-curve launchpads all share a similar lifecycle: tokens move from 0% progress to a "King of the Hill" (KOTH) moment where liquidity becomes permissionless. Traders who can read the curve earlier enjoy better entries and more time to validate the narrative. This playbook shows how to translate raw numbers in CryptoFlash into confident decisions.
 
-## What is KOTH?
+## Why Progress Percentage Matters
+- **Market readiness**: Progress is a proxy for how much capital has already committed to the token.
+- **Risk ladder**: Lower progress = cheaper entry but more failure risk; higher progress = tighter window but higher completion odds.
+- **Execution planning**: Knowing where a curve sits determines whether you should research, scale in, or simply monitor.
 
-KOTH stands for "King of the Hill" and represents the moment when a Pump.fun token reaches **100% bonding curve progress**. This is when the token transitions from the bonding curve phase to full liquidity on Raydium.
+## Stage Breakdown
+1. **Discovery (0-40%)** – Idea still forming. Focus on narratives and creator credibility.
+2. **Validation (40-70%)** – Liquidity starts to mean something. Watch AI Snipe Score momentum and whale lookups.
+3. **Acceleration (70-90%)** – Crowded zone. Progress velocity and wallet concentration decide if it finishes.
+4. **Final Push (90-100%)** – Countdown to open liquidity. Execution becomes a timing game.
 
-## How Bonding Curves Work
+## Signals to Monitor in CryptoFlash
+### Velocity of Progress
+Large percentage jumps in short intervals signal coordinated demand. Use the dashboard refresh timestamps to judge whether the curve is drifting or surging.
 
-Pump.fun uses a bonding curve mechanism:
+### Liquidity & Volume Context
+Combine progress with liquidity in USD. A token at 85% with thin liquidity is fragile; one with deep liquidity suggests committed capital.
 
-1. **Token Launch**: Token starts at 0% progress
-2. **Bonding Curve Phase**: As people buy, progress increases (0-100%)
-3. **KOTH (100%)**: Token reaches full liquidity
-4. **Raydium Listing**: Token is now tradeable on DEX
+### Wallet Composition
+Tap the Whale Alerts feed to see if smart money is touching the curve. Multiple whale pings near 70%+ progress often precede a quick finish.
 
-## Why KOTH Matters
+## How to React Inside CryptoFlash
+- **Dashboard filters** highlight progress bands (e.g. 70-90%). Snapshot tokens that repeatedly sit near the top.
+- **AI Snipe Score overlays** convert dozens of metrics into a 0-100 grade so you can rank plays even if progress is similar.
+- **Watchlist + alerts** let you pin curves and get push notifications as soon as the progress threshold you trust is breached.
 
-- **Price Discovery**: KOTH is when real price discovery happens
-- **Liquidity**: Full liquidity is unlocked
-- **Volume**: Trading volume typically spikes
-- **Opportunity**: Early detection = better entry prices
+## Decision Checklist
+1. Progress velocity supports a finish?
+2. Liquidity and volume scale with progress?
+3. Whale or community signals present?
+4. Narrative still intact on socials/Discord?
+5. Entry plan and exit plan defined in advance?
 
-## How to Track KOTH
+If you can tick all boxes, you are acting with a structured thesis instead of chasing green candles.
 
-CryptoFlash provides real-time KOTH tracking:
+## Stay Data-Driven
+The KOTH race is emotional for the crowd but mechanical for disciplined traders. Let CryptoFlash provide the telemetry so you can stay objective and position before the liquidity unlock.
 
-- **Early Alerts**: Get notified at 69%+ progress
-- **Live Dashboard**: See all tokens approaching KOTH
-- **AI Snipe Score**: Quality score (0-100) for each token
-- **Progress Tracking**: Real-time bonding curve progress
-
-## Best Practices
-
-1. **Track Early**: Monitor tokens at 69%+ progress
-2. **Check Score**: Look for tokens with score > 75
-3. **Set Alerts**: Use automated alerts for your favorite tokens
-4. **Monitor Volume**: High volume = more interest
-
-## Conclusion
-
-KOTH is a crucial moment for Pump.fun tokens. By tracking KOTH early (69%+ progress), you can position yourself before the token moons.
-
-**Start tracking KOTH now**: [cryptoflash.app/dashboard](/dashboard)
+**Monitor the latest KOTH trajectories → [Open the dashboard](/dashboard)**
     `.trim(),
   },
-  'how-to-snipe-pump-fun-tokens-early': {
-    title: 'How to Snipe Pump.fun Tokens Early: KOTH Tracker Guide',
-    description: 'Master the art of early detection on Pump.fun. Learn how to use KOTH tracker to find tokens before they moon.',
+  'cryptoflash-sniper-workflow': {
+    title: 'CryptoFlash Sniper Workflow: Alerts, Scores & Execution',
+    description: 'Step-by-step workflow for configuring alerts, using AI Snipe Score and executing trades with discipline.',
     date: '2024-11-05',
     readTime: '7 min read',
     content: `
-# How to Snipe Pump.fun Tokens Early: KOTH Tracker Guide
+# CryptoFlash Sniper Workflow: Alerts, Scores & Execution
 
-Early detection is the key to successful memecoin trading. This guide shows you how to snipe Pump.fun tokens before they moon.
+Great entries are rarely about luck—they are the result of a repeatable workflow. This guide walks through a battle-tested process that CryptoFlash power users rely on every day.
 
-## Why Early Detection Matters
+## 1. Build a Focused Universe
+- Start with the **Trending** section plus personal narrative watchlists.
+- Tag tokens that match your thesis (e.g. gaming, AI, community memes).
+- Use the watchlist to declutter the dashboard and focus only on high-conviction ideas.
 
-- **Better Entry Price**: Buy before price pumps
-- **Higher Profit Potential**: Early entry = more gains
-- **Less Competition**: Fewer people know about it
-- **Time Advantage**: More time to research
+## 2. Configure Alerts Intentionally
+- **Progress Alerts**: Free plan alerts fire at 95%; Pro drops to 85%; Ultimate reaches 80%. Match the threshold to your risk appetite.
+- **Score Filters**: Set minimum AI Snipe Score (e.g. 74+) so only quality setups ping.
+- **Quantity Limits**: Remember plan caps—balance the number of active alerts with your ability to monitor them.
 
-## Using KOTH Tracker
+## 3. Interpret the Alert Payload
+When the alert fires, cross-check:
+- Current progress versus historic velocity.
+- Score trend (is it climbing or fading?).
+- Whale activity and liquidity snapshot.
 
-CryptoFlash tracks tokens at **69%+ progress**, giving you 8-15 minutes before KOTH.
+If one of those datapoints contradicts your plan, stand down. Alerts are a decision point, not an obligation to buy.
 
-### Step 1: Monitor Dashboard
+## 4. Execute With Discipline
+- Use limit orders where possible—late-stage curves move quickly.
+- Size positions according to conviction and liquidity. Avoid overexposure to one narrative.
+- Set exit criteria (target multiple, time-based exit, or score deterioration) before entering.
 
-Visit the [live dashboard](/dashboard) to see:
-- Real-time bonding curve progress
-- AI Snipe Score (quality indicator)
-- Whale activity
-- Volume trends
+## 5. Review & Iterate
+Maintain a simple trade journal:
+- Alert time vs. entry time
+- Progress & score at entry
+- Outcome and lessons learned
 
-### Step 2: Set Alerts
+Reviewing 10-20 trades will quickly highlight whether your thresholds are too tight or too loose.
 
-Configure alerts for:
-- **Progress Threshold**: 69%+ (early signal)
-- **Score Threshold**: 72+ (quality filter)
-- **Multiple Tokens**: Diversify your alerts
+## Bonus: Combine With Whale Alerts
+Ultimate users can layer the Whale Alerts channel to catch sudden large buys that confirm an alert. When both fire close together, momentum is typically strong.
 
-### Step 3: Analyze Before Buying
-
-Before buying, check:
-- ✅ AI Snipe Score (higher = better)
-- ✅ Progress (closer to 100% = more urgent)
-- ✅ Whale activity (whales = confidence)
-- ✅ Volume (high volume = interest)
-
-## Pro Tips
-
-1. **Track Multiple Tokens**: Don't put all eggs in one basket
-2. **Use Score Filter**: Focus on tokens with score > 75
-3. **Set Early Alerts**: 69%+ progress is the sweet spot
-4. **Monitor Success Rate**: Track which alerts hit KOTH
-
-## Conclusion
-
-Early detection is everything in memecoin trading. Use KOTH tracker to get ahead of the crowd.
-
-**Start sniping now**: [cryptoflash.app/dashboard](/dashboard)
+**Ready to put the workflow into action? → [Configure your alerts](/alerts)**
     `.trim(),
   },
-  'pump-fun-bonding-curve-explained': {
-    title: 'Pump.fun Bonding Curve Explained: When to Buy',
-    description: 'Understand Pump.fun bonding curves, progress tracking, and optimal entry points for maximum profits.',
+  'solana-bonding-curve-economics': {
+    title: 'Solana Bonding Curve Economics Explained',
+    description: 'Understand how bonding curves price liquidity, why KOTH matters and how CryptoFlash models the curve.',
     date: '2024-11-04',
     readTime: '6 min read',
     content: `
-# Pump.fun Bonding Curve Explained: When to Buy
+# Solana Bonding Curve Economics Explained
 
-Understanding bonding curves is essential for successful Pump.fun trading.
+Bonding-curve launchpads were designed to decentralize fundraising, but they also create predictable price behaviour. Grasping the math behind the curve helps you time entries and exits with more confidence.
 
-## What is a Bonding Curve?
+## The Curve in Plain English
+- Price starts extremely low and increases with each buy.
+- Supply is fixed during the curve phase; liquidity grows alongside price.
+- At 100% progress (KOTH), the pool migrates to an open DEX and price discovery becomes public.
 
-A bonding curve is a mathematical formula that determines token price based on supply. As more tokens are bought, the price increases.
+## Key Economic Forces
+### 1. Early Price Elasticity
+Small buys move the curve dramatically. Traders here chase asymmetric upside but face high failure risk.
 
-## How Pump.fun Bonding Curves Work
+### 2. Mid-Curve Stability
+Liquidity deepens, spreads tighten and organic communities either form or fade. This is where most disciplined traders begin sizing in.
 
-1. **0-100% Progress**: Token is in bonding curve phase
-2. **Price Increases**: Each buy increases the price
-3. **100% = KOTH**: Token reaches full liquidity
-4. **Raydium Listing**: Token is now on DEX
+### 3. Late-Curve Momentum
+Fear of missing out plus accumulation by larger wallets accelerates progress. Slippage increases—plan your execution carefully.
 
-## When to Buy
+## Why KOTH Is a Critical Checkpoint
+- **Liquidity Unlock**: Market makers can participate, reducing slippage.
+- **Narrative Validation**: Surviving the entire curve signals strong community demand.
+- **Volatility Spike**: Newly unlocked liquidity attracts both momentum traders and profit takers.
 
-### Early Entry (0-50% Progress)
-- ✅ Lowest price
-- ✅ Highest risk (token might not reach KOTH)
-- ⚠️ Requires patience
+## How CryptoFlash Models the Curve
+- **Progress %** acts as the primary axis.
+- **AI Snipe Score** blends velocity, liquidity depth, holder concentration and social traction.
+- **Historical analytics** let you compare a token’s path vs. previous successful curves.
 
-### Mid Entry (50-80% Progress)
-- ✅ Moderate price
-- ✅ Lower risk (token likely to hit KOTH)
-- ✅ Good balance
+## Practical Takeaways
+1. Treat early entries as venture bets and size accordingly.
+2. Focus on the 65-85% zone if you prefer balanced risk/reward.
+3. Use data (velocity, score, whale flow) to validate each step.
+4. Plan exits around the KOTH unlock—volatility is guaranteed.
 
-### Late Entry (80-100% Progress)
-- ⚠️ Higher price
-- ✅ Lowest risk (almost at KOTH)
-- ⚠️ Less profit potential
+## Continue Exploring
+CryptoFlash condenses curve economics into actionable dashboards so you can make faster, smarter calls without refreshing ten different tabs.
 
-## Optimal Strategy
-
-**Best Entry Point: 69-85% Progress**
-
-- Early enough for good entry price
-- Late enough to confirm token quality
-- Sweet spot for risk/reward
-
-## Using CryptoFlash
-
-Track bonding curve progress in real-time:
-- See exact progress percentage
-- Monitor price changes
-- Get alerts at optimal entry points
-
-## Conclusion
-
-Understanding bonding curves helps you time your entries perfectly. Track progress and buy at optimal points.
-
-**Track bonding curves now**: [cryptoflash.app/dashboard](/dashboard)
+**Explore bonding curve analytics → [Visit the dashboard](/dashboard)**
     `.trim(),
   },
 }
@@ -256,7 +230,10 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
               if (line.startsWith('### ')) {
                 return <h3 key={i} className="text-xl font-bold text-[#F8FAFC] mt-4 mb-2">{line.slice(4)}</h3>
               }
-              if (line.startsWith('- ') || line.startsWith('✅ ') || line.startsWith('⚠️ ')) {
+              if (line.startsWith('- ')) {
+                return <li key={i} className="text-[#b8c5d6] mb-2 ml-4">{line.slice(2)}</li>
+              }
+              if (line.startsWith('✅ ') || line.startsWith('⚠️ ')) {
                 return <li key={i} className="text-[#b8c5d6] mb-2 ml-4">{line}</li>
               }
               if (line.trim() === '') {

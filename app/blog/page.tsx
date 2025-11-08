@@ -5,12 +5,12 @@ import { Navbar } from '@/components/Navbar'
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://cryptoflash.app'
 
 export const metadata: Metadata = {
-  title: 'Blog | KOTH Tracker Guides & Pump.fun Tips | CryptoFlash',
-  description: 'Learn how to use KOTH tracker, understand bonding curves, snipe Pump.fun tokens early, and maximize profits. Complete guides and tutorials.',
-  keywords: 'pump.fun guide, KOTH tracker tutorial, bonding curve explained, how to snipe memecoins, Solana memecoin strategy, pump.fun tips',
+  title: 'Blog | CryptoFlash Playbooks & KOTH Strategies',
+  description: 'Deep-dives on KOTH progression, sniper workflows and Solana bonding-curve economics. Learn how to extract signal from CryptoFlash and trade smarter.',
+  keywords: 'KOTH strategy, Solana bonding curve, CryptoFlash guides, memecoin sniper workflow, alerts tutorial',
   openGraph: {
-    title: 'CryptoFlash Blog - KOTH Tracker Guides & Tips',
-    description: 'Learn how to use KOTH tracker and snipe Pump.fun tokens early with our complete guides.',
+    title: 'CryptoFlash Blog – KOTH Playbooks & Sniper Workflows',
+    description: 'Learn how to master KOTH progression, configure sniper alerts and understand Solana bonding curves with CryptoFlash.',
     url: `${siteUrl}/blog`,
     type: 'website',
   },
@@ -22,23 +22,23 @@ export const metadata: Metadata = {
 // Blog posts data (will be moved to CMS or database later)
 const blogPosts = [
   {
-    slug: 'what-is-koth-complete-guide',
-    title: 'What is KOTH? Complete Guide to King of the Hill on Pump.fun',
-    description: 'Learn everything about KOTH (King of the Hill) on Pump.fun. Understand bonding curves, when tokens hit KOTH, and how to track them early.',
+    slug: 'koth-progression-playbook',
+    title: 'KOTH Progression Playbook: Reading Solana Bonding Curves',
+    description: 'Learn how to interpret bonding-curve progress, spot confidence signals and react before a token graduates to open liquidity.',
     date: '2024-11-06',
-    readTime: '5 min read',
+    readTime: '6 min read',
   },
   {
-    slug: 'how-to-snipe-pump-fun-tokens-early',
-    title: 'How to Snipe Pump.fun Tokens Early: KOTH Tracker Guide',
-    description: 'Master the art of early detection on Pump.fun. Learn how to use KOTH tracker to find tokens before they moon.',
+    slug: 'cryptoflash-sniper-workflow',
+    title: 'CryptoFlash Sniper Workflow: Alerts, Scores & Execution',
+    description: 'Step-by-step workflow for configuring alerts, using AI Snipe Score and executing trades with discipline.',
     date: '2024-11-05',
     readTime: '7 min read',
   },
   {
-    slug: 'pump-fun-bonding-curve-explained',
-    title: 'Pump.fun Bonding Curve Explained: When to Buy',
-    description: 'Understand Pump.fun bonding curves, progress tracking, and optimal entry points for maximum profits.',
+    slug: 'solana-bonding-curve-economics',
+    title: 'Solana Bonding Curve Economics Explained',
+    description: 'Understand how bonding curves price liquidity, why KOTH matters and how CryptoFlash models the curve.',
     date: '2024-11-04',
     readTime: '6 min read',
   },
@@ -56,7 +56,7 @@ export default function BlogPage() {
             CryptoFlash Blog
           </h1>
           <p className="text-lg text-[#b8c5d6] leading-relaxed">
-            Learn how to use KOTH tracker, understand bonding curves, and snipe Pump.fun tokens early.
+            Playbooks for traders who rely on CryptoFlash. Master KOTH progression, fine-tune sniper alerts and build conviction with real data.
           </p>
         </div>
 
