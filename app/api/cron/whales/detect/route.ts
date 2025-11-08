@@ -4,6 +4,7 @@ import { HELIUS_API_AVAILABLE } from '@/lib/api/helius'
 import { sendWhaleEventToDiscord } from '@/lib/discord'
 import { supabaseAdmin, isSupabaseConfigured } from '@/lib/supabase'
 import { detectWhaleTransfersForToken, delay, MIN_WHALE_ALERT_USD, MAX_WHALE_SIGNATURES, TopTokenRecord } from '@/lib/whales'
+import { recordCronFailure, recordCronSuccess } from '@/lib/cron'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -34,10 +35,15 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('[Whale Detect] Failed to fetch whale_top_tokens:', error)
+      await recordCronFailure('whales:detect', error)
       return NextResponse.json({ error: 'Failed to fetch tokens' }, { status: 500 })
     }
 
     if (!tokens || tokens.length === 0) {
+      await recordCronSuccess('whales:detect', {
+        reviewedTokens: 0,
+        note: 'No tokens available'
+      })
       return NextResponse.json({ success: false, message: 'No tokens available for whale detection' })
     }
 
@@ -115,10 +121,12 @@ export async function GET(request: NextRequest) {
       await delay(PER_TOKEN_DELAY_MS)
     }
 
+    await recordCronSuccess('whales:detect', summary)
     return NextResponse.json({ success: true, ...summary })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error)
     console.error('[Whale Detect] Unexpected error:', message)
+    await recordCronFailure('whales:detect', message)
     return NextResponse.json({ error: 'Unexpected error' }, { status: 500 })
   }
 }

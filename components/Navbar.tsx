@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Zap, AlertCircle, Crown, Trophy, Waves, ShieldCheck, LogOut, User, LogIn } from 'lucide-react'
+import { Zap, AlertCircle, Crown, Trophy, Waves, ShieldCheck, LogOut, User, LogIn, Gauge } from 'lucide-react'
 import { useSession } from '@/hooks/useSession'
+import { usePlan } from '@/hooks/usePlan'
 import { useState } from 'react'
 
 export function Navbar() {
@@ -13,12 +14,15 @@ export function Navbar() {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showMobileMenu, setShowMobileMenu] = useState(false)
 
+  const { plan } = usePlan()
+
   const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: Zap },
     { href: '/alerts', label: 'Alerts', icon: AlertCircle },
     { href: '/alerts/whales', label: 'Whale Add-on', icon: ShieldCheck },
     { href: '/whale-alerts', label: 'Whales', icon: Waves },
     { href: '/leaderboard', label: 'Leaderboard', icon: Trophy },
+    { href: '/monitoring', label: 'Monitoring', icon: Gauge, requiresPlan: 'ultimate' as const },
     { href: '/premium', label: 'Premium', icon: Crown },
   ]
 
@@ -32,7 +36,9 @@ export function Navbar() {
           </Link>
 
           <div className="hidden md:flex items-center space-x-2">
-            {navItems.map((item) => {
+            {navItems
+              .filter(item => !item.requiresPlan || plan === item.requiresPlan)
+              .map((item) => {
               const Icon = item.icon
               const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
               return (
@@ -144,7 +150,9 @@ export function Navbar() {
         {showMobileMenu && (
           <div className="md:hidden border-t border-white/10 bg-[#0B1020]/95 backdrop-blur-xl">
             <div className="px-4 py-3 space-y-1">
-              {navItems.map((item) => {
+            {navItems
+              .filter(item => !item.requiresPlan || plan === item.requiresPlan)
+              .map((item) => {
                 const Icon = item.icon
                 const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
                 return (

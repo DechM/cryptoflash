@@ -130,3 +130,17 @@ function calculateProgressFromLiquidity(token: { liquidity?: number }): number {
   return Math.min((currentLiquidity / maxLiquidity) * 100, 99.9) // Cap at 99.9% until graduated
 }
 
+export function getMoralisStatus() {
+  const keyCount = MORALIS_API_KEYS.length
+  const activeKeyIndex = keyCount ? currentKeyIndex % keyCount : null
+
+  return {
+    configured: keyCount > 0,
+    keyCount,
+    activeKeyIndex,
+    activeKeyLabel: activeKeyIndex !== null ? `Key ${activeKeyIndex + 1}/${keyCount}` : null,
+    disabledUntil: moralisDisabledUntil ? new Date(moralisDisabledUntil).toISOString() : null,
+    isTemporarilyDisabled: !!(moralisDisabledUntil && Date.now() < moralisDisabledUntil)
+  }
+}
+

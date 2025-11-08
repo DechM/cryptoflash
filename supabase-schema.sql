@@ -55,6 +55,9 @@ ALTER TABLE alert_history
 ALTER TABLE alert_history
   ADD COLUMN IF NOT EXISTS alert_progress NUMERIC;
 
+ALTER TABLE alert_history
+  ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_alert_history_user_id ON alert_history(user_id);
 CREATE INDEX IF NOT EXISTS idx_alert_history_created_at ON alert_history(created_at);
@@ -224,6 +227,19 @@ CREATE TABLE IF NOT EXISTS twitter_rate_limits (
 );
 
 CREATE TRIGGER update_twitter_rate_limits_updated_at BEFORE UPDATE ON twitter_rate_limits
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TABLE IF NOT EXISTS cron_status (
+  job_name TEXT PRIMARY KEY,
+  last_success_at TIMESTAMPTZ,
+  last_success_summary JSONB,
+  last_error_at TIMESTAMPTZ,
+  last_error_message TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TRIGGER update_cron_status_updated_at BEFORE UPDATE ON cron_status
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 ALTER TABLE alert_history

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { supabaseAdmin, isSupabaseConfigured } from '@/lib/supabase'
 import { fetchTrendingSolanaPairs, mapPairsToTopTokens } from '@/lib/whales'
+import { recordCronFailure, recordCronSuccess } from '@/lib/cron'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -58,6 +59,11 @@ export async function GET(request: NextRequest) {
     }
 
     if (!tokens.length) {
+      await recordCronSuccess('whales:top', {
+        updated: 0,
+        source: 'none',
+        note: 'No token sources available'
+      })
       return NextResponse.json({ success: false, message: 'No token sources available (DexScreener + fallback failed)' })
     }
 
@@ -70,10 +76,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to upsert whale_top_tokens' }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, updated: tokens.length, source: pairs.length ? 'dexscreener' : 'koth' })
+    const summary = {
+      updated: tokens.length,
+      source: pairs.length ? 'dexscreener' : 'koth'
+    }
+    await recordCronSuccess('whales:top', summary)
+    return NextResponse.json({ success: true, ...summary })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error)
     console.error('[Whale Cron] Unexpected error in top tokens job:', message)
+    await recordCronFailure('whales:top', message)
     return NextResponse.json({ error: 'Unexpected error' }, { status: 500 })
   }
 }

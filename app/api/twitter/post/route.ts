@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { postTweet, formatTwitterPost, formatWhaleTweet } from '@/lib/api/twitter'
 import { Token, WhaleEvent } from '@/lib/types'
 import { MIN_WHALE_ALERT_USD } from '@/lib/whales'
+import { recordCronFailure, recordCronSuccess } from '@/lib/cron'
 
 /**
  * Twitter Post Endpoint
@@ -68,6 +69,11 @@ async function handleTwitterPost() {
 
   if ((todayCount || 0) >= MAX_POSTS_PER_DAY) {
     console.log(`[Twitter Post] Daily limit reached: ${todayCount}/${MAX_POSTS_PER_DAY} posts today`)
+    await recordCronSuccess('twitter:post', {
+      postedCount: 0,
+      reason: 'daily-limit',
+      todayCount
+    })
     return NextResponse.json({
       success: false,
       message: 'Daily post limit reached',
@@ -79,6 +85,12 @@ async function handleTwitterPost() {
   if (storedResumeAt && storedResumeAt.getTime() > Date.now()) {
     const minutesRemaining = Math.max(0, Math.ceil((storedResumeAt.getTime() - Date.now()) / 60000))
     console.warn(`[Twitter Post] Stored rate limit active until ${storedResumeAt.toISOString()} (${minutesRemaining} min left)`)
+    await recordCronSuccess('twitter:post', {
+      postedCount: 0,
+      reason: 'stored-rate-limit',
+      resumeAt: storedResumeAt.toISOString(),
+      minutesRemaining
+    })
     return NextResponse.json({
       success: false,
       message: 'Twitter rate limit active',
@@ -105,6 +117,12 @@ async function handleTwitterPost() {
     if (timeSinceLastPost < MIN_POST_INTERVAL) {
       const minutesRemaining = Math.ceil((MIN_POST_INTERVAL - timeSinceLastPost) / 60000)
       console.log(`[Twitter Post] Rate limit: ${minutesRemaining} minutes until next post`)
+      await recordCronSuccess('twitter:post', {
+        postedCount: 0,
+        reason: 'internal-rate-limit',
+        minutesRemaining,
+        lastPostTime: lastPost.posted_at
+      })
       return NextResponse.json({
         success: false,
         message: 'Rate limit: too soon since last post',
@@ -136,6 +154,11 @@ async function handleTwitterPost() {
       console.warn('[Twitter Post] Twitter rate limit during whale post. Skipping rest of job.')
       const fallbackReset = Math.floor(Date.now() / 1000) + (20 * 60)
       await setStoredResumeAt(tweetResult.resetAt || fallbackReset)
+      await recordCronSuccess('twitter:post', {
+        postedCount: 0,
+        reason: 'rate-limited-whale',
+        resetAt: tweetResult.resetAt || null
+      })
       return NextResponse.json({
         success: false,
         rateLimited: true,
@@ -176,12 +199,18 @@ async function handleTwitterPost() {
 
       await setStoredResumeAt(null)
 
-      return NextResponse.json({
+      const whaleResult = {
         success: true,
         postedWhale: true,
         tweetId: tweetResult.id,
         whaleEventId: pendingWhale.id
+      }
+      await recordCronSuccess('twitter:post', {
+        postedCount: 1,
+        mode: 'whale',
+        tweetId: tweetResult.id
       })
+      return NextResponse.json(whaleResult)
     } else {
       console.error('[Twitter Post] Failed to post whale tweet - postTweet returned null/undefined')
     }
@@ -205,6 +234,10 @@ async function handleTwitterPost() {
 
   if (!tokens || tokens.length === 0) {
     console.log('[Twitter Post] No tokens available')
+    await recordCronSuccess('twitter:post', {
+      postedCount: 0,
+      reason: 'no-tokens'
+    })
     return NextResponse.json({ message: 'No tokens available' })
   }
 
@@ -244,6 +277,11 @@ async function handleTwitterPost() {
       avgScore: tokens.length > 0 ? tokens.reduce((sum, t) => sum + (t.score || 0), 0) / tokens.length : 0
     }
     console.log('[Twitter Post] Token stats:', tokenStats)
+    await recordCronSuccess('twitter:post', {
+      postedCount: 0,
+      reason: 'no-eligible-tokens',
+      tokenStats
+    })
     return NextResponse.json({ 
       success: false,
       message: 'No eligible tokens (69%+ progress, score >= 72)',
@@ -269,7 +307,7 @@ async function handleTwitterPost() {
 
   if (newTokens.length === 0) {
     console.log('[Twitter Post] All eligible tokens already posted')
-    return NextResponse.json({ 
+    const payload = { 
       success: false,
       message: 'All eligible tokens already posted',
       eligibleCount: eligibleTokens.length,
@@ -280,7 +318,13 @@ async function handleTwitterPost() {
         score: t.score,
         progress: t.progress
       }))
+    }
+    await recordCronSuccess('twitter:post', {
+      postedCount: 0,
+      reason: 'already-posted',
+      eligibleCount: eligibleTokens.length
     })
+    return NextResponse.json(payload)
   }
 
   const MAX_TOKENS_PER_RUN = 1
@@ -375,6 +419,11 @@ async function handleTwitterPost() {
   }
 
   console.log(`[Twitter Post] Job completed:`, result)
+  await recordCronSuccess('twitter:post', {
+    postedCount: postedTweets.length,
+    todayTotal: result.todayTotal,
+    rateLimitedUntil
+  })
   
   return NextResponse.json(result)
 }
@@ -391,6 +440,7 @@ export async function POST(request: Request) {
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error)
     console.error('Error in Twitter post endpoint (POST):', message)
+    await recordCronFailure('twitter:post', message)
     return NextResponse.json(
       {
         error: 'Failed to post to Twitter',
@@ -408,12 +458,15 @@ export async function GET() {
     const result = await handleTwitterPost()
     // Ensure we always return a proper response
     if (!result) {
-      return NextResponse.json({ error: 'No response from handler' }, { status: 500 })
+      const message = 'No response from handler'
+      await recordCronFailure('twitter:post', message)
+      return NextResponse.json({ error: message }, { status: 500 })
     }
     return result
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error)
     console.error('[Twitter Post] Error in GET endpoint:', message)
+    await recordCronFailure('twitter:post', message)
     return NextResponse.json(
       {
         success: false,

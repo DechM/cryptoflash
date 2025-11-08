@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getLimit, getUserPlan } from '@/lib/plan'
 import { sendTelegramMessage, formatKOTHAlert } from '@/lib/api/telegram'
+import { recordCronFailure, recordCronSuccess } from '@/lib/cron'
 
 /**
  * Background job to check and send alerts
@@ -16,9 +17,19 @@ export async function POST(request: Request) {
         'Content-Type': 'application/json'
       }
     })
+    if (!kothResponse.ok) {
+      const message = `Failed to fetch KOTH data (${kothResponse.status})`
+      await recordCronFailure('alerts:send', message)
+      return NextResponse.json({ error: message }, { status: 500 })
+    }
+
     const { tokens } = await kothResponse.json()
 
     if (!tokens || tokens.length === 0) {
+      await recordCronSuccess('alerts:send', {
+        sentCount: 0,
+        reason: 'no-tokens'
+      })
       return NextResponse.json({ message: 'No tokens to check' })
     }
 
@@ -30,6 +41,7 @@ export async function POST(request: Request) {
 
     if (alertsError || !alerts) {
       console.error('Error fetching alerts:', alertsError)
+      await recordCronFailure('alerts:send', alertsError || 'Failed to fetch alerts')
       return NextResponse.json({ error: 'Failed to fetch alerts' }, { status: 500 })
     }
 
@@ -120,13 +132,18 @@ export async function POST(request: Request) {
       }
     }
 
-    return NextResponse.json({
+    const result = {
       success: true,
       sentCount: sentAlerts.length,
       sentAlerts
+    }
+    await recordCronSuccess('alerts:send', {
+      sentCount: sentAlerts.length
     })
+    return NextResponse.json(result)
   } catch (error: any) {
     console.error('Error sending alerts:', error)
+    await recordCronFailure('alerts:send', error)
     return NextResponse.json(
       { error: 'Failed to send alerts' },
       { status: 500 }
