@@ -85,7 +85,7 @@ export async function activateWhaleSubscription(
     plan,
     started_at: now.toISOString(),
     expires_at: newExpiry.toISOString(),
-    cancel_at: null,
+    cancel_at: null as unknown as string | undefined,
   } as Partial<WhaleSubscriber>)
 
   const link = await getDiscordLinkRecord(userId)
