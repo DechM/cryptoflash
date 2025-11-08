@@ -106,7 +106,7 @@ CREATE INDEX IF NOT EXISTS idx_api_calls_called_at ON api_calls(called_at);
 CREATE TABLE IF NOT EXISTS crypto_payments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-  plan TEXT NOT NULL CHECK (plan IN ('pro', 'ultimate')),
+  plan TEXT NOT NULL CHECK (plan IN ('pro', 'ultimate', 'whale')),
   amount_usdc NUMERIC NOT NULL,
   session_id TEXT UNIQUE NOT NULL,
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'expired', 'failed')),
