@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Wallet, CheckCircle, Loader2 } from 'lucide-react'
+import { X, Wallet, CheckCircle, Loader2, Copy } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { QRCodeSVG } from 'qrcode.react'
 
@@ -29,6 +29,7 @@ export function SolanaPayModal({
   const [status, setStatus] = useState<'pending' | 'confirming' | 'confirmed' | 'error'>('pending')
   const [error, setError] = useState<string | null>(null)
   const [polling, setPolling] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   const planLabel =
     plan === 'pro' ? 'Pro Plan' : plan === 'ultimate' ? 'Ultimate Plan' : 'Whale Alerts Add-on'
@@ -94,8 +95,67 @@ export function SolanaPayModal({
     return () => clearInterval(pollInterval)
   }
 
+  const buildPhantomLink = () => {
+    try {
+      const [, rest] = solanaPayUrl.split(':')
+      const [address, query] = rest.split('?')
+      const params = new URLSearchParams(query ?? '')
+      const phantom = new URL('phantom://ul/v1/pay')
+      phantom.searchParams.set('recipient', address)
+      const amountParam = params.get('amount')
+      if (amountParam) phantom.searchParams.set('amount', amountParam)
+      const token = params.get('spl-token')
+      if (token) phantom.searchParams.set('spl-token', token)
+      const label = params.get('label')
+      if (label) phantom.searchParams.set('label', label)
+      const message = params.get('message')
+      if (message) phantom.searchParams.set('message', message)
+      const memo = params.get('memo')
+      if (memo) phantom.searchParams.set('memo', memo)
+      return phantom.toString()
+    } catch (error) {
+      console.warn('Failed to build Phantom link', error)
+      return solanaPayUrl
+    }
+  }
+
   const handleOpenWallet = () => {
-    window.location.href = solanaPayUrl
+    try {
+      const hasPhantom =
+        Boolean((window as any)?.solana?.isPhantom) ||
+        Boolean((window as any)?.phantom?.solana?.isPhantom)
+
+      const primaryUrl = hasPhantom ? buildPhantomLink() : solanaPayUrl
+      const win = window.open(primaryUrl, '_blank', 'noopener')
+
+      if (!win) {
+        window.location.assign(primaryUrl)
+      } else if (hasPhantom) {
+        // If protocol handler not registered, fallback to universal link
+        setTimeout(() => {
+          if (!win.closed) {
+            win.location.href = primaryUrl.startsWith('phantom://')
+              ? primaryUrl.replace('phantom://', 'https://phantom.app/')
+              : primaryUrl
+          }
+        }, 1200)
+      }
+    } catch (err) {
+      console.warn('Failed to open wallet link, copying instead', err)
+      void handleCopy()
+    }
+  }
+
+  const handleCopy = async () => {
+    try {
+      const payload = `${solanaPayUrl}\n${buildPhantomLink()}`
+      await navigator.clipboard.writeText(payload)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2500)
+    } catch (err) {
+      console.warn('Clipboard copy failed', err)
+      setError('Copy the payment link manually: ' + solanaPayUrl)
+    }
   }
 
   if (!isOpen) return null
@@ -132,13 +192,23 @@ export function SolanaPayModal({
               </div>
 
               <div className="space-y-3">
-                <button
-                  onClick={handleOpenWallet}
-                  className="w-full flex items-center justify-center space-x-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#9945FF] to-[#14F195] text-white font-semibold hover:opacity-90 transition-opacity"
-                >
-                  <Wallet className="h-5 w-5" />
-                  <span>Open Wallet</span>
-                </button>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <button
+                    onClick={handleOpenWallet}
+                    className="w-full flex items-center justify-center space-x-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#9945FF] to-[#14F195] text-white font-semibold hover:opacity-90 transition-opacity"
+                  >
+                    <Wallet className="h-5 w-5" />
+                    <span>Open Wallet</span>
+                  </button>
+                  <button
+                    onClick={handleCopy}
+                    className="w-full flex items-center justify-center space-x-2 px-6 py-3 rounded-xl border border-white/20 text-[#cbd5f5] hover:border-[#00FFA3]/60 hover:text-white transition-all"
+                    title={solanaPayUrl}
+                  >
+                    <Copy className="h-5 w-5" />
+                    <span>{copied ? 'Copied!' : 'Copy Link'}</span>
+                  </button>
+                </div>
 
                 <button
                   onClick={handleConfirmPayment}
@@ -160,7 +230,7 @@ export function SolanaPayModal({
               </div>
 
               <p className="text-xs text-center text-[#6b7280]">
-                Scan the QR code with your Solana wallet or click "Open Wallet" to pay {amount} USDC
+                Scan the QR code with your Solana wallet, click "Open Wallet", or paste the copied link in Phantom to pay {amount} USDC
               </p>
             </div>
           )}
