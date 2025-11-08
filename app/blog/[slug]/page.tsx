@@ -185,6 +185,10 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   }
 }
 
+export function generateStaticParams() {
+  return Object.keys(blogPosts).map(slug => ({ slug }))
+}
+
 export default function BlogPostPage({ params }: { params: { slug: string } }) {
   const post = blogPosts[params.slug]
 

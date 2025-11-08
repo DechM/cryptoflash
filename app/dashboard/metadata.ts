@@ -1,19 +1,15 @@
-import { Metadata } from 'next'
+import type { Metadata } from 'next'
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://cryptoflash.app'
 
-export const dashboardMetadata: Metadata = {
-  title: 'Live KOTH Dashboard | Real-time Pump.fun Token Tracker | CryptoFlash',
-  description: 'Live dashboard tracking Pump.fun KOTH tokens in real-time. See bonding curve progress, AI Snipe Scores, whale activity, and volume. Track tokens at 90%+ progress before they hit KOTH.',
-  keywords: 'pump.fun dashboard, KOTH dashboard, live token tracker, bonding curve progress, real-time crypto tracker, Solana memecoin dashboard, pump.fun live data',
+export const metadata: Metadata = {
+  title: 'Live KOTH Dashboard | Real-time Solana Curve Tracker | CryptoFlash',
+  description: 'Live dashboard tracking Solana KOTH trajectories in real-time. Monitor bonding-curve progress, AI Snipe Scores, whale flow and volume before liquidity unlocks.',
   openGraph: {
-    title: 'Live KOTH Dashboard - Real-time Pump.fun Tracker',
-    description: 'Track Pump.fun KOTH tokens in real-time. See bonding curve progress, AI scores, and early signals.',
+    title: 'Live KOTH Dashboard - Real-time Solana Curve Tracker',
+    description: 'Track Solana KOTH candidates in real-time. See bonding-curve progress, AI scores and early signals captured by CryptoFlash.',
     url: `${siteUrl}/dashboard`,
     type: 'website',
-  },
-  alternates: {
-    canonical: `${siteUrl}/dashboard`,
   },
 }
 

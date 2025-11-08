@@ -118,13 +118,13 @@ export default function DashboardPage() {
           __html: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "WebPage",
-            "name": "Live KOTH Dashboard - Real-time Pump.fun Tracker",
-            "description": "Live dashboard tracking Pump.fun KOTH tokens in real-time. See bonding curve progress, AI Snipe Scores, whale activity, and volume.",
+            "name": "Live KOTH Dashboard - Real-time Solana Curve Tracker",
+            "description": "Live dashboard tracking Solana KOTH candidates in real-time. See bonding-curve progress, AI Snipe Scores, whale activity and volume before liquidity unlocks.",
             "url": `${process.env.NEXT_PUBLIC_SITE_URL || 'https://cryptoflash.app'}/dashboard`,
             "mainEntity": {
               "@type": "DataCatalog",
-              "name": "KOTH Token Tracker",
-              "description": "Real-time tracking of Pump.fun tokens in bonding curve phase"
+              "name": "KOTH Signal Catalog",
+              "description": "Real-time tracking of Solana bonding-curve tokens approaching KOTH"
             }
           })
         }}
@@ -143,7 +143,7 @@ export default function DashboardPage() {
             KOTH Tracker
           </h1>
           <p className="text-sm md:text-base text-[#b8c5d6] leading-relaxed">
-            Real-time tracking of Pump.fun tokens in bonding curve phase
+            Real-time telemetry for Solana bonding-curve launches. Monitor progress, scores and liquidity to anticipate the next KOTH unlock.
           </p>
           <div className="flex flex-wrap items-center gap-2 md:gap-4 mb-4 mt-4">
             {isEnabled('analytics.premium') && (
