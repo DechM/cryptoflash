@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import { supabaseAdmin, isSupabaseConfigured } from '@/lib/supabase'
-import { fetchTrendingSolanaPairs, mapPairsToTopTokens } from '@/lib/whales'
+import { fetchTrendingSolanaPairs, mapPairsToTopTokens, TopTokenRecord } from '@/lib/whales'
 import { recordCronFailure, recordCronSuccess } from '@/lib/cron'
+import { isValidSolanaAddress, sanitizeSolanaAddress } from '@/lib/solana'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -37,17 +38,28 @@ export async function GET(request: NextRequest) {
           }
 
           if (Array.isArray(kothTokens) && kothTokens.length) {
-            tokens = kothTokens.slice(0, limit).map((token) => ({
-              token_address: token.tokenAddress,
-              token_symbol: token.symbol || null,
-              token_name: token.name || null,
-              price_usd: typeof token.priceUsd === 'number' ? token.priceUsd : null,
-              liquidity_usd: typeof token.liquidity === 'number' ? token.liquidity : null,
-              volume_24h_usd: typeof token.volume24h === 'number' ? token.volume24h : null,
-              txns_24h: null,
-              updated_at: new Date().toISOString()
-            }))
-            console.warn('[Whale Cron] Falling back to KOTH tokens due to DexScreener unavailability')
+            const mapped = kothTokens
+              .slice(0, limit)
+              .map((token): TopTokenRecord | null => {
+                const address = sanitizeSolanaAddress(token.tokenAddress)
+                if (!address) return null
+                return {
+                  token_address: address,
+                  token_symbol: token.symbol || null,
+                  token_name: token.name || null,
+                  price_usd: typeof token.priceUsd === 'number' ? token.priceUsd : null,
+                  liquidity_usd: typeof token.liquidity === 'number' ? token.liquidity : null,
+                  volume_24h_usd: typeof token.volume24h === 'number' ? token.volume24h : null,
+                  txns_24h: null,
+                  updated_at: new Date().toISOString()
+                }
+              })
+              .filter((item): item is TopTokenRecord => item !== null)
+
+            if (mapped.length) {
+              tokens = mapped
+              console.warn('[Whale Cron] Falling back to KOTH tokens due to DexScreener unavailability')
+            }
           }
         } else {
           console.warn('[Whale Cron] KOTH fallback request failed:', fallbackResponse.status)

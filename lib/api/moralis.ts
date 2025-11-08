@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { Token } from '../types'
+import { sanitizeSolanaAddress } from '../solana'
 
 const MORALIS_API_KEYS = (process.env.MORALIS_API_KEYS || process.env.MORALIS_API_KEY || '')
   .split(',')
@@ -78,17 +79,26 @@ export async function fetchBondingTokens(): Promise<Partial<Token>[]> {
         throw new Error('Unexpected Moralis response format')
       }
 
-      return payload.map((token: MoralisBondingToken) => ({
-        tokenAddress: token.tokenAddress || token.mint,
-        name: token.name || 'Unknown',
-        symbol: token.symbol || 'UNKNOWN',
-        priceNative: token.priceNative || 0,
-        priceUsd: token.priceUsd,
-        liquidity: token.liquidity || 0,
-        fullyDilutedValuation: token.fullyDilutedValuation,
-        progress: token.progress || calculateProgressFromLiquidity(token),
-        createdAt: new Date().toISOString()
-      }))
+      return payload
+        .map((token: MoralisBondingToken) => {
+          const address = sanitizeSolanaAddress(token.tokenAddress || token.mint)
+          if (!address) {
+            console.warn('[Moralis] Skipping token with invalid address:', token.tokenAddress || token.mint)
+            return null
+          }
+          return {
+            tokenAddress: address,
+            name: token.name || 'Unknown',
+            symbol: token.symbol || 'UNKNOWN',
+            priceNative: token.priceNative || 0,
+            priceUsd: token.priceUsd,
+            liquidity: token.liquidity || 0,
+            fullyDilutedValuation: token.fullyDilutedValuation,
+            progress: token.progress || calculateProgressFromLiquidity(token),
+            createdAt: new Date().toISOString()
+          } as Partial<Token>
+        })
+        .filter((token): token is Partial<Token> => !!token)
     } catch (err: unknown) {
       const axiosError = err as { response?: { status?: number }; message?: string }
       const status = axiosError.response?.status

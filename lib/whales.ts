@@ -8,9 +8,9 @@ import {
   toWhaleEvent
 } from './api/helius'
 import { LAMPORTS_PER_SOL } from './utils'
+import { isValidSolanaAddress, sanitizeSolanaAddress } from './solana'
 
-const DEXSCREENER_TRENDING_URL = 'https://api.dexscreener.com/latest/dex/pairs/trending'
-const DEXSCREENER_SOLANA_URL = 'https://api.dexscreener.com/latest/dex/tokens/solana'
+const DEXSCREENER_SOLANA_TOKENS_URL = 'https://api.dexscreener.com/latest/dex/tokens/solana'
 const SOLANA_CHAIN_ID = 'solana'
 
 export const MIN_WHALE_ALERT_USD = Number(process.env.WHALE_ALERT_MIN_USD || '5000')
@@ -114,29 +114,17 @@ export async function fetchTrendingSolanaPairs(limit = 60): Promise<DexScreenerP
   let pairs: DexScreenerPair[] = []
 
   try {
-    const response = await axios.get<DexScreenerTrendingResponse>(`${DEXSCREENER_TRENDING_URL}?limit=${Math.max(limit * 2, 100)}`, { timeout: 8000 })
-    pairs = response.data?.pairs || []
-  } catch (error) {
-    const status = axios.isAxiosError(error) ? error.response?.status : undefined
-    console.warn(`[Whale] Failed to fetch DexScreener trending pairs (status: ${status ?? 'unknown'}) - falling back to Solana pairs`)
-  }
-
-  if (!pairs.length) {
-    try {
-      const fallbackResponse = await axios.get(DEXSCREENER_SOLANA_URL, { timeout: 8000 })
-      const fallbackPairs = fallbackResponse.data?.pairs || []
-      if (Array.isArray(fallbackPairs)) {
-        pairs = fallbackPairs
-      } else if (fallbackResponse.data) {
-        // tokens endpoint returns object keyed by token address
-        pairs = Object.values(fallbackResponse.data as Record<string, { pairs?: DexScreenerPair[] }>)
-          .flatMap((entry) => entry?.pairs || [])
-      }
-    } catch (fallbackError) {
-      const message = fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
-      console.error('[Whale] Failed to fetch DexScreener solana pairs:', message)
-      return []
+    const response = await axios.get(DEXSCREENER_SOLANA_TOKENS_URL, { timeout: 8000 })
+    if (Array.isArray(response.data?.pairs)) {
+      pairs = response.data.pairs
+    } else if (response.data) {
+      pairs = Object.values(response.data as Record<string, { pairs?: DexScreenerPair[] }>)
+        .flatMap((entry) => entry?.pairs || [])
     }
+  } catch (error) {
+    const message = axios.isAxiosError(error) ? error.message : String(error)
+    console.error('[Whale] Failed to fetch DexScreener tokens endpoint:', message)
+    return []
   }
 
   const solanaPairs = pairs.filter(pair => pair.chainId?.toLowerCase() === SOLANA_CHAIN_ID)
@@ -149,7 +137,8 @@ export function mapPairsToTopTokens(pairs: DexScreenerPair[]): TopTokenRecord[] 
 
   for (const pair of pairs) {
     const base = pair.baseToken || {}
-    const address = base?.address || ''
+    const rawAddress = (base?.address || '').trim()
+    const address = sanitizeSolanaAddress(rawAddress)
     if (!address || seen.has(address)) {
       continue
     }
@@ -338,21 +327,26 @@ export async function detectWhaleTransfersForToken(
   const maxTransactions = options.maxTransactions ?? MAX_WHALE_TRANSACTIONS
   const results: WhaleDetectionResult[] = []
 
-  if (!token.token_address) {
+  const normalizedAddress = sanitizeSolanaAddress(token.token_address)
+  if (!normalizedAddress) {
     return results
   }
 
-  const transactions = await fetchTransactionsForAddress(token.token_address, maxTransactions)
+  if (!isValidSolanaAddress(normalizedAddress)) {
+    throw new Error(`Invalid token address: ${token.token_address}`)
+  }
+
+  const transactions = await fetchTransactionsForAddress(normalizedAddress, maxTransactions)
   if (!transactions.length) {
     return results
   }
 
   for (const tx of transactions) {
-    const bestTransfer = selectBestTransfer(tx, token.token_address, token.price_usd || 0, minUsd)
+    const bestTransfer = selectBestTransfer(tx, normalizedAddress, token.price_usd || 0, minUsd)
     if (!bestTransfer) continue
 
     const whaleEvent = toWhaleEvent(
-      token.token_address,
+      normalizedAddress,
       token.token_symbol || null,
       token.token_name || null,
       token.price_usd ?? null,

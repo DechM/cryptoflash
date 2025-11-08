@@ -1,10 +1,11 @@
 import axios from 'axios'
 
 import { LAMPORTS_PER_SOL } from '@/lib/utils'
+import { isValidSolanaAddress, sanitizeSolanaAddress } from '@/lib/solana'
 
 const HELIUS_API_KEY = process.env.HELIUS_API_KEY || ''
 const HELIUS_RPC_URL = `https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`
-const HELIUS_DAS_URL = `https://api.helius.xyz/v0/addresses/transactions?api-key=${HELIUS_API_KEY}`
+const HELIUS_DAS_BASE = `https://api.helius.xyz/v0/addresses`
 
 export const HELIUS_API_AVAILABLE = !!HELIUS_API_KEY
 
@@ -28,7 +29,7 @@ async function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-async function postWithRetry<T>(url: string, payload: unknown, timeout = 10000): Promise<T | null> {
+async function postWithRetry<T>(url: string, payload: unknown, timeout = 10000, context?: Record<string, unknown>): Promise<T | null> {
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
       const response = await axios.post<T>(url, payload, { timeout })
@@ -42,8 +43,18 @@ async function postWithRetry<T>(url: string, payload: unknown, timeout = 10000):
         await delay(RETRY_DELAY_MS * (attempt + 1))
         continue
       }
-      const message = error instanceof Error ? error.message : String(error)
-      console.warn('[Helius] request failed:', message)
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status
+        const body = error.response?.data
+        console.warn('[Helius] request failed:', {
+          status,
+          body,
+          context
+        })
+      } else {
+        const message = error instanceof Error ? error.message : String(error)
+        console.warn('[Helius] request failed:', message, context)
+      }
       return null
     }
   }
@@ -53,14 +64,20 @@ async function postWithRetry<T>(url: string, payload: unknown, timeout = 10000):
 export async function getSignaturesForAddress(address: string, limit: number = 5): Promise<Array<{ signature: string; blockTime?: number }>> {
   if (!HELIUS_API_KEY) return []
 
+  const normalized = sanitizeSolanaAddress(address)
+  if (!normalized) {
+    console.warn('[Helius] getSignaturesForAddress called with invalid address:', address)
+    return []
+  }
+
   const payload = {
     jsonrpc: '2.0',
     id: 'getSignaturesForAddress',
     method: 'getSignaturesForAddress',
-    params: [address, { limit }]
+    params: [normalized, { limit }]
   }
 
-  const data = await postWithRetry<{ result?: Array<{ signature: string; blockTime?: number }> }>(HELIUS_RPC_URL, payload, 8000)
+  const data = await postWithRetry<{ result?: Array<{ signature: string; blockTime?: number }> }>(HELIUS_RPC_URL, payload, 8000, { original: address, normalized, action: 'getSignaturesForAddress' })
   if (!data?.result) return []
   return data.result
 }
@@ -78,7 +95,7 @@ export async function getTransactionBySignature(signature: string): Promise<any 
     ]
   }
 
-  const data = await postWithRetry<{ result?: any }>(HELIUS_RPC_URL, payload, 10000)
+  const data = await postWithRetry<{ result?: any }>(HELIUS_RPC_URL, payload, 10000, { signature, action: 'getTransactionBySignature' })
   return data?.result || null
 }
 
@@ -135,16 +152,20 @@ function mapTransferType(type?: string | null): 'transfer' | 'mint' | 'burn' {
 export async function fetchTransactionsForAddress(address: string, limit: number = 5): Promise<HeliusDasTransaction[]> {
   if (!HELIUS_API_KEY) return []
 
-  const payload = {
-    addresses: [address],
-    types: ['TRANSFER', 'SWAP', 'BURN', 'MINT'],
-    options: {
-      commitment: 'finalized',
-      limit,
-    }
+  const normalized = sanitizeSolanaAddress(address)
+  if (!normalized || !isValidSolanaAddress(normalized)) {
+    console.warn('[Helius] fetchTransactionsForAddress skipping invalid address:', address)
+    return []
   }
 
-  const data = await postWithRetry<{ transactions?: HeliusDasTransaction[] } | HeliusDasTransaction[]>(HELIUS_DAS_URL, payload, 15000)
+  const url = `${HELIUS_DAS_BASE}/transactions?api-key=${HELIUS_API_KEY}`
+  const payload = {
+    addresses: [normalized],
+    limit,
+    commitment: 'finalized',
+  }
+
+  const data = await postWithRetry<HeliusDasTransaction[] | { transactions?: HeliusDasTransaction[] }>(url, payload, 15000, { original: address, normalized, action: 'fetchTransactionsForAddress', limit })
   if (!data) return []
   if (Array.isArray(data)) return data
   if (Array.isArray(data.transactions)) return data.transactions
@@ -196,9 +217,18 @@ export function toWhaleEvent(
   transfer: HeliusDasTokenTransfer
 ) {
   const amountTokens = parseTokenTransferAmount(transfer)
-  const amountUsd = priceUsd ? amountTokens * priceUsd : null
+  const amountUsd = priceUsd ? amountTokens * priceUsd : 0
   const fee = typeof tx.fee === 'number' ? tx.fee / LAMPORTS_PER_SOL : null
   const blockTime = tx.timestamp ? new Date(tx.timestamp * 1000).toISOString() : null
+
+  const eventData = {
+    senders: transfer.fromUserAccount
+      ? [{ owner: transfer.fromUserAccount, amount: amountTokens }]
+      : [],
+    receivers: transfer.toUserAccount
+      ? [{ owner: transfer.toUserAccount, amount: amountTokens }]
+      : []
+  }
 
   return {
     signature: tx.signature,
@@ -218,7 +248,7 @@ export function toWhaleEvent(
       receiver_label: null,
       tx_hash: tx.signature,
       tx_url: `https://solscan.io/tx/${tx.signature}`,
-      event_data: transfer,
+      event_data: eventData,
       block_time: blockTime,
       fee,
     }

@@ -7,6 +7,7 @@ import { calculateTokenScore } from '@/lib/score'
 import { Token } from '@/lib/types'
 import { supabase } from '@/lib/supabase'
 import { generateMockTokens, shouldUseMockData } from '@/lib/mock-data'
+import { sanitizeSolanaAddress } from '@/lib/solana'
 
 // Cache duration: 30 seconds
 const CACHE_DURATION = 30 * 1000
@@ -78,11 +79,22 @@ export async function GET() {
     }
     
     // Filter tokens with progress > 90% (KOTH candidates)
-    const kothCandidates = bondingTokens.filter(t => (t.progress || 0) >= 90)
+    const kothCandidates = bondingTokens
+      .map(token => {
+        const sanitized = sanitizeSolanaAddress(token.tokenAddress)
+        if (!sanitized) {
+          return null
+        }
+        return { ...token, tokenAddress: sanitized }
+      })
+      .filter(
+        (token): token is Partial<Token> & { tokenAddress: string } =>
+          !!token && typeof token.tokenAddress === 'string' && token.tokenAddress.length > 0 && (token.progress || 0) >= 90
+      )
     
     // Get token addresses for batch fetching
     const tokenAddresses = kothCandidates
-      .map(t => t.tokenAddress)
+      .map(t => sanitizeSolanaAddress(t.tokenAddress))
       .filter((addr): addr is string => !!addr)
 
     // CHECK WHALE CACHE FROM SUPABASE (PERSISTENT CACHE FOR SERVERLESS)
