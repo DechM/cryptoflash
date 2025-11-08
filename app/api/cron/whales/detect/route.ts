@@ -9,8 +9,8 @@ import { recordCronFailure, recordCronSuccess } from '@/lib/cron'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const DEFAULT_TOKEN_LIMIT = Number(process.env.WHALE_ALERT_TOKEN_LIMIT || '20')
-const PER_TOKEN_DELAY_MS = Number(process.env.WHALE_ALERT_DELAY_MS || '1200')
+const DEFAULT_TOKEN_LIMIT = Number(process.env.WHALE_ALERT_TOKEN_LIMIT || '12')
+const PER_TOKEN_DELAY_MS = Number(process.env.WHALE_ALERT_DELAY_MS || '2000')
 
 export async function GET(request: NextRequest) {
   if (!isSupabaseConfigured) {
