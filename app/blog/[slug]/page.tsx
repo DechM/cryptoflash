@@ -189,6 +189,8 @@ export function generateStaticParams() {
   return Object.keys(blogPosts).map(slug => ({ slug }))
 }
 
+export const dynamicParams = false
+
 export default function BlogPostPage({ params }: { params: { slug: string } }) {
   const post = blogPosts[params.slug]
 
