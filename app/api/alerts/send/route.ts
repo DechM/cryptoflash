@@ -1,14 +1,10 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getLimit, getUserPlan } from '@/lib/plan'
 import { sendTelegramMessage, formatKOTHAlert } from '@/lib/api/telegram'
 import { recordCronFailure, recordCronSuccess } from '@/lib/cron'
 
-/**
- * Background job to check and send alerts
- * This should be called periodically (via Vercel Cron or similar)
- */
-export async function POST(request: Request) {
+async function runAlertsJob() {
   try {
     // Get latest KOTH tokens from internal API
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
@@ -149,5 +145,25 @@ export async function POST(request: Request) {
       { status: 500 }
     )
   }
+}
+
+/**
+ * Background job to check and send alerts
+ * Supports both POST (default) and GET (for Vercel Cron)
+ */
+export async function POST(request: Request) {
+  const authHeader = request.headers.get('authorization')
+  if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  return runAlertsJob()
+}
+
+export async function GET(request: NextRequest) {
+  const authHeader = request.headers.get('authorization')
+  if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  return runAlertsJob()
 }
 
