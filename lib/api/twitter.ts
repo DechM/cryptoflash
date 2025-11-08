@@ -15,6 +15,8 @@ interface TwitterToken {
   score: number
   progress: number
   priceUsd?: number
+  whaleUsd?: number
+  whaleWindow?: string
 }
 
 interface TwitterPostResponse {
@@ -86,60 +88,40 @@ ${hashtags}
  * Optimized for engagement and virality (2024-2025 best practices)
  */
 export function formatTwitterPost(token: TwitterToken): string {
-  // Simple link to our website (no https:// to prevent preview card)
-  // Twitter will still make it clickable, but won't generate preview card
-  const siteLink = "cryptoflash.app"
-  
-  // Hashtags in exact order for optimal reach
-  const hashtags = "#PumpFun #KOTH #Solana #Memecoin #SolanaGems"
-  
-  // Safely format price - check if it's a number
-  const priceText = token.priceUsd && typeof token.priceUsd === 'number' 
-    ? `💵 Price: $${token.priceUsd.toFixed(6)}` 
-    : ''
-  
-  // Calculate urgency/time elements based on progress
   const progress = token.progress || 0
   const score = token.score || 0
-  
-  // Urgency indicator for high progress tokens
-  let urgencyLabel = ''
-  if (progress >= 99) {
-    urgencyLabel = '⚡ Almost KOTH!'
-  } else if (progress >= 95) {
-    urgencyLabel = '⚡ Very Close!'
-  } else if (progress >= 90) {
-    urgencyLabel = '🔥 KOTH Zone!'
+
+  const progressLine = `⚡ Progress: ${progress.toFixed(1)}% • Score ${score.toFixed(1)}`
+
+  let secondaryLine: string | null = null
+  if (typeof token.whaleUsd === 'number' && token.whaleUsd > 0) {
+    const windowText = token.whaleWindow || 'recently'
+    secondaryLine = `🐳 Whale flow: +${formatUsdCompact(token.whaleUsd)} (${windowText})`
+  } else if (typeof token.priceUsd === 'number') {
+    secondaryLine = `💵 Price: $${token.priceUsd.toFixed(6)}`
   }
-  
-  // Score badge for high-scoring tokens
-  let scoreBadge = ''
-  if (score >= 85) {
-    scoreBadge = ' ⭐ (Top 1%)'
-  } else if (score >= 80) {
-    scoreBadge = ' ⭐ (Top 5%)'
-  } else if (score >= 75) {
-    scoreBadge = ' ⭐ (Top 10%)'
+
+  const lines = [
+    `$${token.symbol} // KOTH RACE ⚔️`,
+    '',
+    'Progress surges. Whales circling. Score ticking up.',
+    '',
+    progressLine,
+  ]
+
+  if (secondaryLine) {
+    lines.push(secondaryLine)
   }
-  
-  const progressLine = urgencyLabel
-    ? `📈 Progress: ${token.progress.toFixed(1)}% • ${urgencyLabel}`
-    : `📈 Progress: ${token.progress.toFixed(1)}%`
-  
-  // Optimized template with urgency and value indicators
-  // Format: Urgency + Data + CTA + Hashtags (algorithm-friendly)
-  return `🚨 KOTH Alert!
 
-💰 ${token.name} $${token.symbol}
-📊 Score: ${token.score.toFixed(1)}/100${scoreBadge}
-${progressLine}
-${priceText}
+  lines.push(
+    '',
+    `CA: ${token.address}`,
+    '',
+    '👁‍🗨 Track it live on CryptoFlash.',
+    'Follow @CryptoFlashGuru for instant alerts.'
+  )
 
-👉 Track live: ${siteLink}
-
-${hashtags}
-
-⚠️ DYOR • NFA`
+  return lines.join('\n')
 }
 
 /**
