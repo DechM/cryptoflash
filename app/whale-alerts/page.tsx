@@ -19,7 +19,7 @@ import { WhaleEvent } from '@/lib/types'
 import { cn, copyToClipboard, formatAddress, formatNumber } from '@/lib/utils'
 
 const REFRESH_INTERVAL = Number(process.env.NEXT_PUBLIC_WHALE_REFRESH_MS || 60000)
-const MIN_WHALE_THRESHOLD = Number(process.env.NEXT_PUBLIC_WHALE_MIN_USD || process.env.WHALE_ALERT_MIN_USD || '10000')
+const MIN_WHALE_THRESHOLD = Number(process.env.NEXT_PUBLIC_WHALE_MIN_USD || process.env.WHALE_ALERT_MIN_USD || '5000')
 
 type FeedFilter = 'all' | 'transfer' | 'mint' | 'burn'
 type TimeFilter = '1h' | '6h' | '24h' | 'all'

@@ -8,7 +8,7 @@ const DEXSCREENER_TRENDING_URL = 'https://api.dexscreener.com/latest/dex/pairs/t
 const DEXSCREENER_SOLANA_URL = 'https://api.dexscreener.com/latest/dex/tokens/solana'
 const SOLANA_CHAIN_ID = 'solana'
 
-export const MIN_WHALE_ALERT_USD = Number(process.env.WHALE_ALERT_MIN_USD || '10000')
+export const MIN_WHALE_ALERT_USD = Number(process.env.WHALE_ALERT_MIN_USD || '5000')
 export const MAX_WHALE_SIGNATURES = Number(process.env.WHALE_ALERT_SIGNATURE_LIMIT || '2')
 
 interface DexScreenerVolumeStats {
