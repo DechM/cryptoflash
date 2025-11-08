@@ -1,12 +1,13 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Loader2, Lock, RefreshCcw, ShieldCheck, Unlink, UserPlus } from 'lucide-react'
+import { Loader2, Lock, RefreshCcw, ShieldCheck, Unlink, UserPlus, Coins } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 import { Navbar } from '@/components/Navbar'
 import { useSession } from '@/hooks/useSession'
 import { cn } from '@/lib/utils'
+import { SolanaPayModal } from '@/components/billing/SolanaPayModal'
 
 interface WhaleStatusResponse {
   subscription?: {
@@ -30,6 +31,15 @@ export default function WhaleAlertsSettingsPage() {
   const [unlinking, setUnlinking] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [processingPayment, setProcessingPayment] = useState(false)
+  const [paymentModal, setPaymentModal] = useState<{
+    isOpen: boolean
+    solanaPayUrl: string
+    sessionId: string
+    amount: number
+  } | null>(null)
+
+  const whalePrice = Number(process.env.NEXT_PUBLIC_WHALE_PRICE_USDC || '7.99')
 
   useEffect(() => {
     if (!loading && !user) {
@@ -127,8 +137,46 @@ export default function WhaleAlertsSettingsPage() {
     }
   }
 
+  const handleSubscribe = async () => {
+    try {
+      setProcessingPayment(true)
+      setError(null)
+
+      const response = await fetch('/api/pay/create-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: 'whale' }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || data.error) {
+        if (response.status === 401) {
+          router.push(`/login?next=${encodeURIComponent('/alerts/whales')}`)
+          return
+        }
+        throw new Error(data.error || 'Failed to start payment session')
+      }
+
+      setPaymentModal({
+        isOpen: true,
+        solanaPayUrl: data.solanaPayUrl,
+        sessionId: data.sessionId,
+        amount: data.amount,
+      })
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
+      setError(message)
+    } finally {
+      setProcessingPayment(false)
+    }
+  }
+
   const discordLinked = Boolean(status?.discordLink)
   const subscriptionActive = status?.subscription?.status === 'active'
+  const subscriptionExpires = status?.subscription?.expires_at
+    ? new Date(status.subscription.expires_at)
+    : null
 
   if (loading || !user) {
     return (
@@ -160,6 +208,11 @@ export default function WhaleAlertsSettingsPage() {
                 <p className="text-sm text-[#94a3b8]">
                   Plan: {status?.subscription?.plan || '—'}
                 </p>
+                {subscriptionExpires && (
+                  <p className="text-xs text-[#64748b]">
+                    Expires on {subscriptionExpires.toLocaleDateString()}
+                  </p>
+                )}
               </div>
               <button
                 onClick={fetchStatus}
@@ -172,13 +225,29 @@ export default function WhaleAlertsSettingsPage() {
             </div>
 
             {!subscriptionActive && (
-              <div className="rounded-2xl border border-[#f97316]/30 bg-[#f97316]/10 px-5 py-4 text-sm text-[#fbbf24]">
-                <p className="font-medium flex items-center gap-2">
-                  <Lock className="h-4 w-4" /> Active Whale Alerts subscription required
-                </p>
-                <p className="mt-2 text-[#fcd34d]">
-                  Contact the CryptoFlash team to activate your Whale Alerts plan and unlock the Discord channel.
-                </p>
+              <div className="rounded-2xl border border-[#f97316]/30 bg-[#f97316]/10 px-5 py-4 text-sm text-[#fbbf24] space-y-4">
+                <div>
+                  <p className="font-medium flex items-center gap-2">
+                    <Lock className="h-4 w-4" /> Active Whale Alerts subscription required
+                  </p>
+                  <p className="mt-2 text-[#fcd34d]">
+                    Subscribe for {whalePrice.toFixed(2)} USDC/mo to unlock the private Discord channel and live whale pings.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={handleSubscribe}
+                    disabled={processingPayment}
+                    className="inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold bg-gradient-to-r from-[#00FFA3] to-[#00D1FF] text-black shadow-[0_0_18px_rgba(0,255,163,0.45)] disabled:opacity-60"
+                  >
+                    {processingPayment ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Coins className="h-4 w-4" />
+                    )}
+                    <span>{processingPayment ? 'Preparing...' : 'Pay with Solana'}</span>
+                  </button>
+                </div>
               </div>
             )}
 
@@ -270,6 +339,21 @@ export default function WhaleAlertsSettingsPage() {
           </section>
         </div>
       </main>
+
+      {paymentModal && (
+        <SolanaPayModal
+          isOpen={paymentModal.isOpen}
+          onClose={() => setPaymentModal(null)}
+          solanaPayUrl={paymentModal.solanaPayUrl}
+          sessionId={paymentModal.sessionId}
+          plan="whale"
+          amount={paymentModal.amount}
+          onSuccess={async () => {
+            await fetchStatus()
+            setSuccess('Whale Alerts subscription activated!')
+          }}
+        />
+      )}
     </div>
   )
 }

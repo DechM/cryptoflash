@@ -19,6 +19,10 @@
     {
       "path": "/api/cron/whales/detect",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/whales/subscriptions",
+      "schedule": "0 * * * *"
     }
   ]
 }

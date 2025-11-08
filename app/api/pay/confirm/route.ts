@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { activateWhaleSubscription } from '@/lib/whale-subscription'
 
 const HELIUS_API_KEY = process.env.HELIUS_API_KEY || ''
 const HELIUS_BASE_URL = HELIUS_API_KEY 
@@ -10,6 +11,8 @@ const MERCHANT_WALLET = process.env.MERCHANT_WALLET || ''
 const USDC_MINT = process.env.USDC_MINT || ''
 const PRO_PRICE_USDC = parseFloat(process.env.PRO_PRICE_USDC || '19.99')
 const ULTIMATE_PRICE_USDC = parseFloat(process.env.ULTIMATE_PRICE_USDC || '39.99')
+const WHALE_PRICE_USDC = parseFloat(process.env.WHALE_PLAN_PRICE_USDC || '7.99')
+const WHALE_DURATION_DAYS = Number(process.env.WHALE_PLAN_DURATION_DAYS || '30')
 
 /**
  * Confirm Solana Pay transaction
@@ -39,6 +42,19 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { error: 'Payment session not found' },
         { status: 404 }
+      )
+    }
+
+    const expectedAmount =
+      payment.plan === 'pro'
+        ? PRO_PRICE_USDC
+        : payment.plan === 'ultimate'
+          ? ULTIMATE_PRICE_USDC
+          : WHALE_PRICE_USDC
+
+    if (expectedAmount && Math.abs((payment.amount_usdc || 0) - expectedAmount) > 0.01) {
+      console.warn(
+        `[Payment Confirm] Amount mismatch for plan ${payment.plan}: expected ${expectedAmount}, got ${payment.amount_usdc}`
       )
     }
 
@@ -72,8 +88,22 @@ export async function POST(req: Request) {
     // MOCK PAYMENT MODE (for testing only)
     const ALLOW_MOCK_PAYMENT = process.env.ALLOW_MOCK_PAYMENT === 'true'
     if (ALLOW_MOCK_PAYMENT) {
-      const expiresAt = new Date()
-      expiresAt.setDate(expiresAt.getDate() + 30) // 30 days subscription
+      let expiresAt = new Date()
+      expiresAt.setDate(expiresAt.getDate() + 30) // default 30 days subscription
+      let whaleActivated = false
+
+      if (payment.plan === 'whale') {
+        try {
+          const newExpiry = await activateWhaleSubscription(payment.user_id, {
+            plan: payment.plan,
+            durationDays: WHALE_DURATION_DAYS,
+          })
+          expiresAt = newExpiry
+          whaleActivated = true
+        } catch (error) {
+          console.error('[Whale Subscription] Failed to activate (mock):', error)
+        }
+      }
 
       // Confirm payment (mock)
       const { error: updateError } = await supabaseAdmin
@@ -94,35 +124,47 @@ export async function POST(req: Request) {
         )
       }
 
-      // Update user subscription
-      const { error: userUpdateError } = await supabaseAdmin
-        .from('users')
-        .update({
-          subscription_status: payment.plan,
-          subscription_expires_at: expiresAt.toISOString()
-        })
-        .eq('id', payment.user_id)
+      if (payment.plan === 'pro' || payment.plan === 'ultimate') {
+        const { error: userUpdateError } = await supabaseAdmin
+          .from('users')
+          .update({
+            subscription_status: payment.plan,
+            subscription_expires_at: expiresAt.toISOString()
+          })
+          .eq('id', payment.user_id)
 
-      if (userUpdateError) {
-        console.error('Error updating user subscription:', userUpdateError)
-        // Don't fail - payment is confirmed
+        if (userUpdateError) {
+          console.error('Error updating user subscription:', userUpdateError)
+          // Don't fail - payment is confirmed
+        }
       }
 
-      // Set cookie for plan so UI can immediately reflect the change
       const res = NextResponse.json({
         confirmed: true,
         plan: payment.plan,
         expiresAt: expiresAt.toISOString(),
         txSignature: 'mock-tx-' + sessionId,
-        mock: true
+        mock: true,
+        whaleActive: whaleActivated
       })
 
-      res.cookies.set('cf_plan', payment.plan, {
-        httpOnly: false,
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 60 * 60 * 24 * 365 // 1 year
-      })
+      if (payment.plan === 'pro' || payment.plan === 'ultimate') {
+        res.cookies.set('cf_plan', payment.plan, {
+          httpOnly: false,
+          sameSite: 'lax',
+          path: '/',
+          maxAge: 60 * 60 * 24 * 365 // 1 year
+        })
+      }
+
+      if (payment.plan === 'whale' && whaleActivated) {
+        res.cookies.set('cf_whale', 'active', {
+          httpOnly: false,
+          sameSite: 'lax',
+          path: '/',
+          maxAge: 60 * 60 * 24 * 30
+        })
+      }
 
       return res
     }
@@ -139,9 +181,22 @@ export async function POST(req: Request) {
       })
     }
 
-    // Confirm payment
-    const expiresAt = new Date()
-    expiresAt.setDate(expiresAt.getDate() + 30) // 30 days subscription
+    let expiresAt = new Date()
+    expiresAt.setDate(expiresAt.getDate() + 30) // default 30 days subscription
+    let whaleActivated = false
+
+    if (payment.plan === 'whale') {
+      try {
+        const newExpiry = await activateWhaleSubscription(payment.user_id, {
+          plan: payment.plan,
+          durationDays: WHALE_DURATION_DAYS,
+        })
+        expiresAt = newExpiry
+        whaleActivated = true
+      } catch (error) {
+        console.error('[Whale Subscription] Failed to activate:', error)
+      }
+    }
 
     const { error: updateError } = await supabaseAdmin
       .from('crypto_payments')
@@ -161,34 +216,46 @@ export async function POST(req: Request) {
       )
     }
 
-    // Update user subscription
-    const { error: userUpdateError } = await supabaseAdmin
-      .from('users')
-      .update({
-        subscription_status: payment.plan,
-        subscription_expires_at: expiresAt.toISOString()
-      })
-      .eq('id', payment.user_id)
+    if (payment.plan === 'pro' || payment.plan === 'ultimate') {
+      const { error: userUpdateError } = await supabaseAdmin
+        .from('users')
+        .update({
+          subscription_status: payment.plan,
+          subscription_expires_at: expiresAt.toISOString()
+        })
+        .eq('id', payment.user_id)
 
-    if (userUpdateError) {
-      console.error('Error updating user subscription:', userUpdateError)
-      // Don't fail - payment is confirmed
+      if (userUpdateError) {
+        console.error('Error updating user subscription:', userUpdateError)
+        // Don't fail - payment is confirmed
+      }
     }
 
-    // Set cookie for plan so UI can immediately reflect the change
     const res = NextResponse.json({
       confirmed: true,
       plan: payment.plan,
       expiresAt: expiresAt.toISOString(),
-      txSignature
+      txSignature,
+      whaleActive: whaleActivated
     })
 
-    res.cookies.set('cf_plan', payment.plan, {
-      httpOnly: false,
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 365 // 1 year
-    })
+    if (payment.plan === 'pro' || payment.plan === 'ultimate') {
+      res.cookies.set('cf_plan', payment.plan, {
+        httpOnly: false,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 365 // 1 year
+      })
+    }
+
+    if (payment.plan === 'whale' && whaleActivated) {
+      res.cookies.set('cf_whale', 'active', {
+        httpOnly: false,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 30
+      })
+    }
 
     return res
   } catch (error: any) {

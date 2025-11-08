@@ -5,12 +5,14 @@ import { X, Wallet, CheckCircle, Loader2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { QRCodeSVG } from 'qrcode.react'
 
+type SolanaPlan = 'pro' | 'ultimate' | 'whale'
+
 interface SolanaPayModalProps {
   isOpen: boolean
   onClose: () => void
   solanaPayUrl: string
   sessionId: string
-  plan: 'pro' | 'ultimate'
+  plan: SolanaPlan
   amount: number
   onSuccess: () => void
 }
@@ -27,6 +29,9 @@ export function SolanaPayModal({
   const [status, setStatus] = useState<'pending' | 'confirming' | 'confirmed' | 'error'>('pending')
   const [error, setError] = useState<string | null>(null)
   const [polling, setPolling] = useState(false)
+
+  const planLabel =
+    plan === 'pro' ? 'Pro Plan' : plan === 'ultimate' ? 'Ultimate Plan' : 'Whale Alerts Add-on'
 
   useEffect(() => {
     if (!isOpen) {
@@ -116,7 +121,7 @@ export function SolanaPayModal({
               Pay with Solana
             </h2>
             <p className="text-[#b8c5d6]">
-              {plan === 'pro' ? 'Pro Plan' : 'Ultimate Plan'} - {amount} USDC
+              {planLabel} - {amount} USDC
             </p>
           </div>
 

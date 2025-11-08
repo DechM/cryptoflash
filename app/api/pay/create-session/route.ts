@@ -17,6 +17,7 @@ const MERCHANT_WALLET = process.env.MERCHANT_WALLET || ''
 const USDC_MINT = process.env.USDC_MINT || ''
 const PRO_PRICE_USDC = parseFloat(process.env.PRO_PRICE_USDC || '19.99')
 const ULTIMATE_PRICE_USDC = parseFloat(process.env.ULTIMATE_PRICE_USDC || '39.99')
+const WHALE_PRICE_USDC = parseFloat(process.env.WHALE_PLAN_PRICE_USDC || '7.99')
 
 /**
  * Create Solana Pay session
@@ -75,15 +76,25 @@ export async function POST(req: Request) {
     const { plan } = body
 
     // Validate plan
-    if (plan !== 'pro' && plan !== 'ultimate') {
+    if (plan !== 'pro' && plan !== 'ultimate' && plan !== 'whale') {
       return NextResponse.json(
-        { error: 'Invalid plan. Must be "pro" or "ultimate"' },
+        { error: 'Invalid plan. Must be "pro", "ultimate" or "whale"' },
         { status: 400 }
       )
     }
 
     // Determine price
-    const priceUsdc = plan === 'pro' ? PRO_PRICE_USDC : ULTIMATE_PRICE_USDC
+    const priceUsdc = plan === 'pro'
+      ? PRO_PRICE_USDC
+      : plan === 'ultimate'
+        ? ULTIMATE_PRICE_USDC
+        : WHALE_PRICE_USDC
+    const planLabel =
+      plan === 'pro'
+        ? 'Pro Plan'
+        : plan === 'ultimate'
+          ? 'Ultimate Plan'
+          : 'Whale Alerts Add-on'
 
     // Generate session ID
     const sessionId = generateUUID()
@@ -187,7 +198,7 @@ export async function POST(req: Request) {
 
     // Generate Solana Pay URL
     // Format: solana:<recipient>?amount=<amount>&spl-token=<token>&label=<label>&message=<message>&memo=<memo>
-    const solanaPayUrl = `solana:${MERCHANT_WALLET}?amount=${priceUsdc}&spl-token=${USDC_MINT}&label=CryptoFlash&message=Subscription ${plan}&memo=${sessionId}`
+    const solanaPayUrl = `solana:${MERCHANT_WALLET}?amount=${priceUsdc}&spl-token=${USDC_MINT}&label=CryptoFlash&message=${encodeURIComponent(planLabel)}&memo=${sessionId}`
 
     return NextResponse.json({
       sessionId,
