@@ -1,20 +1,13 @@
-import axios from 'axios'
-
+import { fetchTopCoins, fetchCoinDetails, CoinGeckoMarketCoin } from './api/coingecko'
+import { bitqueryRequest, BitqueryError } from './api/bitquery'
+import { NETWORKS, COINGECKO_PLATFORM_TO_NETWORK, NetworkConfig } from './whales/networks'
 import { supabaseAdmin } from './supabase'
-import {
-  fetchTransactionsForAddress,
-  HeliusDasTransaction,
-  HeliusDasTokenTransfer,
-  toWhaleEvent
-} from './api/helius'
-import { LAMPORTS_PER_SOL } from './utils'
-import { isValidSolanaAddress, sanitizeSolanaAddress } from './solana'
-
-const BIRDEYE_API_KEY = process.env.BIRDEYE_API_KEY || ''
-const BIRDEYE_BASE_URL = 'https://public-api.birdeye.so'
 
 export const MIN_WHALE_ALERT_USD = Number(process.env.WHALE_ALERT_MIN_USD || '5000')
-export const MAX_WHALE_TRANSACTIONS = Number(process.env.WHALE_ALERT_TRANSACTIONS_LIMIT || '3')
+export const DEFAULT_LOOKBACK_MINUTES = Number(process.env.WHALE_ALERT_LOOKBACK_MINUTES || '120')
+export const MAX_RESULTS_PER_ASSET = Number(process.env.WHALE_ALERT_TRANSACTIONS_LIMIT || '3')
+
+export type WhaleEventType = 'buy' | 'sell' | 'transfer'
 
 export interface TopTokenRecord {
   token_address: string
@@ -25,346 +18,369 @@ export interface TopTokenRecord {
   volume_24h_usd: number | null
   txns_24h: number | null
   updated_at: string
+  coingecko_id: string | null
+  chain: string | null
+  network: string | null
+  contract_address: string | null
+  source: string | null
 }
 
-interface UiTokenAmount {
-  uiAmount?: number | null
-  uiAmountString?: string | null
-  amount?: string | number | null
-  decimals?: number | null
+export interface TrackedAsset extends TopTokenRecord {
+  explorer_url: (hash: string) => string
+  network_config: NetworkConfig
+  asset_type: 'contract' | 'native'
 }
 
-interface TokenBalanceEntry {
-  accountIndex: number
-  mint: string
-  owner?: string | null
-  uiTokenAmount?: UiTokenAmount | null
+interface BitqueryTransferRow {
+  amountUsdt: number
+  baseAmount: number
+  baseSymbol: string | null
+  taker: string | null
+  maker: string | null
+  side: 'buy' | 'sell'
+  txHash: string
+  blockTime: string
+  priceUsd: number | null
 }
 
-interface ParsedTransactionMessage {
-  accountKeys?: Array<string | { pubkey?: string }>
-}
-
-interface ParsedTransaction {
-  blockTime?: number
-  meta?: {
-    fee?: number
-    preTokenBalances?: TokenBalanceEntry[]
-    postTokenBalances?: TokenBalanceEntry[]
-  }
-  transaction?: {
-    message?: ParsedTransactionMessage
-  }
-}
-
-export interface TokenTransferInsight {
+export interface WhaleDetectionResult {
+  amountUsd: number
   amountTokens: number
+  side: WhaleEventType
+  txHash: string
+  blockTime: string
   sender: string | null
   receiver: string | null
-  senderLabel?: string | null
-  receiverLabel?: string | null
-  eventType: 'transfer' | 'mint' | 'burn'
-  blockTime?: string | null
-  fee?: number | null
-  rawDiff?: {
-    senders: Array<{ owner: string; amount: number }>
-    receivers: Array<{ owner: string; amount: number }>
+  priceUsd: number | null
+}
+
+const MANUAL_OVERRIDES: Record<
+  string,
+  {
+    network: keyof typeof NETWORKS
+    contract: string | null
+    assetType?: 'native' | 'contract'
+    tokenAddress?: string
+  }
+> = {
+  solana: {
+    network: 'solana',
+    contract: 'So11111111111111111111111111111111111111112',
+    assetType: 'native'
+  },
+  ethereum: {
+    network: 'ethereum',
+    contract: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' // WETH
+  },
+  'binancecoin': {
+    network: 'bsc',
+    contract: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c' // WBNB
   }
 }
 
-const KNOWN_ADDRESS_LABELS: Record<string, string> = {}
+const SKIP_COINS = new Set<string>(['bitcoin', 'internet-computer'])
 
-export async function fetchTrendingSolanaPairs(limit = 60): Promise<TopTokenRecord[]> {
-  const tokens: TopTokenRecord[] = []
+function toPrimaryKey(networkKey: string, contract: string | null, assetType: 'contract' | 'native'): string {
+  if (contract) {
+    return `${networkKey}:${contract.toLowerCase()}`
+  }
+  return `${networkKey}:native:${assetType}`
+}
 
-  if (!BIRDEYE_API_KEY) {
-    console.warn('[Whale] BIRDEYE_API_KEY missing – skipping Birdeye trending fetch')
-  } else {
-    try {
-      const response = await axios.get(`${BIRDEYE_BASE_URL}/defi/tokenlist`, {
-        params: {
-          chain: 'solana'
-        },
-        headers: {
-          'X-API-KEY': BIRDEYE_API_KEY
-        },
-        timeout: 8000
-      })
-
-      const birdeyeTokens: Array<{
-        address?: string
-        symbol?: string | null
-        name?: string | null
-        price?: number | null
-        liquidity?: number | null
-        volume24hUSD?: number | null
-      }> = response.data?.data?.tokens ?? []
-
-      const sortedTokens = [...birdeyeTokens].sort((a, b) => (b?.volume24hUSD ?? 0) - (a?.volume24hUSD ?? 0))
-
-      for (const token of sortedTokens) {
-        if (!token?.address) continue
-        const address = sanitizeSolanaAddress(token.address)
-        if (!address) continue
-
-        tokens.push({
-          token_address: address,
-          token_symbol: token.symbol || null,
-          token_name: token.name || null,
-          price_usd: typeof token.price === 'number' ? token.price : null,
-          liquidity_usd: typeof token.liquidity === 'number' ? token.liquidity : null,
-          volume_24h_usd: typeof token.volume24hUSD === 'number' ? token.volume24hUSD : null,
-          txns_24h: null,
-          updated_at: new Date().toISOString()
-        })
-
-        if (tokens.length >= limit) {
-          break
-        }
-      }
-    } catch (error) {
-      const message = axios.isAxiosError(error) ? error.message : String(error)
-      console.error('[Whale] Failed to fetch Birdeye token list:', message)
+async function enrichCoinWithPlatform(
+  coin: CoinGeckoMarketCoin
+): Promise<{ coingecko_id: string; network: NetworkConfig; contract: string | null; assetType: 'contract' | 'native' } | null> {
+  const override = MANUAL_OVERRIDES[coin.id]
+  if (override) {
+    const network = NETWORKS[override.network]
+    if (!network) return null
+    return {
+      coingecko_id: coin.id,
+      network,
+      contract: override.contract,
+      assetType: override.assetType ?? 'contract'
     }
   }
 
-  return tokens.slice(0, limit)
-}
+  const detail = await fetchCoinDetails(coin.id)
+  const platforms = detail?.platforms ?? {}
 
-function parseUiAmount(value?: UiTokenAmount | null): number {
-  if (!value) return 0
-  if (typeof value.uiAmount === 'number' && !Number.isNaN(value.uiAmount)) {
-    return value.uiAmount
-  }
-  if (value.uiAmountString) {
-    const parsed = Number(value.uiAmountString)
-    if (!Number.isNaN(parsed)) return parsed
-  }
-  if (value.amount !== undefined && value.decimals !== undefined && value.decimals !== null) {
-    const amt = Number(value.amount)
-    const decimals = Number(value.decimals)
-    if (!Number.isNaN(amt) && !Number.isNaN(decimals) && decimals >= 0) {
-      return amt / Math.pow(10, decimals)
+  for (const [platform, address] of Object.entries(platforms)) {
+    const networkKey = COINGECKO_PLATFORM_TO_NETWORK[platform]
+    if (!networkKey) continue
+    const network = NETWORKS[networkKey]
+    if (!network) continue
+    if (!address || address.trim().length === 0) continue
+
+    return {
+      coingecko_id: coin.id,
+      network,
+      contract: address,
+      assetType: 'contract'
     }
   }
-  return 0
+
+  return null
 }
 
-function getAccountOwner(
-  accountKeys: Array<string | { pubkey?: string }> | undefined,
-  index: number,
-  fallbackOwner?: string
-): string {
-  const entry = accountKeys?.[index]
-  if (!entry) {
-    return fallbackOwner || 'Unknown'
-  }
-  if (typeof entry === 'string') return entry
-  if (typeof entry === 'object') {
-    return entry.pubkey || entry.toString?.() || fallbackOwner || 'Unknown'
-  }
-  return fallbackOwner || 'Unknown'
-}
+export async function listTrackedAssets(limit = 10): Promise<TrackedAsset[]> {
+  const coins = await fetchTopCoins(limit * 3)
+  const assets: TrackedAsset[] = []
 
-function labelAddress(address: string | null | undefined): string | null {
-  if (!address) return null
-  return KNOWN_ADDRESS_LABELS[address] || null
-}
-
-export function extractTokenTransfer(rawTx: ParsedTransaction | null, mintAddress: string): TokenTransferInsight | null {
-  if (!rawTx) return null
-
-  const meta = rawTx.meta
-  const message = rawTx.transaction?.message
-  if (!meta || !message) return null
-
-  const accountKeys = message.accountKeys || []
-  const balances = new Map<number, { owner: string; pre: number; post: number; decimals: number | null }>()
-
-  const preBalances = meta.preTokenBalances || []
-  const postBalances = meta.postTokenBalances || []
-
-  for (const entry of preBalances) {
-    if (!entry || entry.mint !== mintAddress) continue
-    const index = entry.accountIndex
-    const owner = entry.owner || getAccountOwner(accountKeys, index)
-    const decimals = entry.uiTokenAmount?.decimals ?? null
-    const pre = parseUiAmount(entry.uiTokenAmount)
-    const record = balances.get(index) || { owner, pre: 0, post: 0, decimals }
-    record.pre = pre
-    record.decimals = decimals ?? record.decimals
-    record.owner = owner || record.owner
-    balances.set(index, record)
-  }
-
-  for (const entry of postBalances) {
-    if (!entry || entry.mint !== mintAddress) continue
-    const index = entry.accountIndex
-    const owner = entry.owner || getAccountOwner(accountKeys, index)
-    const decimals = entry.uiTokenAmount?.decimals ?? null
-    const post = parseUiAmount(entry.uiTokenAmount)
-    const record = balances.get(index) || { owner, pre: 0, post: 0, decimals }
-    record.post = post
-    record.decimals = decimals ?? record.decimals
-    record.owner = owner || record.owner
-    balances.set(index, record)
-  }
-
-  if (balances.size === 0) {
-    return null
-  }
-
-  let totalIn = 0
-  let totalOut = 0
-  const receivers: Array<{ owner: string; amount: number }> = []
-  const senders: Array<{ owner: string; amount: number }> = []
-
-  balances.forEach((record) => {
-    const diff = (record.post ?? 0) - (record.pre ?? 0)
-    if (Math.abs(diff) < 1e-9) return
-    if (diff > 0) {
-      totalIn += diff
-      receivers.push({ owner: record.owner, amount: diff })
-    } else {
-      const out = Math.abs(diff)
-      totalOut += out
-      senders.push({ owner: record.owner, amount: out })
-    }
-  })
-
-  if (totalIn <= 0 && totalOut <= 0) {
-    return null
-  }
-
-  const primaryReceiver = receivers.sort((a, b) => b.amount - a.amount)[0] || null
-  const primarySender = senders.sort((a, b) => b.amount - a.amount)[0] || null
-
-  const eventType: 'transfer' | 'mint' | 'burn' =
-    totalOut === 0 && totalIn > 0 ? 'mint' : totalIn === 0 && totalOut > 0 ? 'burn' : 'transfer'
-
-  const blockTime = rawTx.blockTime ? new Date(rawTx.blockTime * 1000).toISOString() : null
-  const feeLamports = meta.fee ?? null
-  const feeSol = feeLamports !== null ? feeLamports / LAMPORTS_PER_SOL : null
-
-  return {
-    amountTokens: eventType === 'burn' ? totalOut : totalIn,
-    sender: primarySender?.owner || null,
-    receiver: primaryReceiver?.owner || null,
-    senderLabel: labelAddress(primarySender?.owner),
-    receiverLabel: labelAddress(primaryReceiver?.owner),
-    eventType,
-    blockTime,
-    fee: feeSol,
-    rawDiff: {
-      senders,
-      receivers
-    }
-  }
-}
-
-interface WhaleDetectionResult {
-  event: {
-    token_address: string
-    token_symbol: string | null
-    token_name: string | null
-    event_type: 'transfer' | 'mint' | 'burn'
-    amount_tokens: number
-    amount_usd: number
-    price_usd: number | null
-    liquidity_usd: number | null
-    volume_24h_usd: number | null
-    sender: string | null
-    sender_label: string | null
-    receiver: string | null
-    receiver_label: string | null
-    tx_hash: string
-    tx_url: string
-    event_data: TokenTransferInsight['rawDiff']
-    block_time: string | null
-    fee: number | null
-  }
-  signature: string
-}
-
-export async function detectWhaleTransfersForToken(
-  token: TopTokenRecord,
-  options: { minUsd?: number; maxTransactions?: number } = {}
-): Promise<WhaleDetectionResult[]> {
-  const minUsd = options.minUsd ?? MIN_WHALE_ALERT_USD
-  const maxTransactions = options.maxTransactions ?? MAX_WHALE_TRANSACTIONS
-  const results: WhaleDetectionResult[] = []
-
-  const normalizedAddress = sanitizeSolanaAddress(token.token_address)
-  if (!normalizedAddress) {
-    return results
-  }
-
-  if (!isValidSolanaAddress(normalizedAddress)) {
-    throw new Error(`Invalid token address: ${token.token_address}`)
-  }
-
-  const transactions = await fetchTransactionsForAddress(normalizedAddress, maxTransactions)
-  if (!transactions.length) {
-    return results
-  }
-
-  for (const tx of transactions) {
-    const bestTransfer = selectBestTransfer(tx, normalizedAddress, token.price_usd || 0, minUsd)
-    if (!bestTransfer) continue
-
-    const whaleEvent = toWhaleEvent(
-      normalizedAddress,
-      token.token_symbol || null,
-      token.token_name || null,
-      token.price_usd ?? null,
-      tx,
-      bestTransfer.transfer
-    )
-
-    if (!Number.isFinite(whaleEvent.event.amount_usd) || whaleEvent.event.amount_usd < minUsd) {
+  for (const coin of coins) {
+    if (SKIP_COINS.has(coin.id)) {
       continue
     }
 
-    results.push({
-      signature: tx.signature,
-      event: {
-        ...whaleEvent.event,
-        liquidity_usd: token.liquidity_usd,
-        volume_24h_usd: token.volume_24h_usd
+    try {
+      const enriched = await enrichCoinWithPlatform(coin)
+      if (!enriched) continue
+      const { network, contract, assetType } = enriched
+      const tokenAddress = toPrimaryKey(network.key, contract, assetType)
+
+      assets.push({
+        token_address: tokenAddress,
+        token_symbol: coin.symbol ? coin.symbol.toUpperCase() : null,
+        token_name: coin.name ?? null,
+        price_usd: coin.current_price ?? null,
+        liquidity_usd: coin.market_cap ?? null,
+        volume_24h_usd: coin.total_volume ?? null,
+        txns_24h: null,
+        updated_at: new Date().toISOString(),
+        coingecko_id: coin.id,
+        chain: network.displayName,
+        network: network.key,
+        contract_address: contract,
+        source: 'coingecko',
+        explorer_url: network.explorerTxUrl,
+        network_config: network,
+        asset_type: assetType
+      })
+
+      if (assets.length >= limit) break
+    } catch (error) {
+      if (error instanceof BitqueryError) {
+        console.warn('[Whale][CoinGecko] Failed to enrich coin', coin.id, error.message)
+      } else {
+        console.warn('[Whale][CoinGecko] Failed to enrich coin', coin.id, error)
       }
-    })
+    }
+    // Light delay to keep CoinGecko free tier happy
+    await delay(250)
   }
 
-  return results
+  return assets
+}
+
+const EVM_WHALE_QUERY = /* GraphQL */ `
+  query WhaleDexTrades($network: EVMNetwork!, $contract: String!, $since: DateTime!, $limit: Int!) {
+    EVM(network: $network, dataset: combined) {
+      dexTrades: DEXTrades(
+        limit: { count: $limit }
+        order: { descendingBy: Block_Time }
+        where: {
+          Block: { Time: { since: $since } }
+          Trade: { BaseCurrency: { SmartContract: { is: $contract } } }
+        }
+      ) {
+        Block {
+          Time
+        }
+        Trade {
+          BaseAmount
+          BaseAmountInUSD
+          PriceInUSD
+          Side
+          Buyer {
+            Address
+          }
+          Seller {
+            Address
+          }
+          BaseCurrency {
+            Symbol
+          }
+        }
+        Transaction {
+          Hash
+        }
+      }
+    }
+  }
+`
+
+const SOLANA_WHALE_QUERY = /* GraphQL */ `
+  query SolanaDexTrades($mint: String!, $since: DateTime!, $limit: Int!) {
+    Solana(dataset: combined) {
+      dexTrades: DEXTrades(
+        limit: { count: $limit }
+        order: { descendingBy: Block_Time }
+        where: {
+          Block: { Time: { since: $since } }
+          Trade: { BaseCurrency: { MintAddress: { is: $mint } } }
+        }
+      ) {
+        Block {
+          Time
+        }
+        Trade {
+          BaseAmount
+          BaseAmountInUSD
+          PriceInUSD
+          Buyer {
+            Address
+          }
+          Seller {
+            Address
+          }
+          Side
+          BaseCurrency {
+            Symbol
+          }
+        }
+        Transaction {
+          Signature
+        }
+      }
+    }
+  }
+`
+
+interface BitqueryDexTradeRow {
+  Block?: {
+    Time?: string
+  }
+  Trade?: {
+    BaseAmount?: number
+    BaseAmountInUSD?: number
+    PriceInUSD?: number
+    Side?: string
+    Buyer?: { Address?: string }
+    Seller?: { Address?: string }
+    BaseCurrency?: { Symbol?: string }
+  }
+  Transaction?: {
+    Hash?: string
+    Signature?: string
+  }
+}
+
+function mapEvmRow(row: BitqueryDexTradeRow | null | undefined): BitqueryTransferRow | null {
+  if (!row) return null
+  const side = row.Trade?.Side?.toLowerCase()
+  if (side !== 'buy' && side !== 'sell') return null
+
+  const amountUsd = Number(row.Trade?.BaseAmountInUSD ?? 0)
+  if (!Number.isFinite(amountUsd)) return null
+
+  return {
+    amountUsdt: amountUsd,
+    baseAmount: Number(row.Trade?.BaseAmount ?? 0),
+    baseSymbol: row.Trade?.BaseCurrency?.Symbol ?? null,
+    taker: row.Trade?.Buyer?.Address ?? null,
+    maker: row.Trade?.Seller?.Address ?? null,
+    side,
+    txHash: row.Transaction?.Hash ?? '',
+    blockTime: row.Block?.Time ?? new Date().toISOString(),
+    priceUsd: typeof row.Trade?.PriceInUSD === 'number' ? row.Trade.PriceInUSD : null
+  }
+}
+
+function mapSolanaRow(row: BitqueryDexTradeRow | null | undefined): BitqueryTransferRow | null {
+  if (!row) return null
+  const side = row.Trade?.Side?.toLowerCase()
+  if (side !== 'buy' && side !== 'sell') return null
+
+  const amountUsd = Number(row.Trade?.BaseAmountInUSD ?? 0)
+  if (!Number.isFinite(amountUsd)) return null
+
+  return {
+    amountUsdt: amountUsd,
+    baseAmount: Number(row.Trade?.BaseAmount ?? 0),
+    baseSymbol: row.Trade?.BaseCurrency?.Symbol ?? null,
+    taker: row.Trade?.Buyer?.Address ?? null,
+    maker: row.Trade?.Seller?.Address ?? null,
+    side,
+    txHash: row.Transaction?.Signature ?? '',
+    blockTime: row.Block?.Time ?? new Date().toISOString(),
+    priceUsd: typeof row.Trade?.PriceInUSD === 'number' ? row.Trade.PriceInUSD : null
+  }
+}
+
+export async function detectWhaleEventsForAsset(
+  asset: TrackedAsset,
+  options: { minUsd?: number; lookbackMinutes?: number; limit?: number } = {}
+): Promise<WhaleDetectionResult[]> {
+  const minUsd = options.minUsd ?? MIN_WHALE_ALERT_USD
+  const lookbackMinutes = options.lookbackMinutes ?? DEFAULT_LOOKBACK_MINUTES
+  const limit = options.limit ?? MAX_RESULTS_PER_ASSET
+  const since = new Date(Date.now() - lookbackMinutes * 60 * 1000).toISOString()
+
+  if (!asset.contract_address && asset.asset_type !== 'native') {
+    return []
+  }
+
+  let rows: BitqueryTransferRow[] = []
+
+  if (asset.network_config.kind === 'evm') {
+    if (!asset.contract_address) return []
+    const data = await bitqueryRequest<{ EVM: { dexTrades?: BitqueryDexTradeRow[] } }>(EVM_WHALE_QUERY, {
+      network: asset.network_config.bitqueryNetwork,
+      contract: asset.contract_address,
+      since,
+      limit
+    })
+    rows = (data?.EVM?.dexTrades ?? []).map(mapEvmRow).filter(Boolean) as BitqueryTransferRow[]
+  } else if (asset.network_config.kind === 'solana') {
+    const mint = asset.contract_address ?? 'So11111111111111111111111111111111111111112'
+    const data = await bitqueryRequest<{ Solana: { dexTrades?: BitqueryDexTradeRow[] } }>(SOLANA_WHALE_QUERY, {
+      mint,
+      since,
+      limit
+    })
+    rows = (data?.Solana?.dexTrades ?? []).map(mapSolanaRow).filter(Boolean) as BitqueryTransferRow[]
+  }
+
+  return rows
+    .filter(row => row.amountUsdt >= minUsd)
+    .map(row => ({
+      amountUsd: row.amountUsdt,
+      amountTokens: row.baseAmount,
+      side: row.side,
+      txHash: row.txHash,
+      blockTime: row.blockTime,
+      sender: row.maker,
+      receiver: row.taker,
+      priceUsd: row.priceUsd
+    }))
+}
+
+export async function persistTopAssets(assets: TrackedAsset[]) {
+  if (!assets.length) return
+
+  const payload = assets.map(asset => ({
+    token_address: asset.token_address,
+    token_symbol: asset.token_symbol,
+    token_name: asset.token_name,
+    price_usd: asset.price_usd,
+    liquidity_usd: asset.liquidity_usd,
+    volume_24h_usd: asset.volume_24h_usd,
+    txns_24h: asset.txns_24h,
+    updated_at: asset.updated_at,
+    coingecko_id: asset.coingecko_id,
+    chain: asset.chain,
+    network: asset.network,
+    contract_address: asset.contract_address,
+    source: asset.source
+  }))
+
+  await supabaseAdmin.from('whale_top_tokens').upsert(payload, { onConflict: 'token_address' })
 }
 
 export function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-function selectBestTransfer(
-  tx: HeliusDasTransaction,
-  tokenAddress: string,
-  priceUsd: number,
-  minUsd: number
-): { transfer: HeliusDasTokenTransfer; amountUsd: number } | null {
-  const transfers = tx.tokenTransfers?.filter(t => t.mint === tokenAddress) ?? []
-  if (!transfers.length) return null
-
-  let best: { transfer: HeliusDasTokenTransfer; amountUsd: number } | null = null
-
-  for (const transfer of transfers) {
-    const event = toWhaleEvent(tokenAddress, null, null, priceUsd, tx, transfer)
-    const amountUsd = event.event.amount_usd
-    if (!Number.isFinite(amountUsd) || amountUsd < minUsd) continue
-
-    if (!best || amountUsd > best.amountUsd) {
-      best = { transfer, amountUsd }
-    }
-  }
-
-  return best
-}
 export async function getWhaleSubscription(userId: string) {
   const { data } = await supabaseAdmin
     .from('whale_subscribers')
@@ -376,9 +392,7 @@ export async function getWhaleSubscription(userId: string) {
 }
 
 export async function upsertWhaleSubscription(userId: string, values: Partial<import('./types').WhaleSubscriber>) {
-  return supabaseAdmin
-    .from('whale_subscribers')
-    .upsert({ user_id: userId, ...values }, { onConflict: 'user_id' })
+  return supabaseAdmin.from('whale_subscribers').upsert({ user_id: userId, ...values }, { onConflict: 'user_id' })
 }
 
 export async function getDiscordLinkRecord(userId: string) {

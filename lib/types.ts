@@ -90,6 +90,8 @@ export interface WhaleEvent {
   posted_to_twitter: boolean
   tweet_id?: string | null
   created_at: string
+  chain?: string | null
+  network?: string | null
 }
 export interface WhaleSubscriber {
   user_id: string

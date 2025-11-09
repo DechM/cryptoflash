@@ -1,24 +1,28 @@
+import crypto from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 
-import { HELIUS_API_AVAILABLE } from '@/lib/api/helius'
 import { sendWhaleEventToDiscord } from '@/lib/discord'
 import { supabaseAdmin, isSupabaseConfigured } from '@/lib/supabase'
-import { detectWhaleTransfersForToken, delay, MIN_WHALE_ALERT_USD, MAX_WHALE_TRANSACTIONS, TopTokenRecord } from '@/lib/whales'
+import {
+  detectWhaleEventsForAsset,
+  delay,
+  MIN_WHALE_ALERT_USD,
+  MAX_RESULTS_PER_ASSET,
+  TopTokenRecord,
+  TrackedAsset
+} from '@/lib/whales'
+import { NETWORKS } from '@/lib/whales/networks'
 import { recordCronFailure, recordCronSuccess } from '@/lib/cron'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 const DEFAULT_TOKEN_LIMIT = Number(process.env.WHALE_ALERT_TOKEN_LIMIT || '12')
-const PER_TOKEN_DELAY_MS = Number(process.env.WHALE_ALERT_DELAY_MS || '2000')
+const PER_TOKEN_DELAY_MS = Number(process.env.WHALE_ALERT_DELAY_MS || '1500')
 
 export async function GET(request: NextRequest) {
   if (!isSupabaseConfigured) {
     return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 })
-  }
-
-  if (!HELIUS_API_AVAILABLE) {
-    return NextResponse.json({ error: 'Helius API key missing' }, { status: 500 })
   }
 
   const authHeader = request.headers.get('authorization')
@@ -53,13 +57,27 @@ export async function GET(request: NextRequest) {
       inserted: 0,
       skippedExisting: 0,
       minUsd: MIN_WHALE_ALERT_USD,
-      maxTransactions: MAX_WHALE_TRANSACTIONS,
+      maxTransactions: MAX_RESULTS_PER_ASSET,
       errors: [] as string[]
     }
 
     for (const token of tokens as TopTokenRecord[]) {
       try {
-        const detections = await detectWhaleTransfersForToken(token)
+        const networkKey = token.network || ''
+        const networkConfig = networkKey ? NETWORKS[networkKey] : undefined
+        if (!networkConfig) {
+          summary.errors.push(`${token.token_symbol || token.token_name || token.token_address}: Unsupported network`)
+          continue
+        }
+
+        const asset: TrackedAsset = {
+          ...token,
+          explorer_url: networkConfig.explorerTxUrl,
+          network_config: networkConfig,
+          asset_type: token.contract_address ? 'contract' : 'native'
+        }
+
+        const detections = await detectWhaleEventsForAsset(asset)
 
         if (detections.length === 0) {
           await delay(PER_TOKEN_DELAY_MS)
@@ -68,7 +86,7 @@ export async function GET(request: NextRequest) {
 
         summary.candidates += detections.length
 
-        const signatures = detections.map(item => item.signature)
+        const signatures = detections.map(item => item.txHash)
         const { data: existingRows, error: existingError } = await supabaseAdmin
           .from('whale_events')
           .select('tx_hash')
@@ -79,7 +97,7 @@ export async function GET(request: NextRequest) {
         }
 
         const existing = new Set((existingRows || []).map(row => row.tx_hash))
-        const freshEvents = detections.filter(item => !existing.has(item.signature))
+        const freshEvents = detections.filter(item => !existing.has(item.txHash))
 
         if (freshEvents.length === 0) {
           summary.skippedExisting += detections.length
@@ -87,9 +105,28 @@ export async function GET(request: NextRequest) {
           continue
         }
 
-        const payload = freshEvents.map(({ event }) => ({
-          ...event,
-          created_at: event.block_time || new Date().toISOString()
+        const payload = freshEvents.map(({ amountUsd, amountTokens, blockTime, txHash, sender, receiver, priceUsd, side }) => ({
+          token_address: token.token_address,
+          token_symbol: token.token_symbol,
+          token_name: token.token_name,
+          event_type: side,
+          amount_tokens: amountTokens,
+          amount_usd: amountUsd,
+          price_usd: priceUsd ?? token.price_usd,
+          liquidity_usd: token.liquidity_usd,
+          volume_24h_usd: token.volume_24h_usd,
+          sender,
+          sender_label: null,
+          receiver,
+          receiver_label: null,
+          tx_hash: txHash,
+          tx_url: asset.explorer_url(txHash),
+          event_data: null,
+          block_time: blockTime,
+          fee: null,
+          chain: token.chain,
+          network: token.network,
+          created_at: blockTime || new Date().toISOString()
         }))
 
         const { error: insertError } = await supabaseAdmin
@@ -100,13 +137,13 @@ export async function GET(request: NextRequest) {
           summary.errors.push(`Insert failed for ${token.token_symbol || token.token_address.substring(0, 6)}: ${insertError.message}`)
         } else {
           summary.inserted += payload.length
-          for (const item of freshEvents) {
+          for (const item of payload) {
             try {
             await sendWhaleEventToDiscord({
               id: crypto.randomUUID(),
               created_at: new Date().toISOString(),
               posted_to_twitter: false,
-              ...item.event
+              ...item
             })
             } catch (discordError) {
               console.warn('[Whale Detect] Failed to post to Discord:', discordError)

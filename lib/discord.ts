@@ -151,7 +151,9 @@ export async function sendWhaleEventToDiscord(event: WhaleEvent) {
 
   const embed = {
     title: `${event.token_symbol || event.token_name || 'Unknown'} Whale Alert`,
-    description: `**Amount:** ${formatTokens(event.amount_tokens)} tokens\n**Value:** ${formatUsd(event.amount_usd)}`,
+    description: `**Amount:** ${formatTokens(event.amount_tokens)} tokens\n**Value:** ${formatUsd(event.amount_usd)}${
+      event.chain ? `\n**Chain:** ${event.chain}` : ''
+    }`,
     color: 0x00ffa3,
     fields: [
       {
@@ -166,10 +168,10 @@ export async function sendWhaleEventToDiscord(event: WhaleEvent) {
             inline: true,
           }
         : null,
-      event.tx_hash
+      event.tx_url && event.tx_hash
         ? {
             name: 'Transaction',
-            value: `[View on Solscan](https://solscan.io/tx/${event.tx_hash})`,
+            value: `[View Explorer](${event.tx_url})`,
           }
         : null,
       event.sender && event.receiver

@@ -185,7 +185,12 @@ CREATE TABLE IF NOT EXISTS whale_top_tokens (
   liquidity_usd NUMERIC,
   volume_24h_usd NUMERIC,
   txns_24h INTEGER,
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  coingecko_id TEXT,
+  chain TEXT,
+  network TEXT,
+  contract_address TEXT,
+  source TEXT
 );
 
 -- Whale Alerts: Detected whale transfer events
@@ -211,7 +216,9 @@ CREATE TABLE IF NOT EXISTS whale_events (
   fee NUMERIC,
   posted_to_twitter BOOLEAN DEFAULT FALSE,
   tweet_id TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  chain TEXT,
+  network TEXT
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_whale_events_tx_hash ON whale_events(tx_hash);
