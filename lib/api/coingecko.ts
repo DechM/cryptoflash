@@ -30,19 +30,15 @@ const PUBLIC_BASE_URL = 'https://api.coingecko.com/api/v3'
 function createClient(): AxiosInstance {
   const rawKey = process.env.COINGECKO_API_KEY
   const apiKey = rawKey?.trim()
-  const lowerKey = apiKey?.toLowerCase()
+  const usePro =
+    process.env.COINGECKO_USE_PRO?.toLowerCase() === 'true' ||
+    process.env.COINGECKO_PLAN?.toLowerCase() === 'pro'
 
-  let baseURL = PUBLIC_BASE_URL
+  const baseURL = usePro ? PRO_BASE_URL : PUBLIC_BASE_URL
   const headers: Record<string, string> = {}
 
   if (apiKey) {
-    if (lowerKey === 'demo' || lowerKey === 'demokey') {
-      baseURL = PUBLIC_BASE_URL
-      headers['x-cg-demo-api-key'] = apiKey
-    } else {
-      baseURL = PRO_BASE_URL
-      headers['x-cg-pro-api-key'] = apiKey
-    }
+    headers[usePro ? 'x-cg-pro-api-key' : 'x-cg-demo-api-key'] = apiKey
   }
 
   return axios.create({
