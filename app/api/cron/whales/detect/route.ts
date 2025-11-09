@@ -17,7 +17,7 @@ import { recordCronFailure, recordCronSuccess } from '@/lib/cron'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const DEFAULT_TOKEN_LIMIT = Number(process.env.WHALE_ALERT_TOKEN_LIMIT || '12')
+const DEFAULT_TOKEN_LIMIT = Number(process.env.WHALE_ALERT_TOKEN_LIMIT || '10')
 const PER_TOKEN_DELAY_MS = Number(process.env.WHALE_ALERT_DELAY_MS || '1500')
 
 export async function GET(request: NextRequest) {

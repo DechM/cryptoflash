@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const limit = Number(process.env.WHALE_ALERT_TOKEN_LIMIT || '10')
+    const limit = Number(process.env.WHALE_ALERT_TOKEN_LIMIT || '12')
     const trackedAssets = await listTrackedAssets(limit)
 
     if (!trackedAssets.length) {
