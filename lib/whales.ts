@@ -83,12 +83,7 @@ export async function fetchTrendingSolanaPairs(limit = 60): Promise<TopTokenReco
     try {
       const response = await axios.get(`${BIRDEYE_BASE_URL}/defi/tokenlist`, {
         params: {
-          chain: 'solana',
-          sort_by: 'volume24hUSD',
-          order: 'desc',
-          page: 1,
-          offset: 0,
-          limit
+          chain: 'solana'
         },
         headers: {
           'X-API-KEY': BIRDEYE_API_KEY
@@ -103,9 +98,11 @@ export async function fetchTrendingSolanaPairs(limit = 60): Promise<TopTokenReco
         price?: number | null
         liquidity?: number | null
         volume24hUSD?: number | null
-      }> = response.data?.data?.items ?? []
+      }> = response.data?.data?.tokens ?? []
 
-      for (const token of birdeyeTokens) {
+      const sortedTokens = [...birdeyeTokens].sort((a, b) => (b?.volume24hUSD ?? 0) - (a?.volume24hUSD ?? 0))
+
+      for (const token of sortedTokens) {
         if (!token?.address) continue
         const address = sanitizeSolanaAddress(token.address)
         if (!address) continue

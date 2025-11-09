@@ -55,6 +55,10 @@ export function sanitizeSolanaAddress(address?: string | null): string | null {
     }
 
     if (isValidSolanaAddress(candidate)) {
+      const hasForbidden = COMMON_PATTERNS.some(pattern => lower.includes(pattern))
+      if (hasForbidden) {
+        continue
+      }
       return candidate
     }
   }
