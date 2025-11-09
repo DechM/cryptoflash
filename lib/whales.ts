@@ -181,58 +181,85 @@ export async function listTrackedAssets(limit = 10): Promise<TrackedAsset[]> {
   const assets: TrackedAsset[] = []
   const seenPrimaryKeys = new Set<string>()
 
-  for (const coin of coins) {
+  for (let index = 0; index < coins.length && assets.length < limit; index++) {
+    const coin = coins[index]
+
     if (SKIP_COINS.has(coin.id)) {
       continue
     }
 
-    try {
-      const enriched = await enrichCoinWithPlatform(coin)
-      if (!enriched) continue
-      const { network, contract, assetType } = enriched
-      const tokenAddress = toPrimaryKey(network.key, contract, assetType)
+    let attempt = 0
+    let handled = false
 
-      if (seenPrimaryKeys.has(tokenAddress)) {
-        continue
-      }
-      seenPrimaryKeys.add(tokenAddress)
+    while (attempt < 3 && !handled) {
+      try {
+        const enriched = await enrichCoinWithPlatform(coin)
+        if (!enriched) {
+          handled = true
+          break
+        }
+        const { network, contract, assetType } = enriched
+        const tokenAddress = toPrimaryKey(network.key, contract, assetType)
 
-      assets.push({
-        token_address: tokenAddress,
-        token_symbol: coin.symbol ? coin.symbol.toUpperCase() : null,
-        token_name: coin.name ?? null,
-        price_usd: coin.current_price ?? null,
-        liquidity_usd: coin.market_cap ?? null,
-        volume_24h_usd: coin.total_volume ?? null,
-        txns_24h: null,
-        updated_at: new Date().toISOString(),
-        coingecko_id: coin.id,
-        chain: network.displayName,
-        network: network.key,
-        contract_address: contract,
-        source: 'coingecko',
-        explorer_url: network.explorerTxUrl,
-        network_config: network,
-        asset_type: assetType
-      })
+        if (seenPrimaryKeys.has(tokenAddress)) {
+          handled = true
+          break
+        }
+        seenPrimaryKeys.add(tokenAddress)
 
-      if (assets.length >= limit) break
-    } catch (error) {
-      if (
-        typeof error === 'object' &&
-        error !== null &&
-        'response' in error &&
-        (error as { response?: { status?: number } }).response?.status === 429
-      ) {
-        console.warn('[Whale][CoinGecko] Rate limited while enriching coin', coin.id)
-        break
-      } else if (error instanceof BitqueryError) {
-        console.warn('[Whale][CoinGecko] Failed to enrich coin', coin.id, error.message)
-      } else {
-        console.warn('[Whale][CoinGecko] Failed to enrich coin', coin.id, error)
+        assets.push({
+          token_address: tokenAddress,
+          token_symbol: coin.symbol ? coin.symbol.toUpperCase() : null,
+          token_name: coin.name ?? null,
+          price_usd: coin.current_price ?? null,
+          liquidity_usd: coin.market_cap ?? null,
+          volume_24h_usd: coin.total_volume ?? null,
+          txns_24h: null,
+          updated_at: new Date().toISOString(),
+          coingecko_id: coin.id,
+          chain: network.displayName,
+          network: network.key,
+          contract_address: contract,
+          source: 'coingecko',
+          explorer_url: network.explorerTxUrl,
+          network_config: network,
+          asset_type: assetType
+        })
+
+        handled = true
+      } catch (error) {
+        const status =
+          typeof error === 'object' &&
+          error !== null &&
+          'response' in error &&
+          (error as { response?: { status?: number } }).response?.status
+
+        if (status === 429) {
+          attempt++
+          const retryAfterRaw =
+            typeof error === 'object' &&
+            error !== null &&
+            'response' in error &&
+            (error as { response?: { headers?: Record<string, string> } }).response?.headers?.['retry-after']
+          const retrySeconds = retryAfterRaw ? Number(retryAfterRaw) : 1
+          const waitMs = Math.min(Math.max((retrySeconds || 1) * 1000, 1000), 5000)
+          console.warn(`[Whale][CoinGecko] Rate limited on ${coin.id}. Retry ${attempt}/3 after ${waitMs}ms`)
+          await delay(waitMs)
+          if (attempt >= 3) {
+            console.warn('[Whale][CoinGecko] Giving up on', coin.id, 'after repeated rate limits')
+            handled = true
+          }
+          continue
+        } else if (error instanceof BitqueryError) {
+          console.warn('[Whale][CoinGecko] Failed to enrich coin', coin.id, error.message)
+        } else {
+          console.warn('[Whale][CoinGecko] Failed to enrich coin', coin.id, error)
+        }
+        handled = true
       }
     }
-    await delay(800)
+
+    await delay(700)
   }
 
   return assets
