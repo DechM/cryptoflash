@@ -266,39 +266,29 @@ export async function listTrackedAssets(limit = 10): Promise<TrackedAsset[]> {
 }
 
 const EVM_WHALE_QUERY = /* GraphQL */ `
-  query WhaleDexTrades($network: EvmNetwork!, $contract: String!, $since: ISO8601DateTime!, $limit: Int!) {
+  query WhaleDexTrades($network: EvmNetworkInput!, $contract: String!, $since: ISO8601DateTime!, $limit: Int!) {
     evm(network: $network) {
       dexTrades(
-        limit: { count: $limit }
-        orderBy: { descending: Block_Time }
-        where: {
-          Block: { Time: { since: $since } }
-          Trade: { BaseCurrency: { SmartContract: { is: $contract } } }
-        }
+        options: { limit: $limit, desc: "blockNumber" }
+        dateFilter: { since: $since }
+        smartContractAddress: { is: $contract }
       ) {
-        Block {
-          Time
-        }
-        Trade {
-          BaseAmount
-          QuoteAmount
-          PriceInUSD
-          QuoteAmountInUSD
-          Side {
-            Type
-          }
-          Buyer {
-            Address
-          }
-          Seller {
-            Address
-          }
-          BaseCurrency {
-            Symbol
+        blockNumber
+        blockTime
+        baseAmount
+        priceInUsd
+        quoteAmount
+        quoteAmountInUsd
+        transactionHash
+        maker
+        taker
+        smartContract {
+          currency {
+            symbol
           }
         }
-        Transaction {
-          Hash
+        trade {
+          side
         }
       }
     }
@@ -306,39 +296,28 @@ const EVM_WHALE_QUERY = /* GraphQL */ `
 `
 
 const SOLANA_WHALE_QUERY = /* GraphQL */ `
-  query SolanaDexTrades($mint: String!, $since: ISO8601DateTime!, $limit: Int!) {
+  query SolanaDexTrades($since: ISO8601DateTime!, $mint: String!, $limit: Int!) {
     solana(network: solana) {
       dexTrades(
-        limit: { count: $limit }
-        orderBy: { descending: Block_Time }
-        where: {
-          Block: { Time: { since: $since } }
-          Trade: { BaseCurrency: { MintAddress: { is: $mint } } }
-        }
+        options: { limit: $limit, desc: "block_time" }
+        date: { since: $since }
+        baseCurrency: { mintAddress: { is: $mint } }
       ) {
-        Block {
-          Time
+        block_time
+        baseAmount
+        quoteAmount
+        quoteAmountInUsd
+        priceInUsd
+        buyer
+        seller
+        transaction {
+          signature
         }
-        Trade {
-          BaseAmount
-          QuoteAmount
-          PriceInUSD
-          QuoteAmountInUSD
-          Side {
-            Type
-          }
-          Buyer {
-            Address
-          }
-          Seller {
-            Address
-          }
-          BaseCurrency {
-            Symbol
-          }
+        baseCurrency {
+          symbol
         }
-        Transaction {
-          Signature
+        trade {
+          side
         }
       }
     }
@@ -346,86 +325,83 @@ const SOLANA_WHALE_QUERY = /* GraphQL */ `
 `
 
 interface EvmDexTradeRow {
-  Block?: {
-    Time?: string
-  }
-  Trade?: {
-    BaseAmount?: number
-    QuoteAmount?: number
-    PriceInUSD?: number
-    QuoteAmountInUSD?: number
-    Side?: {
-      Type?: string
+  blockNumber?: number
+  blockTime?: string
+  baseAmount?: number
+  quoteAmount?: number
+  priceInUsd?: number
+  quoteAmountInUsd?: number
+  transactionHash?: string
+  maker?: string | null
+  taker?: string | null
+  smartContract?: {
+    currency?: {
+      symbol?: string | null
     }
-    Buyer?: { Address?: string }
-    Seller?: { Address?: string }
-    BaseCurrency?: { Symbol?: string }
   }
-  Transaction?: {
-    Hash?: string
+  trade?: {
+    side?: string | null
   }
 }
 
 interface SolanaDexTradeRow {
-  Block?: {
-    Time?: string
+  block_time?: string
+  baseAmount?: number
+  quoteAmount?: number
+  quoteAmountInUsd?: number
+  priceInUsd?: number
+  buyer?: string | null
+  seller?: string | null
+  transaction?: {
+    signature?: string | null
   }
-  Trade?: {
-    BaseAmount?: number
-    QuoteAmount?: number
-    PriceInUSD?: number
-    QuoteAmountInUSD?: number
-    Side?: {
-      Type?: string
-    }
-    Buyer?: { Address?: string }
-    Seller?: { Address?: string }
-    BaseCurrency?: { Symbol?: string }
+  baseCurrency?: {
+    symbol?: string | null
   }
-  Transaction?: {
-    Signature?: string
+  trade?: {
+    side?: string | null
   }
 }
 
 function mapEvmRow(row: EvmDexTradeRow | null | undefined): BitqueryTransferRow | null {
   if (!row) return null
-  const side = row.Trade?.Side?.Type?.toLowerCase()
+  const side = row.trade?.side?.toLowerCase()
   if (side !== 'buy' && side !== 'sell') return null
 
-  const amountUsd = Number(row.Trade?.QuoteAmountInUSD ?? row.Trade?.BaseAmount ?? 0)
+  const amountUsd = Number(row.quoteAmountInUsd ?? row.quoteAmount ?? row.baseAmount ?? 0)
   if (!Number.isFinite(amountUsd)) return null
 
   return {
     amountUsdt: amountUsd,
-    baseAmount: Number(row.Trade?.BaseAmount ?? 0),
-    baseSymbol: row.Trade?.BaseCurrency?.Symbol ?? null,
-    taker: row.Trade?.Buyer?.Address ?? null,
-    maker: row.Trade?.Seller?.Address ?? null,
+    baseAmount: Number(row.baseAmount ?? 0),
+    baseSymbol: row.smartContract?.currency?.symbol ?? null,
+    taker: row.taker ?? null,
+    maker: row.maker ?? null,
     side,
-    txHash: row.Transaction?.Hash ?? '',
-    blockTime: row.Block?.Time ?? new Date().toISOString(),
-    priceUsd: typeof row.Trade?.PriceInUSD === 'number' ? row.Trade.PriceInUSD : null
+    txHash: row.transactionHash ?? '',
+    blockTime: row.blockTime ?? new Date().toISOString(),
+    priceUsd: typeof row.priceInUsd === 'number' ? row.priceInUsd : null
   }
 }
 
 function mapSolanaRow(row: SolanaDexTradeRow | null | undefined): BitqueryTransferRow | null {
   if (!row) return null
-  const side = row.Trade?.Side?.Type?.toLowerCase()
+  const side = row.trade?.side?.toLowerCase()
   if (side !== 'buy' && side !== 'sell') return null
 
-  const amountUsd = Number(row.Trade?.QuoteAmountInUSD ?? row.Trade?.BaseAmount ?? 0)
+  const amountUsd = Number(row.quoteAmountInUsd ?? row.quoteAmount ?? row.baseAmount ?? 0)
   if (!Number.isFinite(amountUsd)) return null
 
   return {
     amountUsdt: amountUsd,
-    baseAmount: Number(row.Trade?.BaseAmount ?? 0),
-    baseSymbol: row.Trade?.BaseCurrency?.Symbol ?? null,
-    taker: row.Trade?.Buyer?.Address ?? null,
-    maker: row.Trade?.Seller?.Address ?? null,
+    baseAmount: Number(row.baseAmount ?? 0),
+    baseSymbol: row.baseCurrency?.symbol ?? null,
+    taker: row.buyer ?? null,
+    maker: row.seller ?? null,
     side,
-    txHash: row.Transaction?.Signature ?? '',
-    blockTime: row.Block?.Time ?? new Date().toISOString(),
-    priceUsd: typeof row.Trade?.PriceInUSD === 'number' ? row.Trade.PriceInUSD : null
+    txHash: row.transaction?.signature ?? '',
+    blockTime: row.block_time ?? new Date().toISOString(),
+    priceUsd: typeof row.priceInUsd === 'number' ? row.priceInUsd : null
   }
 }
 
