@@ -173,11 +173,11 @@ export async function listTrackedAssets(limit = 10): Promise<TrackedAsset[]> {
 }
 
 const EVM_WHALE_QUERY = /* GraphQL */ `
-  query WhaleDexTrades($network: EVMNetwork!, $contract: String!, $since: DateTime!, $limit: Int!) {
-    EVM(network: $network, dataset: combined) {
-      dexTrades: DEXTrades(
+  query WhaleDexTrades($network: EvmNetwork!, $contract: String!, $since: ISO8601DateTime!, $limit: Int!) {
+    evm(network: $network) {
+      dexTrades(
         limit: { count: $limit }
-        order: { descendingBy: Block_Time }
+        orderBy: { descending: Block_Time }
         where: {
           Block: { Time: { since: $since } }
           Trade: { BaseCurrency: { SmartContract: { is: $contract } } }
@@ -188,9 +188,12 @@ const EVM_WHALE_QUERY = /* GraphQL */ `
         }
         Trade {
           BaseAmount
-          BaseAmountInUSD
+          QuoteAmount
           PriceInUSD
-          Side
+          QuoteAmountInUSD
+          Side {
+            Type
+          }
           Buyer {
             Address
           }
@@ -210,11 +213,11 @@ const EVM_WHALE_QUERY = /* GraphQL */ `
 `
 
 const SOLANA_WHALE_QUERY = /* GraphQL */ `
-  query SolanaDexTrades($mint: String!, $since: DateTime!, $limit: Int!) {
-    Solana(dataset: combined) {
-      dexTrades: DEXTrades(
+  query SolanaDexTrades($mint: String!, $since: ISO8601DateTime!, $limit: Int!) {
+    solana(network: solana) {
+      dexTrades(
         limit: { count: $limit }
-        order: { descendingBy: Block_Time }
+        orderBy: { descending: Block_Time }
         where: {
           Block: { Time: { since: $since } }
           Trade: { BaseCurrency: { MintAddress: { is: $mint } } }
@@ -225,15 +228,18 @@ const SOLANA_WHALE_QUERY = /* GraphQL */ `
         }
         Trade {
           BaseAmount
-          BaseAmountInUSD
+          QuoteAmount
           PriceInUSD
+          QuoteAmountInUSD
+          Side {
+            Type
+          }
           Buyer {
             Address
           }
           Seller {
             Address
           }
-          Side
           BaseCurrency {
             Symbol
           }
@@ -246,31 +252,54 @@ const SOLANA_WHALE_QUERY = /* GraphQL */ `
   }
 `
 
-interface BitqueryDexTradeRow {
+interface EvmDexTradeRow {
   Block?: {
     Time?: string
   }
   Trade?: {
     BaseAmount?: number
-    BaseAmountInUSD?: number
+    QuoteAmount?: number
     PriceInUSD?: number
-    Side?: string
+    QuoteAmountInUSD?: number
+    Side?: {
+      Type?: string
+    }
     Buyer?: { Address?: string }
     Seller?: { Address?: string }
     BaseCurrency?: { Symbol?: string }
   }
   Transaction?: {
     Hash?: string
+  }
+}
+
+interface SolanaDexTradeRow {
+  Block?: {
+    Time?: string
+  }
+  Trade?: {
+    BaseAmount?: number
+    QuoteAmount?: number
+    PriceInUSD?: number
+    QuoteAmountInUSD?: number
+    Side?: {
+      Type?: string
+    }
+    Buyer?: { Address?: string }
+    Seller?: { Address?: string }
+    BaseCurrency?: { Symbol?: string }
+  }
+  Transaction?: {
     Signature?: string
   }
 }
 
-function mapEvmRow(row: BitqueryDexTradeRow | null | undefined): BitqueryTransferRow | null {
+function mapEvmRow(row: EvmDexTradeRow | null | undefined): BitqueryTransferRow | null {
   if (!row) return null
-  const side = row.Trade?.Side?.toLowerCase()
+  const side = row.Trade?.Side?.Type?.toLowerCase()
   if (side !== 'buy' && side !== 'sell') return null
 
-  const amountUsd = Number(row.Trade?.BaseAmountInUSD ?? 0)
+  const amountUsd = Number(row.Trade?.QuoteAmountInUSD ?? row.Trade?.BaseAmount ?? 0)
   if (!Number.isFinite(amountUsd)) return null
 
   return {
@@ -286,12 +315,12 @@ function mapEvmRow(row: BitqueryDexTradeRow | null | undefined): BitqueryTransfe
   }
 }
 
-function mapSolanaRow(row: BitqueryDexTradeRow | null | undefined): BitqueryTransferRow | null {
+function mapSolanaRow(row: SolanaDexTradeRow | null | undefined): BitqueryTransferRow | null {
   if (!row) return null
-  const side = row.Trade?.Side?.toLowerCase()
+  const side = row.Trade?.Side?.Type?.toLowerCase()
   if (side !== 'buy' && side !== 'sell') return null
 
-  const amountUsd = Number(row.Trade?.BaseAmountInUSD ?? 0)
+  const amountUsd = Number(row.Trade?.QuoteAmountInUSD ?? row.Trade?.BaseAmount ?? 0)
   if (!Number.isFinite(amountUsd)) return null
 
   return {
@@ -324,21 +353,21 @@ export async function detectWhaleEventsForAsset(
 
   if (asset.network_config.kind === 'evm') {
     if (!asset.contract_address) return []
-    const data = await bitqueryRequest<{ EVM: { dexTrades?: BitqueryDexTradeRow[] } }>(EVM_WHALE_QUERY, {
+    const data = await bitqueryRequest<{ evm: { dexTrades?: EvmDexTradeRow[] } }>(EVM_WHALE_QUERY, {
       network: asset.network_config.bitqueryNetwork,
       contract: asset.contract_address,
       since,
       limit
     })
-    rows = (data?.EVM?.dexTrades ?? []).map(mapEvmRow).filter(Boolean) as BitqueryTransferRow[]
+    rows = (data?.evm?.dexTrades ?? []).map(mapEvmRow).filter(Boolean) as BitqueryTransferRow[]
   } else if (asset.network_config.kind === 'solana') {
     const mint = asset.contract_address ?? 'So11111111111111111111111111111111111111112'
-    const data = await bitqueryRequest<{ Solana: { dexTrades?: BitqueryDexTradeRow[] } }>(SOLANA_WHALE_QUERY, {
+    const data = await bitqueryRequest<{ solana: { dexTrades?: SolanaDexTradeRow[] } }>(SOLANA_WHALE_QUERY, {
       mint,
       since,
       limit
     })
-    rows = (data?.Solana?.dexTrades ?? []).map(mapSolanaRow).filter(Boolean) as BitqueryTransferRow[]
+    rows = (data?.solana?.dexTrades ?? []).map(mapSolanaRow).filter(Boolean) as BitqueryTransferRow[]
   }
 
   return rows
