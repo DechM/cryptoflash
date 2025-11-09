@@ -28,8 +28,9 @@ const PRO_BASE_URL = 'https://pro-api.coingecko.com/api/v3'
 const PUBLIC_BASE_URL = 'https://api.coingecko.com/api/v3'
 
 function createClient(): AxiosInstance {
-  const apiKey = process.env.COINGECKO_API_KEY
-  const baseURL = apiKey ? PRO_BASE_URL : PUBLIC_BASE_URL
+  const apiKey = process.env.COINGECKO_API_KEY?.trim()
+  const isDemoKey = apiKey?.toLowerCase() === 'demo'
+  const baseURL = apiKey && !isDemoKey ? PRO_BASE_URL : PUBLIC_BASE_URL
 
   return axios.create({
     baseURL,
