@@ -82,6 +82,8 @@ const MANUAL_OVERRIDES: Record<
 
 const SKIP_COINS = new Set<string>(['bitcoin', 'internet-computer'])
 
+const SUPPORTED_NETWORKS = new Set<keyof typeof NETWORKS>(Object.keys(NETWORKS) as Array<keyof typeof NETWORKS>)
+
 function toPrimaryKey(networkKey: string, contract: string | null, assetType: 'contract' | 'native'): string {
   if (contract) {
     return `${networkKey}:${contract.toLowerCase()}`
@@ -171,12 +173,15 @@ async function enrichCoinWithPlatform(
 }
 
 export async function listTrackedAssets(limit = 10): Promise<TrackedAsset[]> {
-  const coins = await fetchTopCoins(limit * 2)
+  const MAX_ATTEMPTS = limit * 2
+  const coins = await fetchTopCoins(MAX_ATTEMPTS * 2)
   const assets: TrackedAsset[] = []
   const seenPrimaryKeys = new Set<string>()
 
-  for (let index = 0; index < coins.length && assets.length < limit; index++) {
-    const coin = coins[index]
+  for (const coin of coins) {
+    if (assets.length >= limit) {
+      break
+    }
 
     if (SKIP_COINS.has(coin.id)) {
       continue
@@ -193,6 +198,12 @@ export async function listTrackedAssets(limit = 10): Promise<TrackedAsset[]> {
           break
         }
         const { network, contract, assetType } = enriched
+
+        if (!SUPPORTED_NETWORKS.has(network.key as keyof typeof NETWORKS)) {
+          handled = true
+          break
+        }
+
         const tokenAddress = toPrimaryKey(network.key, contract, assetType)
 
         if (seenPrimaryKeys.has(tokenAddress)) {
