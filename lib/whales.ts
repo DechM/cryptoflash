@@ -177,7 +177,7 @@ async function enrichCoinWithPlatform(
 }
 
 export async function listTrackedAssets(limit = 10): Promise<TrackedAsset[]> {
-  const coins = await fetchTopCoins(limit * 3)
+  const coins = await fetchTopCoins(limit * 2)
   const assets: TrackedAsset[] = []
   const seenPrimaryKeys = new Set<string>()
 
@@ -218,14 +218,21 @@ export async function listTrackedAssets(limit = 10): Promise<TrackedAsset[]> {
 
       if (assets.length >= limit) break
     } catch (error) {
-      if (error instanceof BitqueryError) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'response' in error &&
+        (error as { response?: { status?: number } }).response?.status === 429
+      ) {
+        console.warn('[Whale][CoinGecko] Rate limited while enriching coin', coin.id)
+        break
+      } else if (error instanceof BitqueryError) {
         console.warn('[Whale][CoinGecko] Failed to enrich coin', coin.id, error.message)
       } else {
         console.warn('[Whale][CoinGecko] Failed to enrich coin', coin.id, error)
       }
     }
-    // Light delay to keep CoinGecko free tier happy
-    await delay(250)
+    await delay(800)
   }
 
   return assets
