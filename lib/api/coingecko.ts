@@ -47,19 +47,28 @@ const client = createClient()
 export async function fetchTopCoins(limit = 20): Promise<CoinGeckoMarketCoin[]> {
   const perPage = Math.min(Math.max(limit, 1), 250)
 
-  const response = await client.get<CoinGeckoMarketCoin[]>('/coins/markets', {
-    params: {
-      vs_currency: 'usd',
-      order: 'market_cap_desc',
-      per_page: perPage,
-      page: 1,
-      sparkline: false,
-      price_change_percentage: '1h,24h',
-      locale: 'en'
-    }
-  })
+  try {
+    const response = await client.get<CoinGeckoMarketCoin[]>('/coins/markets', {
+      params: {
+        vs_currency: 'usd',
+        order: 'market_cap_desc',
+        per_page: perPage,
+        page: 1,
+        sparkline: false,
+        price_change_percentage: '1h,24h',
+        locale: 'en'
+      }
+    })
 
-  return response.data ?? []
+    return response.data ?? []
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status
+      const data = typeof error.response?.data === 'string' ? error.response?.data : JSON.stringify(error.response?.data)
+      throw new Error(`[CoinGecko] Request failed with status ${status}: ${data}`)
+    }
+    throw error
+  }
 }
 
 export async function fetchCoinDetails(id: string): Promise<CoinGeckoCoinDetails | null> {
