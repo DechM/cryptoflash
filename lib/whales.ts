@@ -273,6 +273,7 @@ const EVM_WHALE_QUERY = /* GraphQL */ `
         baseCurrency: [$currency]
       ) {
         block {
+          height
           timestamp {
             iso8601
           }
