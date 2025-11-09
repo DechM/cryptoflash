@@ -72,7 +72,7 @@ export interface WhaleEvent {
   token_address: string
   token_symbol?: string | null
   token_name?: string | null
-  event_type: 'transfer' | 'mint' | 'burn' | 'exchange'
+  event_type: 'transfer' | 'mint' | 'burn' | 'exchange' | 'buy' | 'sell'
   amount_tokens?: number | null
   amount_usd?: number | null
   price_usd?: number | null
