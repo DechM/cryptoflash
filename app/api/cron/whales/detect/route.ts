@@ -140,10 +140,10 @@ export async function GET(request: NextRequest) {
           for (const item of payload) {
             try {
             await sendWhaleEventToDiscord({
+              ...item,
               id: crypto.randomUUID(),
-              created_at: new Date().toISOString(),
-              posted_to_twitter: false,
-              ...item
+              created_at: item.created_at ?? new Date().toISOString(),
+              posted_to_twitter: false
             })
             } catch (discordError) {
               console.warn('[Whale Detect] Failed to post to Discord:', discordError)
