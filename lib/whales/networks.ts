@@ -1,4 +1,4 @@
-export type NetworkKind = 'solana' | 'evm'
+export type NetworkKind = 'evm'
 
 export interface NetworkConfig {
   key: string
@@ -11,17 +11,10 @@ export interface NetworkConfig {
 const makeExplorer = (base: string) => (hash: string) => `${base}${hash}`
 
 export const NETWORKS: Record<string, NetworkConfig> = {
-  solana: {
-    key: 'solana',
-    kind: 'solana',
-    bitqueryNetwork: 'mainnet',
-    explorerTxUrl: makeExplorer('https://solscan.io/tx/'),
-    displayName: 'Solana'
-  },
   ethereum: {
     key: 'ethereum',
     kind: 'evm',
-    bitqueryNetwork: 'eth',
+    bitqueryNetwork: 'ethereum',
     explorerTxUrl: makeExplorer('https://etherscan.io/tx/'),
     displayName: 'Ethereum'
   },
@@ -35,30 +28,9 @@ export const NETWORKS: Record<string, NetworkConfig> = {
   polygon: {
     key: 'polygon',
     kind: 'evm',
-    bitqueryNetwork: 'polygon',
+    bitqueryNetwork: 'matic',
     explorerTxUrl: makeExplorer('https://polygonscan.com/tx/'),
     displayName: 'Polygon'
-  },
-  base: {
-    key: 'base',
-    kind: 'evm',
-    bitqueryNetwork: 'base',
-    explorerTxUrl: makeExplorer('https://basescan.org/tx/'),
-    displayName: 'Base'
-  },
-  arbitrum: {
-    key: 'arbitrum',
-    kind: 'evm',
-    bitqueryNetwork: 'arbitrum',
-    explorerTxUrl: makeExplorer('https://arbiscan.io/tx/'),
-    displayName: 'Arbitrum'
-  },
-  optimism: {
-    key: 'optimism',
-    kind: 'evm',
-    bitqueryNetwork: 'optimism',
-    explorerTxUrl: makeExplorer('https://optimistic.etherscan.io/tx/'),
-    displayName: 'Optimism'
   },
   avalanche: {
     key: 'avalanche',
@@ -70,48 +42,31 @@ export const NETWORKS: Record<string, NetworkConfig> = {
 }
 
 export const COINGECKO_PLATFORM_TO_NETWORK: Record<string, keyof typeof NETWORKS> = {
-  solana: 'solana',
   ethereum: 'ethereum',
   'ethereum-erc20': 'ethereum',
   'binance-smart-chain': 'bsc',
   'polygon-pos': 'polygon',
-  base: 'base',
-  'arbitrum-one': 'arbitrum',
-  arbitrum: 'arbitrum',
-  'optimistic-ethereum': 'optimism',
   avalanche: 'avalanche'
 }
 
 export const DEFAULT_PLATFORM_PRIORITY: string[] = [
-  'solana',
   'ethereum',
-  'base',
-  'arbitrum-one',
-  'arbitrum',
-  'optimistic-ethereum',
   'polygon-pos',
   'binance-smart-chain',
   'avalanche'
 ]
 
 export const STABLE_PLATFORM_PRIORITY: string[] = [
-  'solana',
   'ethereum',
-  'base',
-  'arbitrum-one',
-  'optimistic-ethereum',
   'polygon-pos',
   'binance-smart-chain'
 ]
 
 export const STABLE_ALLOWED_NETWORKS: Set<keyof typeof NETWORKS> = new Set([
-  'solana',
   'ethereum',
-  'base',
-  'arbitrum',
-  'optimism',
   'polygon',
-  'bsc'
+  'bsc',
+  'avalanche'
 ])
 
 export const STABLE_COIN_IDS: Set<string> = new Set([
