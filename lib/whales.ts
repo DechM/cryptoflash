@@ -1,6 +1,14 @@
 import { fetchTopCoins, fetchCoinDetails, CoinGeckoMarketCoin } from './api/coingecko'
 import { bitqueryRequest, BitqueryError } from './api/bitquery'
-import { NETWORKS, COINGECKO_PLATFORM_TO_NETWORK, NetworkConfig } from './whales/networks'
+import {
+  NETWORKS,
+  COINGECKO_PLATFORM_TO_NETWORK,
+  NetworkConfig,
+  STABLE_COIN_IDS,
+  STABLE_PLATFORM_PRIORITY,
+  DEFAULT_PLATFORM_PRIORITY,
+  STABLE_ALLOWED_NETWORKS
+} from './whales/networks'
 import { supabaseAdmin } from './supabase'
 
 export const MIN_WHALE_ALERT_USD = Number(process.env.WHALE_ALERT_MIN_USD || '5000')
@@ -105,27 +113,73 @@ async function enrichCoinWithPlatform(
   const detail = await fetchCoinDetails(coin.id)
   const platforms = detail?.platforms ?? {}
 
-  for (const [platform, address] of Object.entries(platforms)) {
-    const networkKey = COINGECKO_PLATFORM_TO_NETWORK[platform]
-    if (!networkKey) continue
-    const network = NETWORKS[networkKey]
-    if (!network) continue
-    if (!address || address.trim().length === 0) continue
+  const isStable = STABLE_COIN_IDS.has(coin.id)
 
-    return {
-      coingecko_id: coin.id,
-      network,
-      contract: address,
-      assetType: 'contract'
-    }
+  type Candidate = {
+    platform: string
+    address: string
+    networkKey: keyof typeof NETWORKS
   }
 
-  return null
+  const candidates: Candidate[] = []
+
+  for (const [platformName, rawAddress] of Object.entries(platforms)) {
+    if (typeof rawAddress !== 'string') continue
+    const address = rawAddress.trim()
+    if (!address) continue
+
+    const normalizedPlatform = platformName.toLowerCase()
+    const networkKey = COINGECKO_PLATFORM_TO_NETWORK[normalizedPlatform]
+    if (!networkKey) continue
+    if (!NETWORKS[networkKey]) continue
+
+    candidates.push({
+      platform: normalizedPlatform,
+      address,
+      networkKey
+    })
+  }
+
+  if (!candidates.length) {
+    return null
+  }
+
+  const priorityList = isStable ? STABLE_PLATFORM_PRIORITY : DEFAULT_PLATFORM_PRIORITY
+  const priorityIndex = (platform: string) => {
+    const idx = priorityList.indexOf(platform)
+    return idx === -1 ? priorityList.length + 10 : idx
+  }
+
+  const sortedCandidates = [...candidates].sort((a, b) => priorityIndex(a.platform) - priorityIndex(b.platform))
+
+  const chosen = sortedCandidates.find(candidate => {
+    if (isStable && !STABLE_ALLOWED_NETWORKS.has(candidate.networkKey)) {
+      return false
+    }
+    return true
+  })
+
+  if (!chosen) {
+    return null
+  }
+
+  const network = NETWORKS[chosen.networkKey]
+  if (!network) {
+    return null
+  }
+
+  return {
+    coingecko_id: coin.id,
+    network,
+    contract: chosen.address,
+    assetType: 'contract'
+  }
 }
 
 export async function listTrackedAssets(limit = 10): Promise<TrackedAsset[]> {
   const coins = await fetchTopCoins(limit * 3)
   const assets: TrackedAsset[] = []
+  const seenPrimaryKeys = new Set<string>()
 
   for (const coin of coins) {
     if (SKIP_COINS.has(coin.id)) {
@@ -137,6 +191,11 @@ export async function listTrackedAssets(limit = 10): Promise<TrackedAsset[]> {
       if (!enriched) continue
       const { network, contract, assetType } = enriched
       const tokenAddress = toPrimaryKey(network.key, contract, assetType)
+
+      if (seenPrimaryKeys.has(tokenAddress)) {
+        continue
+      }
+      seenPrimaryKeys.add(tokenAddress)
 
       assets.push({
         token_address: tokenAddress,

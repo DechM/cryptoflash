@@ -72,12 +72,62 @@ export const NETWORKS: Record<string, NetworkConfig> = {
 export const COINGECKO_PLATFORM_TO_NETWORK: Record<string, keyof typeof NETWORKS> = {
   solana: 'solana',
   ethereum: 'ethereum',
+  'ethereum-erc20': 'ethereum',
   'binance-smart-chain': 'bsc',
   'polygon-pos': 'polygon',
   base: 'base',
   'arbitrum-one': 'arbitrum',
+  arbitrum: 'arbitrum',
   'optimistic-ethereum': 'optimism',
   avalanche: 'avalanche'
 }
+
+export const DEFAULT_PLATFORM_PRIORITY: string[] = [
+  'solana',
+  'ethereum',
+  'base',
+  'arbitrum-one',
+  'arbitrum',
+  'optimistic-ethereum',
+  'polygon-pos',
+  'binance-smart-chain',
+  'avalanche'
+]
+
+export const STABLE_PLATFORM_PRIORITY: string[] = [
+  'solana',
+  'ethereum',
+  'base',
+  'arbitrum-one',
+  'optimistic-ethereum',
+  'polygon-pos',
+  'binance-smart-chain'
+]
+
+export const STABLE_ALLOWED_NETWORKS: Set<keyof typeof NETWORKS> = new Set([
+  'solana',
+  'ethereum',
+  'base',
+  'arbitrum',
+  'optimism',
+  'polygon',
+  'bsc'
+])
+
+export const STABLE_COIN_IDS: Set<string> = new Set([
+  'usd-coin',
+  'usd-coin-wormhole',
+  'usd-coin-bridged',
+  'tether',
+  'tether-usdt',
+  'paypal-usd',
+  'pyusd',
+  'cashusd',
+  'usd1',
+  'usdr',
+  'uscr',
+  'dai',
+  'frax'
+])
 
 
