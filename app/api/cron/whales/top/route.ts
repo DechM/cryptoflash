@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import { supabaseAdmin, isSupabaseConfigured } from '@/lib/supabase'
-import { fetchTrendingSolanaPairs, mapPairsToTopTokens, TopTokenRecord } from '@/lib/whales'
+import { fetchTrendingSolanaPairs, TopTokenRecord } from '@/lib/whales'
 import { recordCronFailure, recordCronSuccess } from '@/lib/cron'
 import { isValidSolanaAddress, sanitizeSolanaAddress } from '@/lib/solana'
 
@@ -20,9 +20,9 @@ export async function GET(request: NextRequest) {
 
   try {
     const limit = 80
-    const pairs = await fetchTrendingSolanaPairs(limit)
+    const primaryTokens = await fetchTrendingSolanaPairs(limit)
 
-    let tokens = pairs.length ? mapPairsToTopTokens(pairs) : []
+    let tokens = primaryTokens
 
     if (!tokens.length) {
       try {
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
 
             if (mapped.length) {
               tokens = mapped
-              console.warn('[Whale Cron] Falling back to KOTH tokens due to DexScreener unavailability')
+              console.warn('[Whale Cron] Falling back to KOTH tokens due to Birdeye unavailability')
             }
           }
         } else {
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
         source: 'none',
         note: 'No token sources available'
       })
-      return NextResponse.json({ success: false, message: 'No token sources available (DexScreener + fallback failed)' })
+      return NextResponse.json({ success: false, message: 'No token sources available (Birdeye + fallback failed)' })
     }
 
     const { error } = await supabaseAdmin
@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
 
     const summary = {
       updated: tokens.length,
-      source: pairs.length ? 'dexscreener' : 'koth'
+      source: primaryTokens.length ? 'birdeye' : 'koth'
     }
     await recordCronSuccess('whales:top', summary)
     return NextResponse.json({ success: true, ...summary })

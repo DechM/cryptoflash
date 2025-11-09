@@ -176,7 +176,7 @@ CREATE TRIGGER update_user_alerts_updated_at BEFORE UPDATE ON user_alerts
 CREATE TRIGGER update_crypto_payments_updated_at BEFORE UPDATE ON crypto_payments
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- Whale Alerts: Top tokens snapshot from DexScreener
+-- Whale Alerts: Top tokens snapshot from Birdeye
 CREATE TABLE IF NOT EXISTS whale_top_tokens (
   token_address TEXT PRIMARY KEY,
   token_symbol TEXT,

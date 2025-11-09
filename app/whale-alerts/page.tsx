@@ -191,7 +191,7 @@ export default function WhaleAlertsPage() {
                 <div>
                   <h1 className="text-3xl md:text-4xl font-bold gradient-text">Whale Alerts</h1>
                   <p className="text-[#94A3B8] text-sm md:text-base">
-                    Live tracker for high-value movements across the top Solana tokens. Powered by DexScreener + Helius.
+                    Live tracker for high-value movements across the top Solana tokens. Powered by Birdeye + Helius.
                   </p>
                 </div>
                 <div className="glass-card px-4 py-3 rounded-xl text-right">
@@ -307,7 +307,7 @@ export default function WhaleAlertsPage() {
             <div className="glass-card rounded-2xl p-10 text-center">
               <TrendingUp className="h-12 w-12 mx-auto text-[#00D1FF] mb-4" />
               <h3 className="text-xl font-semibold text-white">No whale events yet</h3>
-              <p className="text-[#94A3B8] mt-2">We scan the top DexScreener tokens every 15 minutes. Check back soon!</p>
+              <p className="text-[#94A3B8] mt-2">We scan the top Birdeye tokens every 15 minutes. Check back soon!</p>
             </div>
           ) : (
             <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">

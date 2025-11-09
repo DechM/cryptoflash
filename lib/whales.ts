@@ -10,47 +10,11 @@ import {
 import { LAMPORTS_PER_SOL } from './utils'
 import { isValidSolanaAddress, sanitizeSolanaAddress } from './solana'
 
-const DEXSCREENER_SOLANA_TOKENS_URL = 'https://api.dexscreener.com/latest/dex/tokens/solana'
-const SOLANA_CHAIN_ID = 'solana'
+const BIRDEYE_API_KEY = process.env.BIRDEYE_API_KEY || ''
+const BIRDEYE_BASE_URL = 'https://public-api.birdeye.so'
 
 export const MIN_WHALE_ALERT_USD = Number(process.env.WHALE_ALERT_MIN_USD || '5000')
 export const MAX_WHALE_TRANSACTIONS = Number(process.env.WHALE_ALERT_TRANSACTIONS_LIMIT || '3')
-
-interface DexScreenerVolumeStats {
-  h24?: string | number | null
-}
-
-interface DexScreenerLiquidityStats {
-  usd?: string | number | null
-}
-
-interface DexScreenerTxnStats {
-  buys?: number | null
-  sells?: number | null
-  total?: number | null
-}
-
-interface DexScreenerPairTxns {
-  h24?: DexScreenerTxnStats | null
-}
-
-export interface DexScreenerPair {
-  pairAddress?: string | null
-  chainId?: string | null
-  baseToken?: {
-    address?: string | null
-    symbol?: string | null
-    name?: string | null
-  } | null
-  priceUsd?: string | number | null
-  liquidity?: DexScreenerLiquidityStats | null
-  volume?: DexScreenerVolumeStats | null
-  txns?: DexScreenerPairTxns | null
-}
-
-interface DexScreenerTrendingResponse {
-  pairs?: DexScreenerPair[]
-}
 
 export interface TopTokenRecord {
   token_address: string
@@ -110,58 +74,60 @@ export interface TokenTransferInsight {
 
 const KNOWN_ADDRESS_LABELS: Record<string, string> = {}
 
-export async function fetchTrendingSolanaPairs(limit = 60): Promise<DexScreenerPair[]> {
-  let pairs: DexScreenerPair[] = []
-
-  try {
-    const response = await axios.get(DEXSCREENER_SOLANA_TOKENS_URL, { timeout: 8000 })
-    if (Array.isArray(response.data?.pairs)) {
-      pairs = response.data.pairs
-    } else if (response.data) {
-      pairs = Object.values(response.data as Record<string, { pairs?: DexScreenerPair[] }>)
-        .flatMap((entry) => entry?.pairs || [])
-    }
-  } catch (error) {
-    const message = axios.isAxiosError(error) ? error.message : String(error)
-    console.error('[Whale] Failed to fetch DexScreener tokens endpoint:', message)
-    return []
-  }
-
-  const solanaPairs = pairs.filter(pair => pair.chainId?.toLowerCase() === SOLANA_CHAIN_ID)
-  return solanaPairs.slice(0, limit)
-}
-
-export function mapPairsToTopTokens(pairs: DexScreenerPair[]): TopTokenRecord[] {
+export async function fetchTrendingSolanaPairs(limit = 60): Promise<TopTokenRecord[]> {
   const tokens: TopTokenRecord[] = []
-  const seen = new Set<string>()
 
-  for (const pair of pairs) {
-    const base = pair.baseToken || {}
-    const rawAddress = (base?.address || '').trim()
-    const address = sanitizeSolanaAddress(rawAddress)
-    if (!address || seen.has(address)) {
-      continue
+  if (!BIRDEYE_API_KEY) {
+    console.warn('[Whale] BIRDEYE_API_KEY missing – skipping Birdeye trending fetch')
+  } else {
+    try {
+      const response = await axios.get(`${BIRDEYE_BASE_URL}/defi/token_trending`, {
+        params: {
+          chain: 'solana',
+          time_frame: '24h'
+        },
+        headers: {
+          'X-API-KEY': BIRDEYE_API_KEY
+        },
+        timeout: 8000
+      })
+
+      const birdeyeTokens: Array<{
+        address?: string
+        symbol?: string | null
+        name?: string | null
+        price?: number | null
+        liquidity?: number | null
+        volume24hUSD?: number | null
+      }> = response.data?.data?.tokens ?? []
+
+      for (const token of birdeyeTokens) {
+        if (!token?.address) continue
+        const address = sanitizeSolanaAddress(token.address)
+        if (!address) continue
+
+        tokens.push({
+          token_address: address,
+          token_symbol: token.symbol || null,
+          token_name: token.name || null,
+          price_usd: typeof token.price === 'number' ? token.price : null,
+          liquidity_usd: typeof token.liquidity === 'number' ? token.liquidity : null,
+          volume_24h_usd: typeof token.volume24hUSD === 'number' ? token.volume24hUSD : null,
+          txns_24h: null,
+          updated_at: new Date().toISOString()
+        })
+
+        if (tokens.length >= limit) {
+          break
+        }
+      }
+    } catch (error) {
+      const message = axios.isAxiosError(error) ? error.message : String(error)
+      console.error('[Whale] Failed to fetch Birdeye token trending:', message)
     }
-    seen.add(address)
-
-    const price = pair.priceUsd !== undefined && pair.priceUsd !== null ? Number(pair.priceUsd) : null
-    const liquidity = pair.liquidity?.usd !== undefined && pair.liquidity?.usd !== null ? Number(pair.liquidity.usd) : null
-    const volume = pair.volume?.h24 !== undefined && pair.volume?.h24 !== null ? Number(pair.volume.h24) : null
-    const txns = pair.txns?.h24?.total ?? null
-
-    tokens.push({
-      token_address: address,
-      token_symbol: base?.symbol || null,
-      token_name: base?.name || null,
-      price_usd: price && Number.isFinite(price) ? price : null,
-      liquidity_usd: liquidity && Number.isFinite(liquidity) ? liquidity : null,
-      volume_24h_usd: volume && Number.isFinite(volume) ? volume : null,
-      txns_24h: txns ?? null,
-      updated_at: new Date().toISOString()
-    })
   }
 
-  return tokens
+  return tokens.slice(0, limit)
 }
 
 function parseUiAmount(value?: UiTokenAmount | null): number {

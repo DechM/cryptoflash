@@ -213,7 +213,7 @@
 - ✅ **Niche dominance** - Can own the "KOTH tracker" category
 
 **Similar Tools (Not Direct Competitors):**
-- **DexScreener** - General token tracking (not KOTH-specific)
+- **Birdeye** - General token tracking (not KOTH-specific)
 - **Birdeye** - Portfolio tracking (not KOTH alerts)
 - **Pump.fun** - Launchpad (not tracking tool)
 
