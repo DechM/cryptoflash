@@ -81,10 +81,14 @@ export async function fetchTrendingSolanaPairs(limit = 60): Promise<TopTokenReco
     console.warn('[Whale] BIRDEYE_API_KEY missing – skipping Birdeye trending fetch')
   } else {
     try {
-      const response = await axios.get(`${BIRDEYE_BASE_URL}/defi/token_trending`, {
+      const response = await axios.get(`${BIRDEYE_BASE_URL}/defi/tokenlist`, {
         params: {
           chain: 'solana',
-          time_frame: '24h'
+          sort_by: 'volume24hUSD',
+          order: 'desc',
+          page: 1,
+          offset: 0,
+          limit
         },
         headers: {
           'X-API-KEY': BIRDEYE_API_KEY
@@ -99,7 +103,7 @@ export async function fetchTrendingSolanaPairs(limit = 60): Promise<TopTokenReco
         price?: number | null
         liquidity?: number | null
         volume24hUSD?: number | null
-      }> = response.data?.data?.tokens ?? []
+      }> = response.data?.data?.items ?? []
 
       for (const token of birdeyeTokens) {
         if (!token?.address) continue
@@ -123,7 +127,7 @@ export async function fetchTrendingSolanaPairs(limit = 60): Promise<TopTokenReco
       }
     } catch (error) {
       const message = axios.isAxiosError(error) ? error.message : String(error)
-      console.error('[Whale] Failed to fetch Birdeye token trending:', message)
+      console.error('[Whale] Failed to fetch Birdeye token list:', message)
     }
   }
 
