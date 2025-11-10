@@ -24,6 +24,43 @@ interface TwitterPostResponse {
   text: string
 }
 
+const WHALE_TWEET_HOOKS = [
+  '🚨 Whale detected on-chain 🐋',
+  '🐋 Massive crypto transfer spotted',
+  '🧠 Smart money just moved again',
+  '💰 Big wallet activity incoming',
+  '⚡ Whale radar pinged live'
+] as const
+
+const KOTH_TWEET_HOOKS: Array<(token: TwitterToken) => string> = [
+  token => `⚔️ $${formatTokenTag(token)} is storming the KOTH summit`,
+  token => `🚀 KOTH radar pinged: $${formatTokenTag(token)} sprinting up the curve`,
+  token => `🔥 Curve momentum popping for $${formatTokenTag(token)}`,
+  token => `👀 Sniper watch: $${formatTokenTag(token)} closing in on the crown`,
+  token => `⚡ Early signal: $${formatTokenTag(token)} heating up the bonding curve`
+]
+
+function pickRandom<T>(items: readonly T[]): T {
+  if (!items.length) {
+    throw new Error('Cannot pick a random item from an empty array')
+  }
+  const index = Math.floor(Math.random() * items.length)
+  return items[index] ?? items[0]
+}
+
+function formatTokenTag(token: TwitterToken): string {
+  if (token.symbol) {
+    return token.symbol.toUpperCase()
+  }
+  if (token.name) {
+    return token.name
+  }
+  if (token.address) {
+    return shortAddress(token.address, 4)
+  }
+  return 'TOKEN'
+}
+
 
 function shortAddress(address?: string | null, chars: number = 4) {
   if (!address) return 'Unknown'
@@ -67,7 +104,9 @@ export function formatWhaleTweet(event: WhaleEvent): string {
   const siteLink = 'cryptoflash.app/whale-alerts'
   const hashtags = '#Solana #WhaleAlert #CryptoFlash'
 
-  return `🐳 Whale Alert!
+  const hook = pickRandom(WHALE_TWEET_HOOKS)
+
+  return `${hook}
 
 ${headline}
 💰 ${amountLine}
@@ -101,7 +140,11 @@ export function formatTwitterPost(token: TwitterToken): string {
     secondaryLine = `💵 Price: $${token.priceUsd.toFixed(6)}`
   }
 
+  const hook = pickRandom(KOTH_TWEET_HOOKS)(token)
+
   const lines = [
+    hook,
+    '',
     `$${token.symbol} // KOTH RACE ⚔️`,
     '',
     'Progress surges. Whales circling. Score ticking up.',
