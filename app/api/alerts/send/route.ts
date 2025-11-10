@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getLimit, getUserPlan } from '@/lib/plan'
-import { sendTelegramMessage, formatKOTHAlert } from '@/lib/api/telegram'
+import { sendKothAlertToDiscord } from '@/lib/discord'
 import { recordCronFailure, recordCronSuccess } from '@/lib/cron'
 
 async function runAlertsJob() {
@@ -42,6 +42,26 @@ async function runAlertsJob() {
     }
 
     const sentAlerts: string[] = []
+    const tokenWatchers = new Map<
+      string,
+      {
+        token: any
+        watchers: Array<{
+          alert: (typeof alerts)[number]
+          userId: string
+          threshold: number
+          alertType: string
+          displayName: string
+        }>
+      }
+    >()
+
+    const userCache = new Map<
+      string,
+      {
+        email: string | null
+      }
+    >()
 
     // Check each alert against tokens
     for (const alert of alerts) {
@@ -81,50 +101,76 @@ async function runAlertsJob() {
         }
       })
 
+      const thresholdLabel = `${alert.alert_type === 'progress' ? 'Progress' : 'Score'} alert >= ${threshold}`
+
       // Send alerts for matching tokens
       for (const token of matchingTokens) {
-        // Get user telegram chat ID
-        const { data: user } = await supabaseAdmin
-          .from('users')
-          .select('telegram_chat_id, telegram_username')
-          .eq('id', alert.user_id)
-          .single()
-
-        if (!user?.telegram_chat_id) {
-          continue // Skip if no Telegram chat ID
+        let userRecord = userCache.get(alert.user_id)
+        if (!userRecord) {
+          const { data: userData } = await supabaseAdmin
+            .from('users')
+            .select('email')
+            .eq('id', alert.user_id)
+            .single()
+          userRecord = { email: userData?.email ?? null }
+          userCache.set(alert.user_id, userRecord)
         }
 
-        // Send Telegram message
-        const message = formatKOTHAlert({
+        const displayName =
+          (userRecord.email ? userRecord.email.split('@')[0] : 'Watcher') || `Watcher-${alert.user_id.slice(0, 4)}`
+
+        const key = token.tokenAddress
+        if (!tokenWatchers.has(key)) {
+          tokenWatchers.set(key, {
+            token,
+            watchers: []
+          })
+        }
+
+        tokenWatchers.get(key)!.watchers.push({
+          alert,
+          userId: alert.user_id,
+          threshold,
+          alertType: alert.alert_type,
+          displayName
+        })
+
+        sentAlerts.push(`${token.symbol} (${thresholdLabel})`)
+      }
+    }
+
+    for (const { token, watchers } of tokenWatchers.values()) {
+      await sendKothAlertToDiscord(
+        {
+          tokenAddress: token.tokenAddress,
           name: token.name,
           symbol: token.symbol,
-          address: token.tokenAddress,
           score: token.score,
           progress: token.progress,
-          priceUsd: token.priceUsd
+          priceUsd: token.priceUsd,
+          liquidity: token.liquidity,
+          volume24h: token.volume24h,
+          curveSpeed: token.curveSpeed,
+          whaleCount: token.whaleCount,
+          whaleInflows: token.whaleInflows
+        },
+        watchers.map(watcher => ({
+          displayName: watcher.displayName,
+          alertType: watcher.alertType,
+          threshold: watcher.threshold
+        }))
+      )
+
+      for (const watcher of watchers) {
+        await supabaseAdmin.from('alert_history').insert({
+          user_id: watcher.userId,
+          token_address: token.tokenAddress,
+          token_name: token.name,
+          token_symbol: token.symbol,
+          alert_score: token.score,
+          alert_progress: token.progress,
+          sent_at: new Date().toISOString()
         })
-
-        const sent = await sendTelegramMessage({
-          chat_id: user.telegram_chat_id,
-          text: message
-        })
-
-        if (sent) {
-          // Log to alert history
-          await supabaseAdmin
-            .from('alert_history')
-            .insert({
-              user_id: alert.user_id,
-              token_address: token.tokenAddress,
-              token_name: token.name,
-              token_symbol: token.symbol,
-              alert_score: token.score,
-              alert_progress: token.progress,
-              sent_at: new Date().toISOString()
-            })
-
-          sentAlerts.push(`${token.symbol} to ${user.telegram_username}`)
-        }
       }
     }
 

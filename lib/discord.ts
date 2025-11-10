@@ -36,6 +36,7 @@ const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN || ''
 const DISCORD_SERVER_ID = process.env.DISCORD_SERVER_ID || ''
 const DISCORD_WHALE_ROLE_ID = process.env.DISCORD_WHALE_ROLE_ID || ''
 const DISCORD_ALERT_CHANNEL_ID = process.env.DISCORD_ALERT_CHANNEL_ID || ''
+const DISCORD_KOTH_CHANNEL_ID = process.env.DISCORD_KOTH_CHANNEL_ID || ''
 
 interface DiscordTokenResponse {
   access_token: string
@@ -235,5 +236,128 @@ export async function sendWhaleEventToDiscord(event: WhaleEvent) {
   if (!response.ok) {
     const text = await response.text()
     console.error('[Discord] Failed to send whale alert:', response.status, text)
+  }
+}
+
+function formatPercent(value?: number | null) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '—'
+  return `${value.toFixed(1)}%`
+}
+
+function formatTinyUsd(value?: number | null) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '—'
+  if (value >= 1) return `$${value.toFixed(2)}`
+  if (value >= 0.01) return `$${value.toFixed(4)}`
+  return `$${value.toFixed(6)}`
+}
+
+export interface KothWatcherInfo {
+  displayName: string
+  alertType: string
+  threshold: number
+}
+
+interface KothTokenPayload {
+  tokenAddress: string
+  name: string
+  symbol: string
+  score?: number
+  progress?: number
+  priceUsd?: number
+  liquidity?: number
+  volume24h?: number
+  curveSpeed?: number
+  whaleCount?: number
+  whaleInflows?: number
+}
+
+export async function sendKothAlertToDiscord(token: KothTokenPayload, watchers: KothWatcherInfo[]) {
+  if (!DISCORD_KOTH_CHANNEL_ID || !DISCORD_BOT_TOKEN) {
+    return
+  }
+
+  if (!watchers.length) {
+    return
+  }
+
+  const watchersPreview = watchers
+    .slice(0, 12)
+    .map(watcher => {
+      const label = watcher.alertType === 'progress' ? 'Progress ≥' : 'Score ≥'
+      return `• ${watcher.displayName} · ${label} ${watcher.threshold.toFixed(1)}`
+    })
+    .join('\n')
+
+  const pumpFunUrl = `https://pump.fun/coin/${token.tokenAddress}`
+
+  const embed = {
+    title: `🏆 ${token.name} (${token.symbol}) KOTH Alert`,
+    description: [
+      `**Score:** ${token.score !== undefined ? `${token.score.toFixed(1)}/100` : '—'}`,
+      `**Progress:** ${formatPercent(token.progress)}`,
+      `**Price:** ${formatTinyUsd(token.priceUsd)}`
+    ].join('\n'),
+    color: 0xf97316,
+    fields: [
+      token.liquidity !== undefined
+        ? {
+            name: 'Liquidity',
+            value: `${token.liquidity.toFixed(2)} SOL`,
+            inline: true
+          }
+        : null,
+      token.volume24h !== undefined
+        ? {
+            name: '24h Volume',
+            value: `${token.volume24h.toFixed(2)} SOL`,
+            inline: true
+          }
+        : null,
+      token.curveSpeed !== undefined
+        ? {
+            name: 'Curve Speed',
+            value: `${token.curveSpeed.toFixed(1)}/10`,
+            inline: true
+          }
+        : null,
+      token.whaleCount
+        ? {
+            name: 'Whales',
+            value: `${token.whaleCount} (infl. ${token.whaleInflows?.toFixed(2) ?? 0} SOL)`,
+            inline: true
+          }
+        : null,
+      {
+        name: 'Watchers',
+        value: watchersPreview || '—',
+        inline: false
+      },
+      {
+        name: 'Links',
+        value: `[View on Pump.fun](${pumpFunUrl})`,
+        inline: false
+      }
+    ].filter(Boolean),
+    footer: {
+      text: 'CryptoFlash KOTH Alerts • Telegram retired, Discord in full control'
+    }
+  }
+
+  const payload = {
+    embeds: [embed]
+  }
+
+  const response = await fetch(`https://discord.com/api/channels/${DISCORD_KOTH_CHANNEL_ID}/messages`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bot ${DISCORD_BOT_TOKEN}`
+    },
+    body: JSON.stringify(payload)
+  })
+
+  if (!response.ok) {
+    const text = await response.text()
+    console.error('[Discord] Failed to send KOTH alert:', response.status, text)
   }
 }
