@@ -3,7 +3,29 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 
 import { Navbar } from '@/components/Navbar'
-import { blogPosts } from '../posts'
+import postsModule from '../posts'
+import type { BlogPost } from '../posts'
+
+type BlogParams = { slug: string }
+
+interface BlogPageProps {
+  params: BlogParams | Promise<BlogParams>
+}
+
+const rawPosts = postsModule as unknown
+
+let blogPosts: BlogPost[] = []
+
+if (Array.isArray(rawPosts)) {
+  blogPosts = rawPosts as BlogPost[]
+} else if (rawPosts && typeof rawPosts === 'object') {
+  const candidates = rawPosts as { blogPosts?: BlogPost[]; default?: BlogPost[] }
+  if (Array.isArray(candidates.blogPosts)) {
+    blogPosts = candidates.blogPosts
+  } else if (Array.isArray(candidates.default)) {
+    blogPosts = candidates.default
+  }
+}
 
 const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://cryptoflash.app').replace(/\/$/, '')
 
@@ -13,14 +35,8 @@ export function generateStaticParams() {
   return blogPosts.map(post => ({ slug: post.slug }))
 }
 
-interface BlogPageProps {
-  params: {
-    slug: string
-  }
-}
-
-export function generateMetadata({ params }: BlogPageProps): Metadata {
-  const { slug } = params
+export async function generateMetadata({ params }: BlogPageProps): Promise<Metadata> {
+  const { slug } = await params
   const post = blogPosts.find(item => item.slug === slug)
 
   if (!post) {
@@ -53,8 +69,8 @@ export function generateMetadata({ params }: BlogPageProps): Metadata {
   }
 }
 
-export default function BlogArticlePage({ params }: BlogPageProps) {
-  const { slug } = params
+export default async function BlogArticlePage({ params }: BlogPageProps) {
+  const { slug } = await params
   const post = blogPosts.find(item => item.slug === slug)
 
   if (!post) {

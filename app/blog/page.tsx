@@ -1,7 +1,23 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { Navbar } from '@/components/Navbar'
-import { blogPosts } from './posts'
+import postsModule from './posts'
+import type { BlogPost } from './posts'
+
+const rawPosts = postsModule as unknown
+
+let blogPosts: BlogPost[] = []
+
+if (Array.isArray(rawPosts)) {
+  blogPosts = rawPosts as BlogPost[]
+} else if (rawPosts && typeof rawPosts === 'object') {
+  const candidates = rawPosts as { blogPosts?: BlogPost[]; default?: BlogPost[] }
+  if (Array.isArray(candidates.blogPosts)) {
+    blogPosts = candidates.blogPosts
+  } else if (Array.isArray(candidates.default)) {
+    blogPosts = candidates.default
+  }
+}
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://cryptoflash.app'
 

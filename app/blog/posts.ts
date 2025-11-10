@@ -131,3 +131,5 @@ export const blogPosts: BlogPost[] = [
   }
 ]
 
+export default blogPosts
+
