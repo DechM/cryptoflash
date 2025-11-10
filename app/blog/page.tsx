@@ -43,10 +43,10 @@ export default function BlogPage() {
     <div className="min-h-screen bg-[#0B1020] w-full">
       <Navbar />
       
-      <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-8 max-w-6xl lg:max-w-7xl xl:max-w-[115rem] mx-auto">
+      <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8 max-w-none">
         {/* Header */}
         <div className="mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold gradient-text mb-4">
+          <h1 className="text-4xl md:text-5xl font-bold gradient-text mb-4 font-heading">
             CryptoFlash Blog
           </h1>
           <p className="text-lg text-[#b8c5d6] leading-relaxed">
@@ -55,7 +55,7 @@ export default function BlogPage() {
         </div>
 
         {/* Blog Posts List */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
           {blogPosts.map((post) => (
             <Link
               key={post.slug}
@@ -63,7 +63,7 @@ export default function BlogPage() {
               className="glass-card rounded-xl p-6 hover:scale-105 transition-transform duration-300 hover:border-[#00FFA3]/30"
             >
               <div className="mb-4">
-                <h2 className="text-xl font-bold text-[#F8FAFC] mb-2 hover:text-[#00FFA3] transition-colors">
+                <h2 className="text-xl font-bold text-[#F8FAFC] mb-2 hover:text-[#00FFA3] transition-colors font-heading">
                   {post.title}
                 </h2>
                 <p className="text-sm text-[#94A3B8] mb-4 line-clamp-3">

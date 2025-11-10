@@ -81,7 +81,7 @@ export default async function BlogArticlePage({ params }: BlogPageProps) {
     <div className="min-h-screen bg-[#0B1020] w-full">
       <Navbar />
 
-      <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-8 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto">
+      <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8 max-w-none">
         <div className="mb-10 space-y-4">
           <Link
             href="/blog"
@@ -89,7 +89,7 @@ export default async function BlogArticlePage({ params }: BlogPageProps) {
           >
             ← Back to blog
           </Link>
-          <h1 className="text-3xl md:text-4xl font-bold gradient-text">{post.title}</h1>
+          <h1 className="text-3xl md:text-4xl font-bold gradient-text font-heading">{post.title}</h1>
           <p className="text-[#94A3B8] leading-relaxed">{post.hero ?? post.description}</p>
           <div className="flex items-center gap-4 text-xs text-[#6b7280] uppercase tracking-widest">
             <span>{new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
@@ -98,10 +98,10 @@ export default async function BlogArticlePage({ params }: BlogPageProps) {
           </div>
         </div>
 
-        <article className="prose prose-invert prose-sm sm:prose-base lg:prose-lg xl:prose-xl max-w-none">
+        <article className="prose prose-invert prose-sm sm:prose-base lg:prose-lg xl:prose-xl prose-headings:font-heading max-w-none">
           {post.sections.map(section => (
             <section key={section.heading} className="mb-10">
-              <h2>{section.heading}</h2>
+              <h2 className="font-heading">{section.heading}</h2>
               {section.body.map((paragraph, index) => (
                 <p key={`${section.heading}-${index}`}>{paragraph}</p>
               ))}
@@ -109,7 +109,7 @@ export default async function BlogArticlePage({ params }: BlogPageProps) {
           ))}
 
           <section className="mb-10">
-            <h2>Key Takeaways</h2>
+            <h2 className="font-heading">Key Takeaways</h2>
             <ul>
               {post.keyTakeaways.map(takeaway => (
                 <li key={takeaway}>{takeaway}</li>
@@ -119,7 +119,9 @@ export default async function BlogArticlePage({ params }: BlogPageProps) {
         </article>
 
         <div className="mt-12 p-6 rounded-xl bg-white/5 border border-white/10">
-          <h3 className="text-lg font-semibold text-white mb-2">Continue the playbook</h3>
+          <h3 className="text-lg font-semibold text-white mb-4 font-heading">
+            Ready to Start Tracking KOTH?
+          </h3>
           <p className="text-sm text-[#b8c5d6] mb-4">
             Set up CryptoFlash alerts, overlay whale inflows and execute your KOTH strategy with data instead of hype.
           </p>
