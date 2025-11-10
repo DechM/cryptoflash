@@ -5,8 +5,8 @@
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email TEXT,
-  telegram_username TEXT,
-  telegram_chat_id TEXT UNIQUE, -- Unique for Telegram webhook upsert
+  telegram_username TEXT, -- deprecated (legacy Telegram support)
+  telegram_chat_id TEXT UNIQUE, -- deprecated (legacy Telegram support)
   subscription_status TEXT DEFAULT 'free' CHECK (subscription_status IN ('free', 'pro', 'ultimate', 'expired')),
   stripe_customer_id TEXT,
   stripe_subscription_id TEXT,
@@ -287,8 +287,12 @@ CREATE TABLE IF NOT EXISTS discord_oauth_states (
   state TEXT PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  used_at TIMESTAMPTZ
+  used_at TIMESTAMPTZ,
+  redirect_path TEXT
 );
+
+ALTER TABLE discord_oauth_states
+  ADD COLUMN IF NOT EXISTS redirect_path TEXT;
 
 CREATE TRIGGER update_whale_subscribers_updated_at BEFORE UPDATE ON whale_subscribers
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

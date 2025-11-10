@@ -29,7 +29,7 @@ export default function PrivacyPage() {
               </p>
               <ul className="list-disc list-inside text-[#b8c5d6] space-y-2 ml-4">
                 <li><strong>Account Information:</strong> Email address, password (hashed), subscription status</li>
-                <li><strong>Telegram Information:</strong> Telegram username and chat ID (when you link your Telegram account)</li>
+                <li><strong>Discord Information:</strong> Discord user ID and username (when you link your Discord account)</li>
                 <li><strong>Alert Preferences:</strong> Token addresses, score thresholds, and notification settings</li>
                 <li><strong>Payment Information:</strong> Solana wallet addresses and transaction IDs (processed via Solana Pay)</li>
               </ul>
@@ -50,7 +50,7 @@ export default function PrivacyPage() {
               </p>
               <ul className="list-disc list-inside text-[#b8c5d6] space-y-2 ml-4">
                 <li>Provide, maintain, and improve the Service</li>
-                <li>Send you alerts and notifications (Telegram, email)</li>
+                <li>Send you alerts and notifications (Discord, email)</li>
                 <li>Process payments and manage subscriptions</li>
                 <li>Respond to your inquiries and provide customer support</li>
                 <li>Analyze usage patterns to improve user experience</li>
@@ -86,7 +86,7 @@ export default function PrivacyPage() {
                 <li><strong>Supabase:</strong> Database and authentication (privacy policy: supabase.com/privacy)</li>
                 <li><strong>Google Analytics:</strong> Website analytics (privacy policy: policies.google.com/privacy)</li>
                 <li><strong>Vercel:</strong> Hosting and deployment (privacy policy: vercel.com/legal/privacy-policy)</li>
-                <li><strong>Telegram:</strong> Notification delivery (privacy policy: telegram.org/privacy)</li>
+                <li><strong>Discord:</strong> Notification delivery (privacy policy: discord.com/privacy)</li>
               </ul>
               <p className="text-[#b8c5d6] leading-relaxed mt-4">
                 These services have their own privacy policies. We encourage you to review them.

@@ -280,13 +280,16 @@ export async function sendKothAlertToDiscord(token: KothTokenPayload, watchers: 
     return
   }
 
-  const watchersPreview = watchers
-    .slice(0, 12)
-    .map(watcher => {
-      const label = watcher.alertType === 'progress' ? 'Progress ≥' : 'Score ≥'
-      return `• ${watcher.displayName} · ${label} ${watcher.threshold.toFixed(1)}`
-    })
-    .join('\n')
+  const previewLines = watchers.slice(0, 12).map(watcher => {
+    const label = watcher.alertType === 'progress' ? 'Progress ≥' : 'Score ≥'
+    return `• ${watcher.displayName} · ${label} ${watcher.threshold.toFixed(1)}`
+  })
+
+  if (watchers.length > 12) {
+    previewLines.push(`• …and ${watchers.length - 12} more watchers`)
+  }
+
+  const watchersPreview = previewLines.join('\n')
 
   const pumpFunUrl = `https://pump.fun/coin/${token.tokenAddress}`
 

@@ -39,7 +39,7 @@ export default function TermsPage() {
               <ul className="list-disc list-inside text-[#b8c5d6] space-y-2 ml-4">
                 <li>Real-time KOTH token tracking</li>
                 <li>AI Snipe Score calculations</li>
-                <li>Automated alerts via Telegram and Twitter/X</li>
+                <li>Automated alerts via Discord and Twitter/X</li>
                 <li>Dashboard with live data</li>
                 <li>Leaderboard and analytics</li>
               </ul>

@@ -1,106 +1,122 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Navbar } from '@/components/Navbar'
-import { AlertCircle, Check, Zap, Lock, Link as LinkIcon, ExternalLink } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
 import { motion } from 'framer-motion'
+import { AlertCircle, Check, Zap, Lock, ExternalLink } from 'lucide-react'
+
+import { Navbar } from '@/components/Navbar'
 import { useFeature } from '@/hooks/useFeature'
 import { useSession } from '@/hooks/useSession'
-import Link from 'next/link'
 
 export default function AlertsPageContent() {
   const { user } = useSession()
-  const [telegramUsername, setTelegramUsername] = useState('')
+  const { plan, limit } = useFeature()
+
   const [tokenAddress, setTokenAddress] = useState('')
+  const [threshold, setThreshold] = useState(limit('alerts.threshold_min') as number)
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
-  const [telegramLinked, setTelegramLinked] = useState<boolean | null>(null) // null = checking, true/false = status
-  const [linkingTelegram, setLinkingTelegram] = useState(false)
 
-  const { plan, limit, isEnabled } = useFeature()
+  const [discordStatus, setDiscordStatus] = useState<{ linked: boolean; username: string | null } | null>(null)
+  const [checkingDiscord, setCheckingDiscord] = useState(false)
+  const [linkingDiscord, setLinkingDiscord] = useState(false)
+  const [discordError, setDiscordError] = useState<string | null>(null)
+  const [testSending, setTestSending] = useState(false)
+
   const minThreshold = limit('alerts.threshold_min') as number
   const maxTokens = limit('alerts.max_tokens') as number
   const maxPerDay = limit('alerts.max_per_day') as number
-  
-  const [threshold, setThreshold] = useState(minThreshold)
 
-  // Check Telegram link status on mount and poll for updates
-  useEffect(() => {
+  const refreshDiscordStatus = useCallback(async () => {
     if (!user) {
-      setTelegramLinked(false)
+      setDiscordStatus({ linked: false, username: null })
       return
     }
-    
-    let isMounted = true
-    let pollInterval: NodeJS.Timeout | null = null
-    
-    const checkTelegramLink = async () => {
-      if (!isMounted) return
-      
-      try {
-        const response = await fetch('/api/me/link-telegram')
-        if (response.ok) {
-          const data = await response.json()
-          const isLinked = data.linked || false
-          
-          if (isMounted) {
-            setTelegramLinked(isLinked)
-            
-            if (data.telegram_username) {
-              setTelegramUsername(data.telegram_username)
-            }
-            
-            // Stop polling if linked
-            if (isLinked && pollInterval) {
-              clearInterval(pollInterval)
-              pollInterval = null
-            }
-          }
-        } else if (response.status === 401) {
-          // Stop polling if we get 401 (unauthorized)
-          console.warn('Unauthorized - stopping Telegram link polling')
-          if (isMounted) {
-            setTelegramLinked(false)
-          }
-          if (pollInterval) {
-            clearInterval(pollInterval)
-            pollInterval = null
-          }
-        } else {
-          if (isMounted) {
-            setTelegramLinked(false)
-          }
-        }
-      } catch (error) {
-        console.error('Error checking Telegram link:', error)
-        if (isMounted) {
-          setTelegramLinked(false)
-        }
-      }
-    }
-    
-    // Initial check
-    checkTelegramLink()
-    
-    // Poll every 3 seconds if not linked
-    pollInterval = setInterval(() => {
-      if (isMounted && telegramLinked !== true) {
-        checkTelegramLink()
-      }
-    }, 3000)
-    
-    return () => {
-      isMounted = false
-      if (pollInterval) {
-        clearInterval(pollInterval)
-      }
-    }
-  }, [user, telegramLinked]) // Include telegramLinked to stop polling when linked
 
-  // Update threshold when plan changes
+    setCheckingDiscord(true)
+    try {
+      const response = await fetch('/api/me/link-discord', { cache: 'no-store' })
+      if (response.ok) {
+        const data = await response.json()
+        setDiscordStatus({
+          linked: Boolean(data.linked),
+          username: data.discord_username
+        })
+      } else if (response.status === 401) {
+        setDiscordStatus({ linked: false, username: null })
+      } else {
+        setDiscordStatus({ linked: false, username: null })
+      }
+    } catch (error) {
+      console.error('Error checking Discord link:', error)
+      setDiscordStatus({ linked: false, username: null })
+    } finally {
+      setCheckingDiscord(false)
+    }
+  }, [user])
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('linked')) {
+      setSuccess(true)
+      params.delete('linked')
+      const url = `${window.location.pathname}?${params.toString()}`
+      window.history.replaceState({}, '', url)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (user) {
+      refreshDiscordStatus()
+    } else {
+      setDiscordStatus({ linked: false, username: null })
+    }
+  }, [user, refreshDiscordStatus])
+
   useEffect(() => {
     setThreshold(minThreshold)
   }, [minThreshold])
+
+  const handleLinkDiscord = async () => {
+    setDiscordError(null)
+    setLinkingDiscord(true)
+    try {
+      const response = await fetch('/api/alerts/discord/link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      const data = await response.json()
+
+      if (!response.ok || !data.authorizeUrl) {
+        throw new Error(data.error || 'Failed to start Discord linking')
+      }
+
+      window.location.href = data.authorizeUrl
+    } catch (error: any) {
+      console.error('Error linking Discord:', error)
+      setDiscordError(error.message || 'Failed to link Discord account. Please try again.')
+    } finally {
+      setLinkingDiscord(false)
+    }
+  }
+
+  const handleUnlinkDiscord = async () => {
+    setDiscordError(null)
+    try {
+      const response = await fetch('/api/alerts/discord/link', {
+        method: 'DELETE'
+      })
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data.error || 'Failed to unlink Discord account')
+      }
+      await refreshDiscordStatus()
+    } catch (error: any) {
+      console.error('Error unlinking Discord:', error)
+      setDiscordError(error.message || 'Failed to unlink Discord account. Please try again.')
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -128,18 +144,17 @@ export default function AlertsPageContent() {
 
       if (!response.ok) {
         if (response.status === 401) {
-          // User not authenticated - redirect to login
           alert(data.message || 'Please log in to create alerts')
           window.location.href = `/login?next=${encodeURIComponent('/alerts')}`
           return
         }
-        
-        if (data.error === 'TELEGRAM_NOT_LINKED') {
-          alert('⚠️ Please link your Telegram account first!\n\nClick "Open Telegram Bot" above, then click "Start" in Telegram.')
-          setTelegramLinked(false) // Force refresh of link status
+
+        if (data.error === 'DISCORD_NOT_LINKED') {
+          alert('⚠️ Please link your Discord account first! Click "Link Discord" above.')
+          await refreshDiscordStatus()
           return
         }
-        
+
         if (data.error === 'MAX_ALERTS_REACHED') {
           alert(`You've reached your limit. ${plan === 'free' ? 'Upgrade to Pro for 10 tokens or Ultimate for unlimited!' : 'Upgrade to Ultimate for unlimited!'}`)
         } else {
@@ -149,7 +164,6 @@ export default function AlertsPageContent() {
       }
 
       setSuccess(true)
-      setTelegramUsername('')
       setTokenAddress('')
       setThreshold(minThreshold)
     } catch (error) {
@@ -157,6 +171,28 @@ export default function AlertsPageContent() {
       alert('Failed to create alert')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleSendTestAlert = async () => {
+    setDiscordError(null)
+    setTestSending(true)
+    try {
+      const response = await fetch('/api/alerts/test-send', {
+        method: 'POST'
+      })
+      const data = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(data.message || data.error || 'Failed to send test alert')
+      }
+
+      alert('✅ Test alert sent! Check the Discord KOTH channel.')
+    } catch (error: any) {
+      console.error('Error sending test alert:', error)
+      setDiscordError(error.message || 'Failed to send test alert. Please try again.')
+    } finally {
+      setTestSending(false)
     }
   }
 
@@ -177,10 +213,13 @@ export default function AlertsPageContent() {
             Set Up Alerts
           </h1>
           <p className="text-[#b8c5d6]">
-            Get notified when KOTH tokens reach your threshold
+            Get notified in Discord when KOTH tokens reach your threshold
           </p>
           <div className="mt-2 px-3 py-1 inline-block rounded-lg bg-white/5 border border-white/10">
-            <span className="text-sm text-[#b8c5d6]">Current Plan: <span className="font-semibold text-white">{plan.toUpperCase()}</span></span>
+            <span className="text-sm text-[#b8c5d6]">
+              Current Plan:{' '}
+              <span className="font-semibold text-white">{plan.toUpperCase()}</span>
+            </span>
           </div>
         </motion.div>
 
@@ -197,7 +236,7 @@ export default function AlertsPageContent() {
                 <div>
                   <p className="font-semibold text-[#ffd700] mb-1">Free Plan</p>
                   <p className="text-sm text-[#b8c5d6]">
-                    You can track {maxTokens} token{maxTokens > 1 ? 's' : ''} with alerts at {minThreshold}%+ score. 
+                    You can track {maxTokens} token{maxTokens > 1 ? 's' : ''} with alerts at {minThreshold}%+ score.
                     Upgrade to Pro (19.99 USDC/mo) for early alerts (85%+) or Ultimate (39.99 USDC/mo) for earliest alerts (80%)!
                   </p>
                 </div>
@@ -218,146 +257,105 @@ export default function AlertsPageContent() {
             </motion.div>
           )}
 
-          {/* Telegram Link Status */}
-          {telegramLinked === null && (
+          {checkingDiscord && (
             <div className="mb-6 p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
               <div className="flex items-center space-x-2">
                 <AlertCircle className="h-5 w-5 text-blue-400 animate-spin" />
-                <span className="text-sm text-blue-400">Checking Telegram link status...</span>
+                <span className="text-sm text-blue-400">Checking Discord link status...</span>
               </div>
             </div>
           )}
 
-          {telegramLinked === false && (
+          {discordError && (
+            <div className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/30">
+              <div className="flex items-start space-x-2">
+                <AlertCircle className="h-5 w-5 text-red-400 mt-0.5" />
+                <div>
+                  <p className="text-sm text-red-400 font-semibold">Discord Error</p>
+                  <p className="text-sm text-red-300">{discordError}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {discordStatus?.linked === false && !checkingDiscord && (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="mb-6 p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30"
+              className="mb-6 p-4 rounded-lg bg-purple-500/10 border border-purple-500/30"
             >
-              <div className="flex items-start justify-between">
-                <div className="flex items-start space-x-3 flex-1">
-                  <AlertCircle className="h-5 w-5 text-yellow-400 mt-0.5 flex-shrink-0" />
-                  <div className="flex-1">
-                    <p className="font-semibold text-yellow-400 mb-1">Telegram Not Linked</p>
-                    <p className="text-sm text-[#b8c5d6] mb-3">
-                      Link your Telegram account to receive alerts when tokens match your criteria.
+              <div className="flex items-start space-x-3">
+                <AlertCircle className="h-5 w-5 text-purple-400 mt-0.5 flex-shrink-0" />
+                <div className="flex-1 space-y-3">
+                  <div>
+                    <p className="font-semibold text-purple-300 mb-1">Discord Not Linked</p>
+                    <p className="text-sm text-[#b8c5d6]">
+                      Connect your Discord account to receive KOTH alerts directly inside the CryptoFlash server.
                     </p>
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <a
-                        href={`https://t.me/${process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'CryptoFlashBot'}?start=email:${encodeURIComponent(user?.email || '')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center space-x-2 px-4 py-2 rounded-lg bg-[#0088cc] hover:bg-[#0077b3] text-white font-semibold transition-colors text-sm"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                        <span>Open Telegram Bot</span>
-                      </a>
-                      <button
-                        onClick={async () => {
-                          try {
-                            const response = await fetch('/api/me/link-telegram')
-                            if (response.ok) {
-                              const data = await response.json()
-                              setTelegramLinked(data.linked || false)
-                              if (data.telegram_username) {
-                                setTelegramUsername(data.telegram_username)
-                              }
-                              if (data.linked) {
-                                alert('✅ Telegram account is now linked!')
-                              } else {
-                                alert('⚠️ Not linked yet. Make sure you clicked "Start" in Telegram after opening the bot.')
-                              }
-                            }
-                          } catch (error) {
-                            console.error('Error refreshing link status:', error)
-                          }
-                        }}
-                        className="inline-flex items-center space-x-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold transition-colors text-sm"
-                      >
-                        <LinkIcon className="h-4 w-4" />
-                        <span>Check Status</span>
-                      </button>
-                      <button
-                        onClick={async () => {
-                          setLinkingTelegram(true)
-                          try {
-                            const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'CryptoFlashBot'
-                            const userEmail = user?.email || 'your-email'
-                            alert(`📱 Link Telegram Account:
-
-1. Click "Open Telegram Bot" button above (opens automatically)
-2. Click "Start" button in Telegram
-3. Your account will be automatically linked!
-
-OR manually:
-- Open: https://t.me/${botUsername}
-- Send: /start email:${userEmail}
-
-💡 We'll automatically detect your email and link your account.`)
-                          } catch (error) {
-                            console.error('Error:', error)
-                          } finally {
-                            setLinkingTelegram(false)
-                          }
-                        }}
-                        disabled={linkingTelegram}
-                        className="inline-flex items-center space-x-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold transition-colors text-sm disabled:opacity-50"
-                      >
-                        <LinkIcon className="h-4 w-4" />
-                        <span>{linkingTelegram ? 'Opening...' : 'How to Link'}</span>
-                      </button>
-                    </div>
                   </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={handleLinkDiscord}
+                      disabled={linkingDiscord}
+                      className="inline-flex items-center space-x-2 px-4 py-2 rounded-lg bg-[#5865F2] hover:bg-[#4752C4] text-white font-semibold transition-colors text-sm disabled:opacity-60"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      <span>{linkingDiscord ? 'Opening Discord...' : 'Link Discord'}</span>
+                    </button>
+                    <button
+                      onClick={refreshDiscordStatus}
+                      className="inline-flex items-center space-x-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold transition-colors text-sm"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      <span>Refresh Status</span>
+                    </button>
+                  </div>
+                  <p className="text-xs text-[#94A3B8]">
+                    You’ll be redirected to Discord to authorize the CryptoFlash bot.
+                  </p>
                 </div>
               </div>
             </motion.div>
           )}
 
-          {telegramLinked === true && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="mb-6 p-4 rounded-lg bg-[#00FFA3]/20 border border-[#00FFA3]/30"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Check className="h-5 w-5 text-[#00FFA3]" />
-                      <span className="text-sm text-[#00FFA3] font-semibold">
-                        ✅ Telegram linked! You'll receive alerts when tokens match your criteria.
-                      </span>
+          {discordStatus?.linked && !checkingDiscord && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="mb-6 p-4 rounded-lg bg-[#00FFA3]/20 border border-[#00FFA3]/30"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center space-x-2">
+                  <Check className="h-5 w-5 text-[#00FFA3]" />
+                  <span className="text-sm text-[#00FFA3] font-semibold">
+                    ✅ Discord linked! {discordStatus.username ? `(${discordStatus.username})` : ''}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {plan === 'ultimate' ? (
+                    <button
+                      onClick={handleSendTestAlert}
+                      disabled={testSending}
+                      className="px-4 py-2 rounded-lg bg-[#00FFA3]/20 hover:bg-[#00FFA3]/30 border border-[#00FFA3]/50 text-[#00FFA3] font-semibold text-sm transition-colors disabled:opacity-60"
+                    >
+                      {testSending ? 'Sending...' : 'Send Test Alert'}
+                    </button>
+                  ) : (
+                    <div className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-xs text-[#6b7280] flex items-center space-x-1">
+                      <Lock className="h-3 w-3" />
+                      <span>Ultimate only</span>
                     </div>
-                    {plan === 'ultimate' ? (
-                      <button
-                        onClick={async () => {
-                          try {
-                            const response = await fetch('/api/alerts/test-send', {
-                              method: 'POST'
-                            })
-                            const data = await response.json()
-                            
-                            if (response.ok) {
-                              alert('✅ Test alert sent! Check your Telegram.')
-                            } else {
-                              alert(`❌ ${data.message || data.error || 'Failed to send test alert'}`)
-                            }
-                          } catch (error) {
-                            console.error('Error sending test alert:', error)
-                            alert('❌ Failed to send test alert')
-                          }
-                        }}
-                        className="ml-4 px-4 py-2 rounded-lg bg-[#00FFA3]/20 hover:bg-[#00FFA3]/30 border border-[#00FFA3]/50 text-[#00FFA3] font-semibold text-sm transition-colors"
-                      >
-                        Send Test Alert
-                      </button>
-                    ) : (
-                      <div className="ml-4 px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-xs text-[#6b7280] flex items-center space-x-1">
-                        <Lock className="h-3 w-3" />
-                        <span>Ultimate only</span>
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              )}
+                  )}
+                  <button
+                    onClick={handleUnlinkDiscord}
+                    className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold text-sm transition-colors"
+                  >
+                    Unlink
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
@@ -373,7 +371,7 @@ OR manually:
                 className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-[#00FFA3] focus:outline-none text-white placeholder-[#6b7280] font-mono text-sm"
               />
               <p className="mt-2 text-xs text-[#6b7280]">
-                {plan === 'free' 
+                {plan === 'free'
                   ? `Free users can track ${maxTokens} specific token or all tokens`
                   : plan === 'pro'
                   ? `Pro users can track up to ${maxTokens} tokens`
@@ -400,100 +398,49 @@ OR manually:
                   {threshold}%
                 </div>
               </div>
-              <div className="mt-2 flex justify-between text-xs text-[#6b7280]">
-                <span>{minThreshold}%</span>
-                <span>{maxThreshold}%</span>
-              </div>
               <p className="mt-2 text-xs text-[#6b7280]">
-                {plan === 'ultimate' 
-                  ? 'Ultimate users: 80-100%' 
+                {plan === 'free'
+                  ? 'Free users receive alerts at 95%+ scores. Upgrade for earlier alerts.'
                   : plan === 'pro'
-                  ? 'Pro users: 85-100%'
-                  : 'Free users: Fixed at 95%'}
+                  ? 'Pro users can receive alerts as early as 85%.'
+                  : 'Ultimate users get the earliest alerts at 80%+'}
               </p>
-              {!canUseCustomThreshold && (
-                <div className="mt-2 flex items-center space-x-2 text-xs text-[#ffd700]">
-                  <Lock className="h-3 w-3" />
-                  <span>Custom thresholds available in Pro/Ultimate</span>
-                </div>
-              )}
             </div>
 
             <button
               type="submit"
-              disabled={submitting || telegramLinked === false}
-              className="btn-cta-upgrade w-full disabled:opacity-50 disabled:cursor-not-allowed"
-              title={telegramLinked === false ? 'Please link your Telegram account first to receive alerts' : undefined}
+              disabled={submitting || !discordStatus?.linked}
+              className="w-full inline-flex items-center justify-center px-6 py-3 rounded-lg bg-gradient-to-r from-[#00FFA3] to-[#1DB8A3] text-[#050712] font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {submitting ? (
-                <>
-                  <AlertCircle className="h-4 w-4 animate-spin" />
-                  <span>Creating Alert...</span>
-                </>
-              ) : (
-                <>
-                  <AlertCircle className="h-4 w-4" />
-                  <span>Create Alert</span>
-                </>
-              )}
+              {submitting ? 'Creating Alert...' : 'Create Alert'}
             </button>
-            
-            {telegramLinked === false && (
-              <p className="text-xs text-yellow-400 text-center">
-                ⚠️ Link your Telegram account above to enable alerts
+
+            {!discordStatus?.linked && (
+              <p className="text-xs text-center text-[#6b7280]">
+                You must link Discord before creating alerts.
               </p>
             )}
           </form>
 
-          {plan === 'free' && (
-            <div className="mt-6 p-4 rounded-lg bg-gradient-to-r from-[#FF2E86]/10 to-[#ff6b35]/10 border border-[#FF2E86]/30 text-center">
-              <p className="text-sm text-[#b8c5d6] mb-3">
-                <strong className="text-white">Upgrade for more power:</strong>
-              </p>
-              <div className="grid md:grid-cols-2 gap-4 mb-4">
-                <div className="text-left">
-                  <p className="font-semibold text-white mb-2">Pro - 19.99 USDC/mo</p>
-                  <ul className="space-y-1 text-xs text-[#b8c5d6]">
-                    <li className="flex items-center space-x-2">
-                      <Check className="h-3 w-3 text-[#00FFA3]" />
-                      <span>10 token tracking</span>
-                    </li>
-                    <li className="flex items-center space-x-2">
-                      <Check className="h-3 w-3 text-[#00FFA3]" />
-                      <span>Early alerts at 85%</span>
-                    </li>
-                    <li className="flex items-center space-x-2">
-                      <Check className="h-3 w-3 text-[#00FFA3]" />
-                      <span>Custom thresholds (85-100%)</span>
-                    </li>
-                  </ul>
-                </div>
-                <div className="text-left">
-                  <p className="font-semibold text-white mb-2">Ultimate - 39.99 USDC/mo</p>
-                  <ul className="space-y-1 text-xs text-[#b8c5d6]">
-                    <li className="flex items-center space-x-2">
-                      <Check className="h-3 w-3 text-[#FF2E86]" />
-                      <span>Unlimited tracking</span>
-                    </li>
-                    <li className="flex items-center space-x-2">
-                      <Check className="h-3 w-3 text-[#FF2E86]" />
-                      <span>Earliest alerts at 80%</span>
-                    </li>
-                    <li className="flex items-center space-x-2">
-                      <Check className="h-3 w-3 text-[#FF2E86]" />
-                      <span>Whale alerts + API access</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-              <Link
-                href="/premium"
-                className="btn-cta-upgrade inline-block"
-              >
-                View Plans →
-              </Link>
+          <div className="mt-8 space-y-4">
+            <div className="p-4 rounded-lg bg-white/5 border border-white/10">
+              <h2 className="text-lg font-semibold text-white mb-2">Alert Limits</h2>
+              <ul className="text-sm text-[#b8c5d6] space-y-1">
+                <li>• Track up to {maxTokens} token{maxTokens > 1 ? 's' : ''} with your current plan</li>
+                <li>• Max {maxPerDay} alerts per day</li>
+                <li>• Alerts are delivered to the CryptoFlash Discord server</li>
+              </ul>
             </div>
-          )}
+
+            <div className="p-4 rounded-lg bg-white/5 border border-white/10">
+              <h2 className="text-lg font-semibold text-white mb-2">Need faster signals?</h2>
+              <p className="text-sm text-[#b8c5d6]">
+                Upgrade to <Link href="/pricing" className="text-[#00FFA3] underline">Pro</Link> or{' '}
+                <Link href="/pricing" className="text-[#00FFA3] underline">Ultimate</Link> for earlier thresholds,
+                more tracked tokens, and premium analytics. Ultimate also unlocks Whale Alerts via Discord.
+              </p>
+            </div>
+          </div>
         </motion.div>
       </main>
     </div>

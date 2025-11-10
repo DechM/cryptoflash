@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getLimit, getUserPlan } from '@/lib/plan'
 import { getCurrentUser } from '@/lib/auth'
-import type { PlanId } from '@/lib/plan'
-
 export async function POST(request: Request) {
   try {
     // Check authentication
@@ -26,18 +24,18 @@ export async function POST(request: Request) {
     // Get plan from database (source of truth)
     const plan = await getUserPlan(userId)
     
-    // Check if Telegram is linked (required for all plans to receive alerts)
-    const { data: userData } = await supabaseAdmin
-      .from('users')
-      .select('telegram_chat_id')
-      .eq('id', userId)
-      .single()
+    // Check if Discord is linked (required to receive alerts)
+    const { data: discordLink } = await supabaseAdmin
+      .from('discord_links')
+      .select('discord_user_id')
+      .eq('user_id', userId)
+      .maybeSingle()
 
-    if (!userData?.telegram_chat_id) {
+    if (!discordLink?.discord_user_id) {
       return NextResponse.json(
         {
-          error: 'TELEGRAM_NOT_LINKED',
-          message: 'Please link your Telegram account first to receive alerts. Click "Open Telegram Bot" above.'
+          error: 'DISCORD_NOT_LINKED',
+          message: 'Please link your Discord account first to receive alerts.'
         },
         { status: 400 }
       )

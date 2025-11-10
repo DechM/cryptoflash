@@ -114,7 +114,7 @@ export default function RootLayout({
                 "AI Snipe Score (0-100)",
                 "Bonding curve progress tracking",
                 "Automated Twitter/X alerts",
-                "Telegram notifications",
+                "Discord notifications",
                 "Live dashboard"
               ],
               "screenshot": `${siteUrl}/og-image.png`

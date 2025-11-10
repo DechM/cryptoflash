@@ -5,7 +5,7 @@ Real-time KOTH (King of the Hill) tracker for Pump.fun memecoins on Solana. Get 
 ## Features
 
 - 📊 **Real-time KOTH Tracking** - Live dashboard with top 50 tokens in bonding curve phase
-- 🚨 **Telegram Alerts** - Get notified when tokens reach your threshold
+- 🚨 **Discord Alerts** - Get notified when tokens reach your threshold
 - 📈 **AI Snipe Score** - Calculate 0-100 score based on multiple factors
 - 🔥 **Heatmap Visualization** - Visual representation of KOTH candidates
 - 💎 **Freemium Model** - Free tier with Pro upgrades ($4.99/mo)
@@ -23,7 +23,7 @@ Real-time KOTH (King of the Hill) tracker for Pump.fun memecoins on Solana. Get 
   - Moralis (Pump.fun bonding curve data)
   - Dexscreener (Volume & price data)
   - Helius (Whale tracking)
-  - Telegram Bot API (Alerts)
+  - Discord Bot (Alerts)
 
 ## Setup
 
@@ -38,7 +38,9 @@ Real-time KOTH (King of the Hill) tracker for Pump.fun memecoins on Solana. Get 
    - `SUPABASE_SERVICE_ROLE_KEY`
    - `MORALIS_API_KEY`
    - `HELIUS_API_KEY`
-   - `TELEGRAM_BOT_TOKEN`
+   - `DISCORD_BOT_TOKEN`
+   - `DISCORD_ALERT_CHANNEL_ID`
+   - `DISCORD_KOTH_CHANNEL_ID`
    - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
    - `STRIPE_SECRET_KEY`
    - `STRIPE_WEBHOOK_SECRET`
@@ -47,18 +49,13 @@ Real-time KOTH (King of the Hill) tracker for Pump.fun memecoins on Solana. Get 
 3. **Set up Supabase database**:
    Run the SQL schema in `supabase-schema.sql` in your Supabase SQL Editor
 
-4. **Set up Telegram Bot**:
-   - Create bot via [@BotFather](https://t.me/BotFather)
-   - Get bot token and add to `.env.local`
-   - Users need to send `/start` to your bot to enable alerts
-
-5. **Set up Stripe**:
+4. **Set up Stripe**:
    - Create Stripe account
    - Get API keys
    - Set up webhook endpoint: `https://yourdomain.com/api/webhooks/stripe`
    - Add webhook secret to `.env.local`
 
-6. **Run development server**:
+5. **Run development server**:
    ```bash
    npm run dev
    ```

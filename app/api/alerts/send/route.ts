@@ -52,6 +52,7 @@ async function runAlertsJob() {
           threshold: number
           alertType: string
           displayName: string
+          discordUsername?: string | null
         }>
       }
     >()
@@ -60,6 +61,8 @@ async function runAlertsJob() {
       string,
       {
         email: string | null
+        discordUsername: string | null
+        discordLinked: boolean
       }
     >()
 
@@ -107,17 +110,35 @@ async function runAlertsJob() {
       for (const token of matchingTokens) {
         let userRecord = userCache.get(alert.user_id)
         if (!userRecord) {
-          const { data: userData } = await supabaseAdmin
-            .from('users')
-            .select('email')
-            .eq('id', alert.user_id)
-            .single()
-          userRecord = { email: userData?.email ?? null }
+          const [{ data: discordData }, { data: userData }] = await Promise.all([
+            supabaseAdmin
+              .from('discord_links')
+              .select('discord_username, discord_user_id')
+              .eq('user_id', alert.user_id)
+              .maybeSingle(),
+            supabaseAdmin
+              .from('users')
+              .select('email')
+              .eq('id', alert.user_id)
+              .maybeSingle()
+          ])
+
+          userRecord = {
+            email: userData?.email ?? null,
+            discordUsername: discordData?.discord_username ?? null,
+            discordLinked: Boolean(discordData?.discord_user_id)
+          }
           userCache.set(alert.user_id, userRecord)
         }
 
+        if (!userRecord.discordLinked) {
+          continue
+        }
+
         const displayName =
-          (userRecord.email ? userRecord.email.split('@')[0] : 'Watcher') || `Watcher-${alert.user_id.slice(0, 4)}`
+          userRecord.discordUsername ||
+          (userRecord.email ? userRecord.email.split('@')[0] : 'Watcher') ||
+          `Watcher-${alert.user_id.slice(0, 4)}`
 
         const key = token.tokenAddress
         if (!tokenWatchers.has(key)) {
@@ -132,7 +153,8 @@ async function runAlertsJob() {
           userId: alert.user_id,
           threshold,
           alertType: alert.alert_type,
-          displayName
+          displayName,
+          discordUsername: userRecord.discordUsername
         })
 
         sentAlerts.push(`${token.symbol} (${thresholdLabel})`)
@@ -155,7 +177,7 @@ async function runAlertsJob() {
           whaleInflows: token.whaleInflows
         },
         watchers.map(watcher => ({
-          displayName: watcher.displayName,
+          displayName: watcher.discordUsername || watcher.displayName,
           alertType: watcher.alertType,
           threshold: watcher.threshold
         }))

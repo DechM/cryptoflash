@@ -48,7 +48,7 @@ export default function ContactPage() {
                   <h3 className="text-lg font-semibold text-[#F8FAFC] mb-2">How do I set up alerts?</h3>
                   <p className="text-[#b8c5d6]">
                     Go to the <a href="/alerts" className="text-[#00FFA3] hover:underline">Alerts page</a>, 
-                    link your Telegram account, and create alerts for tokens you want to track.
+                    link your Discord account, and create alert rules for tokens you want to track.
                   </p>
                 </div>
                 <div>

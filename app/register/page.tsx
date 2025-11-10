@@ -15,7 +15,6 @@ function RegisterPageContent() {
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [telegramUsername, setTelegramUsername] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -45,10 +44,7 @@ function RegisterPageContent() {
         email,
         password,
         options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            telegram_username: telegramUsername || null
-          }
+          emailRedirectTo: redirectUrl
         }
       })
 
@@ -193,24 +189,8 @@ function RegisterPageContent() {
                     placeholder="At least 8 characters"
                   />
                 </div>
-              </div>
-
-              <div>
-                <label htmlFor="telegram" className="block text-sm font-semibold text-[#b8c5d6] mb-2">
-                  Telegram Username <span className="text-xs text-[#6b7280]">(optional)</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    id="telegram"
-                    value={telegramUsername}
-                    onChange={(e) => setTelegramUsername(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-[#00FFA3] focus:outline-none text-white placeholder-[#6b7280]"
-                    placeholder="@username (optional)"
-                  />
-                </div>
                 <p className="mt-2 text-xs text-[#6b7280]">
-                  Link your Telegram to receive alerts
+                  You can link your Discord account for alerts after signing in.
                 </p>
               </div>
 
