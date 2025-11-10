@@ -1,5 +1,21 @@
 import { WhaleEvent } from './types'
 
+const SIDE_CONFIG: Record<string, { label: string; color: number; emoji: string }> = {
+  buy: { label: 'BUY', color: 0x3b82f6, emoji: '🟢' },
+  sell: { label: 'SELL', color: 0xef4444, emoji: '🔴' },
+  transfer: { label: 'TRANSFER', color: 0x10b981, emoji: '📦' },
+  mint: { label: 'MINT', color: 0xf97316, emoji: '🪙' },
+  burn: { label: 'BURN', color: 0xfacc15, emoji: '🔥' },
+  exchange: { label: 'EXCHANGE', color: 0x8b5cf6, emoji: '🔁' }
+}
+
+const FALLBACK_SIDE = { label: 'TRANSFER', color: 0x0ea5e9, emoji: '🐋' }
+
+function pickSide(eventType?: string | null) {
+  if (!eventType) return FALLBACK_SIDE
+  return SIDE_CONFIG[eventType.toLowerCase()] ?? FALLBACK_SIDE
+}
+
 function formatUsd(value?: number | null) {
   if (typeof value !== 'number' || !Number.isFinite(value)) return '—'
   if (value >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(1)}B`
@@ -149,16 +165,31 @@ export async function sendWhaleEventToDiscord(event: WhaleEvent) {
     return
   }
 
+  const side = pickSide(event.event_type)
+  const amountUsdText = formatUsd(event.amount_usd)
+  const amountTokenText = formatTokens(event.amount_tokens)
+
+  const headerParts = [
+    side.emoji,
+    `${event.token_symbol || event.token_name || 'Unknown'} Whale Alert`,
+    side.emoji
+  ]
+
+  const descriptionLines = [
+    `**Value:** ${amountUsdText}`,
+    `**Amount:** ${amountTokenText}`,
+    event.chain ? `**Chain:** ${event.chain}` : null,
+    event.token_symbol && event.token_name ? `**Token:** ${event.token_symbol} · ${event.token_name}` : null
+  ].filter(Boolean)
+
   const embed = {
-    title: `${event.token_symbol || event.token_name || 'Unknown'} Whale Alert`,
-    description: `**Amount:** ${formatTokens(event.amount_tokens)} tokens\n**Value:** ${formatUsd(event.amount_usd)}${
-      event.chain ? `\n**Chain:** ${event.chain}` : ''
-    }`,
-    color: 0x00ffa3,
+    title: headerParts.join(' '),
+    description: descriptionLines.join('\n'),
+    color: side.color,
     fields: [
       {
         name: 'Event',
-        value: `${event.event_type || 'transfer'}`.toUpperCase(),
+        value: side.label,
         inline: true,
       },
       event.block_time
@@ -171,7 +202,7 @@ export async function sendWhaleEventToDiscord(event: WhaleEvent) {
       event.tx_url && event.tx_hash
         ? {
             name: 'Transaction',
-            value: `[View Explorer](${event.tx_url})`,
+            value: `[Open Transaction](${event.tx_url})`,
           }
         : null,
       event.sender && event.receiver
@@ -183,8 +214,9 @@ export async function sendWhaleEventToDiscord(event: WhaleEvent) {
         : null,
     ].filter(Boolean),
     footer: {
-      text: 'CryptoFlash Whale Alerts',
+      text: 'CryptoFlash Whale Alerts • Stay ahead of mega flows',
     },
+    timestamp: event.block_time ? new Date(event.block_time).toISOString() : undefined,
   }
 
   const payload = {
