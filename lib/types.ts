@@ -3,8 +3,6 @@ export type SubscriptionTier = 'free' | 'pro' | 'ultimate' | 'expired'
 export interface User {
   id: string
   email?: string
-  telegram_username?: string
-  telegram_chat_id?: string
   subscription_status: SubscriptionTier
   stripe_customer_id?: string
   stripe_subscription_id?: string

@@ -5,8 +5,6 @@
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email TEXT,
-  telegram_username TEXT, -- deprecated (legacy Telegram support)
-  telegram_chat_id TEXT UNIQUE, -- deprecated (legacy Telegram support)
   subscription_status TEXT DEFAULT 'free' CHECK (subscription_status IN ('free', 'pro', 'ultimate', 'expired')),
   stripe_customer_id TEXT,
   stripe_subscription_id TEXT,
@@ -16,7 +14,6 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 -- Indexes
-CREATE UNIQUE INDEX IF NOT EXISTS idx_users_telegram_chat_id ON users(telegram_chat_id) WHERE telegram_chat_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_users_stripe_subscription_id ON users(stripe_subscription_id);
 CREATE INDEX IF NOT EXISTS idx_users_subscription_status ON users(subscription_status);
 
