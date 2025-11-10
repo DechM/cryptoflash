@@ -11,7 +11,7 @@ import {
 } from './whales/networks'
 import { supabaseAdmin } from './supabase'
 
-export const MIN_WHALE_ALERT_USD = Number(process.env.WHALE_ALERT_MIN_USD || '5000')
+export const MIN_WHALE_ALERT_USD = Number(process.env.WHALE_ALERT_MIN_USD || '20000')
 export const DEFAULT_LOOKBACK_MINUTES = Number(process.env.WHALE_ALERT_LOOKBACK_MINUTES || '120')
 export const MAX_RESULTS_PER_ASSET = Number(process.env.WHALE_ALERT_TRANSACTIONS_LIMIT || '3')
 

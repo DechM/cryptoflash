@@ -19,7 +19,7 @@ import { WhaleEvent } from '@/lib/types'
 import { cn, copyToClipboard, formatAddress, formatNumber } from '@/lib/utils'
 
 const REFRESH_INTERVAL = Number(process.env.NEXT_PUBLIC_WHALE_REFRESH_MS || 60000)
-const MIN_WHALE_THRESHOLD = Number(process.env.NEXT_PUBLIC_WHALE_MIN_USD || process.env.WHALE_ALERT_MIN_USD || '5000')
+const MIN_WHALE_THRESHOLD = Number(process.env.NEXT_PUBLIC_WHALE_MIN_USD || process.env.WHALE_ALERT_MIN_USD || '20000')
 
 type FeedFilter = 'all' | 'transfer' | 'mint' | 'burn'
 type TimeFilter = '1h' | '6h' | '24h' | 'all'
@@ -191,7 +191,7 @@ export default function WhaleAlertsPage() {
                 <div>
                   <h1 className="text-3xl md:text-4xl font-bold gradient-text">Whale Alerts</h1>
                   <p className="text-[#94A3B8] text-sm md:text-base">
-                    Live tracker for high-value movements across the top Solana tokens. Powered by Birdeye + Helius.
+                    Live tracker for high-value movements across the top EVM tokens. Powered by CoinGecko + Bitquery.
                   </p>
                 </div>
                 <div className="glass-card px-4 py-3 rounded-xl text-right">
