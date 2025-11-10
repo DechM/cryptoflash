@@ -1,48 +1,26 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { Navbar } from '@/components/Navbar'
+import { blogPosts } from './posts'
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://cryptoflash.app'
 
 export const metadata: Metadata = {
   title: 'Blog | CryptoFlash Playbooks & KOTH Strategies',
-  description: 'Deep-dives on KOTH progression, sniper workflows and Solana bonding-curve economics. Learn how to extract signal from CryptoFlash and trade smarter.',
+  description:
+    'Deep-dives on KOTH progression, sniper workflows and Solana bonding-curve economics. Learn how to extract signal from CryptoFlash and trade smarter.',
   keywords: 'KOTH strategy, Solana bonding curve, CryptoFlash guides, memecoin sniper workflow, alerts tutorial',
   openGraph: {
     title: 'CryptoFlash Blog – KOTH Playbooks & Sniper Workflows',
-    description: 'Learn how to master KOTH progression, configure sniper alerts and understand Solana bonding curves with CryptoFlash.',
+    description:
+      'Learn how to master KOTH progression, configure sniper alerts and understand Solana bonding curves with CryptoFlash.',
     url: `${siteUrl}/blog`,
-    type: 'website',
+    type: 'website'
   },
   alternates: {
-    canonical: `${siteUrl}/blog`,
-  },
+    canonical: `${siteUrl}/blog`
+  }
 }
-
-// Blog posts data (will be moved to CMS or database later)
-const blogPosts = [
-  {
-    slug: 'koth-progression-playbook',
-    title: 'KOTH Progression Playbook: Reading Solana Bonding Curves',
-    description: 'Learn how to interpret bonding-curve progress, spot confidence signals and react before a token graduates to open liquidity.',
-    date: '2024-11-06',
-    readTime: '6 min read',
-  },
-  {
-    slug: 'cryptoflash-sniper-workflow',
-    title: 'CryptoFlash Sniper Workflow: Alerts, Scores & Execution',
-    description: 'Step-by-step workflow for configuring alerts, using AI Snipe Score and executing trades with discipline.',
-    date: '2024-11-05',
-    readTime: '7 min read',
-  },
-  {
-    slug: 'solana-bonding-curve-economics',
-    title: 'Solana Bonding Curve Economics Explained',
-    description: 'Understand how bonding curves price liquidity, why KOTH matters and how CryptoFlash models the curve.',
-    date: '2024-11-04',
-    readTime: '6 min read',
-  },
-]
 
 export default function BlogPage() {
   return (
