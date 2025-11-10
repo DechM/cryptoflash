@@ -43,7 +43,7 @@ export default function BlogPage() {
     <div className="min-h-screen bg-[#0B1020] w-full">
       <Navbar />
       
-      <main className="w-full px-4 sm:px-6 lg:px-8 py-8 max-w-6xl mx-auto">
+      <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-8 max-w-6xl lg:max-w-7xl xl:max-w-[115rem] mx-auto">
         {/* Header */}
         <div className="mb-12">
           <h1 className="text-4xl md:text-5xl font-bold gradient-text mb-4">
@@ -55,7 +55,7 @@ export default function BlogPage() {
         </div>
 
         {/* Blog Posts List */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {blogPosts.map((post) => (
             <Link
               key={post.slug}

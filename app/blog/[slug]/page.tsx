@@ -81,7 +81,7 @@ export default async function BlogArticlePage({ params }: BlogPageProps) {
     <div className="min-h-screen bg-[#0B1020] w-full">
       <Navbar />
 
-      <main className="w-full px-4 sm:px-6 lg:px-8 py-8 max-w-4xl mx-auto">
+      <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-8 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto">
         <div className="mb-10 space-y-4">
           <Link
             href="/blog"
@@ -98,7 +98,7 @@ export default async function BlogArticlePage({ params }: BlogPageProps) {
           </div>
         </div>
 
-        <article className="prose prose-invert prose-sm sm:prose-base lg:prose-lg max-w-none">
+        <article className="prose prose-invert prose-sm sm:prose-base lg:prose-lg xl:prose-xl max-w-none">
           {post.sections.map(section => (
             <section key={section.heading} className="mb-10">
               <h2>{section.heading}</h2>
