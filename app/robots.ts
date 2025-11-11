@@ -1,6 +1,6 @@
 import { MetadataRoute } from 'next'
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://cryptoflash.app'
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://cryptoflash.app').replace(/\/$/, '')
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -14,6 +14,7 @@ export default function robots(): MetadataRoute.Robots {
           '/test-',
           '/_next/',
           '/admin/',
+          '/premium/success',
         ],
       },
       {

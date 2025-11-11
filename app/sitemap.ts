@@ -1,54 +1,44 @@
 import { MetadataRoute } from 'next'
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://cryptoflash.app'
+const siteOrigin = process.env.NEXT_PUBLIC_SITE_URL || 'https://cryptoflash.app'
+const siteUrl = siteOrigin.replace(/\/$/, '')
 
 export default function sitemap(): MetadataRoute.Sitemap {
+  const now = new Date()
   return [
     {
       url: siteUrl,
-      lastModified: new Date(),
-      changeFrequency: 'hourly',
+      lastModified: now,
+      changeFrequency: 'daily',
       priority: 1,
     },
     {
       url: `${siteUrl}/dashboard`,
-      lastModified: new Date(),
+      lastModified: now,
       changeFrequency: 'hourly',
-      priority: 1,
-    },
-    {
-      url: `${siteUrl}/alerts`,
-      lastModified: new Date(),
-      changeFrequency: 'daily',
       priority: 0.9,
     },
     {
-      url: `${siteUrl}/premium`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.8,
+      url: `${siteUrl}/alerts`,
+      lastModified: now,
+      changeFrequency: 'daily',
+      priority: 0.6,
     },
     {
-      url: `${siteUrl}/leaderboard`,
-      lastModified: new Date(),
-      changeFrequency: 'hourly',
+      url: `${siteUrl}/premium`,
+      lastModified: now,
+      changeFrequency: 'weekly',
       priority: 0.7,
     },
     {
-      url: `${siteUrl}/login`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.5,
-    },
-    {
-      url: `${siteUrl}/register`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.5,
+      url: `${siteUrl}/leaderboard`,
+      lastModified: now,
+      changeFrequency: 'daily',
+      priority: 0.6,
     },
     {
       url: `${siteUrl}/blog`,
-      lastModified: new Date(),
+      lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.8,
     },
@@ -69,6 +59,24 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: new Date('2024-11-04'),
       changeFrequency: 'monthly',
       priority: 0.7,
+    },
+    {
+      url: `${siteUrl}/whale-alerts`,
+      lastModified: now,
+      changeFrequency: 'daily',
+      priority: 0.7,
+    },
+    {
+      url: `${siteUrl}/koth-tracker`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.75,
+    },
+    {
+      url: `${siteUrl}/faq`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.6,
     },
   ]
 }
