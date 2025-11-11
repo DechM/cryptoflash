@@ -28,33 +28,38 @@ export function calculateScore(data: ScoreCalculationData): number {
     rugRisk = 50 // Default medium risk
   } = data
 
-  // Curve Progress: 40% (0-40 points)
-  const progressScore = Math.min(curveProgress, 100) * 0.4
-  
-  // Curve Speed: 20% (0-20 points)
-  // Normalize curve speed (0-10 scale) to 0-20 points
-  const speedScore = Math.min(curveSpeed, 10) * 2
-  
-  // Whale Inflows: 15% (0-15 points)
-  // Normalize: 10+ SOL whale inflows = max (15 points)
-  const whaleScore = Math.min((whaleInflows / 10) * 15, 15)
-  
-  // Volume Jump: 15% (0-15 points)
-  // Normalize: +100% jump = max (15 points), negative jumps = 0
-  const volumeScore = Math.min(Math.max(volumeJump, 0), 100) * 0.15
-  
-  // Rug Risk penalty: -10 (max)
-  // rugRisk is 0-100, where 100 = safe, 0 = high risk
-  // Penalty: (100 - rugRisk) / 100 * 10
-  const rugPenalty = Math.min(((100 - rugRisk) / 100) * 10, 10)
+  const clampedProgress = Math.max(0, Math.min(curveProgress, 100))
+  const progressRatio = clampedProgress / 100
 
-  const totalScore = Math.min(100, Math.max(0,
-    progressScore +
-    speedScore +
-    whaleScore +
-    volumeScore -
-    rugPenalty
-  ))
+  // Progress carries more weight (up to ~65 points with late-stage bonus)
+  const progressBase = progressRatio * 50
+  const progressBonus = clampedProgress >= 95 ? (clampedProgress - 95) * 2.5 : 0
+  const progressScore = Math.min(progressBase + progressBonus, 65)
+
+  // Curve speed: keep 0-10 scale but slightly soften max (0-18 points)
+  const speedScore = Math.min(curveSpeed, 10) * 1.8
+
+  // Whale inflows: max out around 6 SOL worth of inflow (≈12 points)
+  const whaleScore = Math.min((whaleInflows / 6) * 12, 12)
+
+  // Volume jump: allow moderate gains to contribute (−20% -> 0, +120% -> max 12)
+  const normalizedVolume = Math.min(Math.max(volumeJump + 20, 0), 140)
+  const volumeScore = normalizedVolume * 0.0857142857 // ≈12 points max
+
+  // Rug penalty: soften to max 6 points so high-progress plays still surface
+  const rugPenalty = Math.min(((100 - rugRisk) / 100) * 6, 6)
+
+  const totalScore = Math.min(
+    100,
+    Math.max(
+      0,
+      progressScore +
+        speedScore +
+        whaleScore +
+        volumeScore -
+        rugPenalty
+    )
+  )
 
   return Math.round(totalScore * 100) / 100 // Round to 2 decimals
 }
