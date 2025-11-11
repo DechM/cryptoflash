@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import Script from 'next/script'
 
 import { Navbar } from '@/components/Navbar'
 import postsModule from '../posts'
@@ -77,9 +78,40 @@ export default async function BlogArticlePage({ params }: BlogPageProps) {
     notFound()
   }
 
+  const articleUrl = `${baseUrl}/blog/${post.slug}`
+  const articleSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: post.title,
+    description: post.description,
+    datePublished: post.date,
+    author: {
+      '@type': 'Person',
+      name: 'CryptoFlash'
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'CryptoFlash',
+      logo: {
+        '@type': 'ImageObject',
+        url: `${baseUrl}/og-image.png`
+      }
+    },
+    mainEntityOfPage: articleUrl,
+    image: `${baseUrl}/og-image.png`,
+    url: articleUrl
+  }
+
   return (
     <div className="min-h-screen bg-[#0B1020] w-full">
       <Navbar />
+
+      <Script
+        id={`article-schema-${post.slug}`}
+        type="application/ld+json"
+        strategy="afterInteractive"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+      />
 
       <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8 max-w-none">
         <div className="mb-10 space-y-4">

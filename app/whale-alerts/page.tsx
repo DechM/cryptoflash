@@ -1,5 +1,7 @@
 'use client'
 
+import Link from 'next/link'
+import Script from 'next/script'
 import { useEffect, useMemo, useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -179,6 +181,44 @@ export default function WhaleAlertsPage() {
     <div className="min-h-screen bg-[#050712] w-full flex flex-col">
       <Navbar />
 
+      <Script
+        id="whale-alerts-faq-schema"
+        type="application/ld+json"
+        strategy="afterInteractive"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Which blockchains does CryptoFlash Whale Alerts cover?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "We track high-value transactions across top EVM chains such as Ethereum, BNB Chain, Polygon, Base, Arbitrum, Optimism and Avalanche. Support expands as Bitquery releases new datasets."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "What is the minimum transfer size for a whale alert?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Our Ultimate plan delivers alerts for $20,000 USD+ transfers by default. The threshold can be tuned lower when activity spikes so you never miss smart money flows."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How are alerts delivered to traders?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Alerts post immediately inside the CryptoFlash Discord with rich embeds, wallet flow context and Bitquery data. We also auto-publish curated alerts to X/Twitter for public sentiment."
+                }
+              }
+            ]
+          })
+        }}
+      />
+
       <main className="w-full px-4 sm:px-6 lg:px-12 py-10 flex-grow">
         <div className="max-w-7xl mx-auto space-y-10">
           <header className="space-y-6">
@@ -192,6 +232,16 @@ export default function WhaleAlertsPage() {
                   <h1 className="text-3xl md:text-4xl font-bold gradient-text">Whale Alerts</h1>
                   <p className="text-[#94A3B8] text-sm md:text-base">
                     Live tracker for high-value movements across the top EVM tokens. Powered by CoinGecko + Bitquery.
+                  </p>
+                  <p className="text-[#94A3B8] text-sm md:text-base">
+                    Unlock Ultimate to receive Discord embeds and automated hype posts, or layer alerts with your{" "}
+                    <Link href="/alerts" className="text-[#00FFA3] hover:underline">
+                      KOTH rules
+                    </Link>{" "}
+                    for faster conviction. View plan details on{" "}
+                    <Link href="/premium" className="text-[#00FFA3] hover:underline">
+                      CryptoFlash Pricing
+                    </Link>.
                   </p>
                 </div>
                 <div className="glass-card px-4 py-3 rounded-xl text-right">
@@ -254,6 +304,43 @@ export default function WhaleAlertsPage() {
               ))}
             </div>
           </header>
+
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="grid gap-6 md:grid-cols-2"
+          >
+            <div className="glass-card rounded-2xl p-6 space-y-3">
+              <h2 className="text-lg md:text-xl font-heading text-white">Why whale flow matters for KOTH</h2>
+              <p className="text-sm md:text-base text-[#b8c5d6]">
+                Track concentrated capital before liquidity unlocks. Use whale inflows to confirm{" "}
+                <Link href="/dashboard" className="text-[#00FFA3] hover:underline">
+                  KOTH dashboard signals
+                </Link>{" "}
+                and avoid chasing exhausted curves.
+              </p>
+              <ul className="space-y-2 text-xs md:text-sm text-[#94A3B8]">
+                <li>• Filter events by type or timeframe to focus on actionable flow</li>
+                <li>• Copy wallet addresses to build blacklists or follow smart money</li>
+                <li>• Export events by joining our Ultimate tier for API + CSV access</li>
+              </ul>
+            </div>
+
+            <div className="glass-card rounded-2xl p-6 space-y-3">
+              <h2 className="text-lg md:text-xl font-heading text-white">Delivery built for Discord-first teams</h2>
+              <p className="text-sm md:text-base text-[#b8c5d6]">
+                Whale embeds land in the CryptoFlash Discord with value, chain and flow details. We also auto-post curated alerts to X/Twitter so your community can react instantly.
+              </p>
+              <p className="text-xs md:text-sm text-[#94A3B8]">
+                Tip: Pair alerts with scheduled review sessions or include them in your{" "}
+                <Link href="/blog/koth-progression-playbook" className="text-[#00FFA3] hover:underline">
+                  KOTH strategy playbook
+                </Link>{" "}
+                for consistent execution.
+              </p>
+            </div>
+          </motion.section>
 
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <div className="glass-card rounded-2xl border border-white/10 p-4">

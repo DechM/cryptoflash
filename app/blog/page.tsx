@@ -52,6 +52,17 @@ export default function BlogPage() {
           <p className="text-lg text-[#b8c5d6] leading-relaxed">
             Playbooks for traders who rely on CryptoFlash. Master KOTH progression, fine-tune sniper alerts and build conviction with real data.
           </p>
+          <p className="text-sm text-[#94A3B8] mt-3">
+            Looking for live data? Hop over to our{' '}
+            <Link href="/whale-alerts" className="text-[#00FFA3] hover:underline">
+              Whale Alerts feed
+            </Link>{' '}
+            or{' '}
+            <Link href="/dashboard" className="text-[#00FFA3] hover:underline">
+              KOTH dashboard
+            </Link>{' '}
+            and plug these playbooks into action.
+          </p>
         </div>
 
         {/* Blog Posts List */}
