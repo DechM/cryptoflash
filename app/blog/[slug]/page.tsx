@@ -10,7 +10,7 @@ import type { BlogPost } from '../posts'
 type BlogParams = { slug: string }
 
 interface BlogPageProps {
-  params: BlogParams | Promise<BlogParams>
+  params: Promise<BlogParams>
 }
 
 const rawPosts = postsModule as unknown
