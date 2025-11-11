@@ -110,11 +110,6 @@ export default function RootLayout({
                 "priceCurrency": "USD",
                 "availability": "https://schema.org/InStock"
               },
-              "aggregateRating": {
-                "@type": "AggregateRating",
-                "ratingValue": "5",
-                "ratingCount": "1"
-              },
               "featureList": [
                 "Real-time KOTH tracking",
                 "Early alerts at 69%+ progress",
@@ -123,6 +118,9 @@ export default function RootLayout({
                 "Automated Twitter/X alerts",
                 "Discord notifications",
                 "Live dashboard"
+              ],
+              "sameAs": [
+                "https://x.com/CryptoFlashGuru"
               ],
               "screenshot": `${siteUrl}/og-image.png`
             })
