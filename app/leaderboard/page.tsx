@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { Navbar } from '@/components/Navbar'
 import { Trophy, Medal, Award, TrendingUp } from 'lucide-react'
 import { motion } from 'framer-motion'
@@ -57,7 +58,14 @@ export default function LeaderboardPage() {
             Leaderboard
           </h1>
           <p className="text-[#b8c5d6]">
-            Top wallets sniping Pump.fun KOTH tokens
+            Top wallets sniping Pump.fun KOTH tokens. Want to join them? Explore the{' '}
+            <Link href="/koth-tracker" className="text-[#00FFA3] hover:underline">
+              KOTH Tracker
+            </Link>{' '}
+            and subscribe to{' '}
+            <Link href="/alerts" className="text-[#00FFA3] hover:underline">
+              KOTH alerts
+            </Link>.
           </p>
         </motion.div>
 

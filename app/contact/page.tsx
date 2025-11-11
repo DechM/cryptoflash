@@ -1,4 +1,5 @@
 import { Metadata } from 'next'
+import Link from 'next/link'
 import { Navbar } from '@/components/Navbar'
 import { Twitter } from 'lucide-react'
 
@@ -19,9 +20,21 @@ export default function ContactPage() {
       <main className="w-full px-4 sm:px-6 lg:px-8 py-12 max-w-4xl mx-auto flex-grow">
         <div className="glass-card rounded-xl p-6 md:p-8">
           <h1 className="text-4xl font-bold gradient-text mb-6">Contact Us</h1>
-          <p className="text-lg text-[#b8c5d6] mb-8">
-            Have questions, feedback, or need support? We're here to help!
+          <p className="text-lg text-[#b8c5d6] mb-6">
+            Have questions, feedback, or need support? We're here to help! Check the{' '}
+            <Link href="/faq" className="text-[#00FFA3] hover:underline">
+              FAQ page
+            </Link>{' '}
+            or reach out directly below.
           </p>
+          <div className="mb-6">
+            <Link
+              href="/whale-alerts"
+              className="inline-flex items-center px-4 py-2 rounded-lg bg-[#00FFA3]/20 border border-[#00FFA3]/40 text-[#00FFA3] hover:bg-[#00FFA3]/30 transition-colors text-sm font-semibold"
+            >
+              View Whale Alerts
+            </Link>
+          </div>
 
           <div className="space-y-8">
             {/* Social Media */}
@@ -42,13 +55,16 @@ export default function ContactPage() {
 
             {/* FAQ Section */}
             <div className="glass-card rounded-xl p-6">
-              <h2 className="text-xl font-bold text-[#F8FAFC] mb-4">Frequently Asked Questions</h2>
+              <h2 className="text-xl font-bold text-[#F8FAFC] mb-4">Highlights</h2>
               <div className="space-y-4">
                 <div>
                   <h3 className="text-lg font-semibold text-[#F8FAFC] mb-2">How do I set up alerts?</h3>
                   <p className="text-[#b8c5d6]">
-                    Go to the <a href="/alerts" className="text-[#00FFA3] hover:underline">Alerts page</a>, 
-                    link your Discord account, and create alert rules for tokens you want to track.
+                    Go to the{' '}
+                    <Link href="/alerts" className="text-[#00FFA3] hover:underline">
+                      Alerts page
+                    </Link>
+                    , link your Discord account, и създай правила за токени, които искаш да следиш.
                   </p>
                 </div>
                 <div>
@@ -63,6 +79,20 @@ export default function ContactPage() {
                   <p className="text-[#b8c5d6]">
                     Yes, you can cancel your subscription at any time. 
                     Cancellation takes effect at the end of the current billing period.
+                  </p>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-[#F8FAFC] mb-2">Need faster signals?</h3>
+                  <p className="text-[#b8c5d6]">
+                    Upgrade to{' '}
+                    <Link href="/premium" className="text-[#00FFA3] underline">
+                      Pro
+                    </Link>{' '}
+                    or{' '}
+                    <Link href="/premium" className="text-[#00FFA3] underline">
+                      Ultimate
+                    </Link>{' '}
+                    for earlier alerts, повече токени и Whale Alerts.
                   </p>
                 </div>
                 <div>
