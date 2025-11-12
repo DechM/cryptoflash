@@ -218,8 +218,24 @@ CREATE TABLE IF NOT EXISTS whale_events (
   network TEXT
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_whale_events_tx_hash ON whale_events(tx_hash);
+ALTER TABLE twitter_posts
+  ALTER COLUMN token_address DROP NOT NULL;
+
+ALTER TABLE twitter_posts
+  DROP CONSTRAINT IF EXISTS twitter_posts_token_address_key;
+
+ALTER TABLE twitter_posts
+  ALTER COLUMN token_address SET NOT NULL;
+
+ALTER TABLE whale_events
+  ADD COLUMN IF NOT EXISTS posted_to_discord BOOLEAN DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS discord_message_id TEXT,
+  ADD COLUMN IF NOT EXISTS discord_posted_at TIMESTAMPTZ;
+
 CREATE INDEX IF NOT EXISTS idx_whale_events_block_time ON whale_events(block_time DESC);
+CREATE INDEX IF NOT EXISTS idx_whale_events_posted_to_twitter ON whale_events(posted_to_twitter);
+CREATE INDEX IF NOT EXISTS idx_whale_events_posted_to_discord ON whale_events(posted_to_discord);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_whale_events_tx_hash ON whale_events(tx_hash);
 
 
 -- Twitter Rate Limit State

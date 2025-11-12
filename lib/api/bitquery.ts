@@ -18,25 +18,40 @@ export class BitqueryError extends Error {
 }
 
 const BITQUERY_ENDPOINT = process.env.BITQUERY_ENDPOINT || 'https://graphql.bitquery.io'
-const BITQUERY_API_KEY = process.env.BITQUERY_API_KEY || ''
 
-function buildHeaders(): Record<string, string> {
-  if (!BITQUERY_API_KEY) {
-    throw new BitqueryError('BITQUERY_API_KEY is not configured')
+const rawKeyList = (process.env.BITQUERY_API_KEYS || '')
+  .split(',')
+  .map(key => key.trim())
+  .filter(Boolean)
+
+const fallbackKey = process.env.BITQUERY_API_KEY?.trim()
+
+const bitqueryKeys = rawKeyList.length > 0 ? rawKeyList : fallbackKey ? [fallbackKey] : []
+
+let nextKeyIndex = 0
+
+function getNextApiKey(): string {
+  if (bitqueryKeys.length === 0) {
+    throw new BitqueryError('No Bitquery API keys configured. Set BITQUERY_API_KEYS or BITQUERY_API_KEY.')
   }
+  const key = bitqueryKeys[nextKeyIndex]
+  nextKeyIndex = (nextKeyIndex + 1) % bitqueryKeys.length
+  return key
+}
 
-  const isNewAuthKey = BITQUERY_API_KEY.startsWith('ory_')
+function buildHeaders(apiKey: string): Record<string, string> {
+  const isNewAuthKey = apiKey.startsWith('ory_')
 
   if (isNewAuthKey) {
     return {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${BITQUERY_API_KEY}`
+      Authorization: `Bearer ${apiKey}`
     }
   }
 
   return {
     'Content-Type': 'application/json',
-    'X-API-KEY': BITQUERY_API_KEY
+    'X-API-KEY': apiKey
   }
 }
 
@@ -45,13 +60,13 @@ export async function bitqueryRequest<T>(
   variables: Record<string, unknown>,
   options: { signal?: AbortSignal; retryCount?: number } = {}
 ): Promise<T> {
-  const headers = buildHeaders()
-
   const { signal, retryCount = 1 } = options
   let attempt = 0
   let lastError: unknown
 
   while (attempt <= retryCount) {
+    const apiKey = getNextApiKey()
+    const headers = buildHeaders(apiKey)
     try {
       const response = await fetch(BITQUERY_ENDPOINT, {
         method: 'POST',

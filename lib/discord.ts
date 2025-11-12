@@ -38,6 +38,10 @@ const DISCORD_WHALE_ROLE_ID = process.env.DISCORD_WHALE_ROLE_ID || ''
 const DISCORD_ALERT_CHANNEL_ID = process.env.DISCORD_ALERT_CHANNEL_ID || ''
 const DISCORD_KOTH_CHANNEL_ID = process.env.DISCORD_KOTH_CHANNEL_ID || ''
 
+interface DiscordMessageResponse {
+  id?: string | null
+}
+
 interface DiscordTokenResponse {
   access_token: string
   token_type: string
@@ -161,9 +165,14 @@ export async function removeUserRole(userId: string) {
   }
 }
 
-export async function sendWhaleEventToDiscord(event: WhaleEvent) {
-  if (!DISCORD_ALERT_CHANNEL_ID || !DISCORD_BOT_TOKEN) {
-    return
+export async function sendWhaleEventToDiscord(event: WhaleEvent): Promise<DiscordMessageResponse | null> {
+  if (!DISCORD_ALERT_CHANNEL_ID) {
+    console.warn('[Discord] DISCORD_ALERT_CHANNEL_ID not configured; skipping whale alert.')
+    return null
+  }
+  if (!DISCORD_BOT_TOKEN) {
+    console.warn('[Discord] DISCORD_BOT_TOKEN not configured; skipping whale alert.')
+    return null
   }
 
   const side = pickSide(event.event_type)
@@ -236,6 +245,13 @@ export async function sendWhaleEventToDiscord(event: WhaleEvent) {
   if (!response.ok) {
     const text = await response.text()
     console.error('[Discord] Failed to send whale alert:', response.status, text)
+    return null
+  }
+
+  try {
+    return await response.json()
+  } catch {
+    return { id: null }
   }
 }
 
@@ -249,6 +265,21 @@ function formatTinyUsd(value?: number | null) {
   if (value >= 1) return `$${value.toFixed(2)}`
   if (value >= 0.01) return `$${value.toFixed(4)}`
   return `$${value.toFixed(6)}`
+}
+
+function formatSolAmount(value?: number | null) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null
+  return `${value.toFixed(2)} SOL`
+}
+
+function formatCurveSpeed(value?: number | null) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null
+  return `${value.toFixed(1)}/10`
+}
+
+function formatWhaleInflows(value?: number | null) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null
+  return value.toFixed(2)
 }
 
 export interface KothWatcherInfo {
@@ -271,13 +302,18 @@ interface KothTokenPayload {
   whaleInflows?: number
 }
 
-export async function sendKothAlertToDiscord(token: KothTokenPayload, watchers: KothWatcherInfo[]) {
-  if (!DISCORD_KOTH_CHANNEL_ID || !DISCORD_BOT_TOKEN) {
-    return
+export async function sendKothAlertToDiscord(token: KothTokenPayload, watchers: KothWatcherInfo[]): Promise<DiscordMessageResponse | null> {
+  if (!DISCORD_KOTH_CHANNEL_ID) {
+    console.warn('[Discord] DISCORD_KOTH_CHANNEL_ID not configured; skipping KOTH alert.')
+    return null
+  }
+  if (!DISCORD_BOT_TOKEN) {
+    console.warn('[Discord] DISCORD_BOT_TOKEN not configured; skipping KOTH alert.')
+    return null
   }
 
   if (!watchers.length) {
-    return
+    return null
   }
 
   const previewLines = watchers.slice(0, 12).map(watcher => {
@@ -293,6 +329,15 @@ export async function sendKothAlertToDiscord(token: KothTokenPayload, watchers: 
 
   const pumpFunUrl = `https://pump.fun/coin/${token.tokenAddress}`
 
+  const liquidityText = formatSolAmount(token.liquidity)
+  const volumeText = formatSolAmount(token.volume24h)
+  const curveSpeedText = formatCurveSpeed(token.curveSpeed)
+  const inflowsText = formatWhaleInflows(token.whaleInflows)
+  const whalesFieldValue =
+    token.whaleCount && token.whaleCount > 0
+      ? `${token.whaleCount}${inflowsText ? ` (infl. ${inflowsText} SOL)` : ''}`
+      : null
+
   const embed = {
     title: `🏆 ${token.name} (${token.symbol}) KOTH Alert`,
     description: [
@@ -302,31 +347,31 @@ export async function sendKothAlertToDiscord(token: KothTokenPayload, watchers: 
     ].join('\n'),
     color: 0xf97316,
     fields: [
-      token.liquidity !== undefined
+      liquidityText
         ? {
             name: 'Liquidity',
-            value: `${token.liquidity.toFixed(2)} SOL`,
+            value: liquidityText,
             inline: true
           }
         : null,
-      token.volume24h !== undefined
+      volumeText
         ? {
             name: '24h Volume',
-            value: `${token.volume24h.toFixed(2)} SOL`,
+            value: volumeText,
             inline: true
           }
         : null,
-      token.curveSpeed !== undefined
+      curveSpeedText
         ? {
             name: 'Curve Speed',
-            value: `${token.curveSpeed.toFixed(1)}/10`,
+            value: curveSpeedText,
             inline: true
           }
         : null,
-      token.whaleCount
+      whalesFieldValue
         ? {
             name: 'Whales',
-            value: `${token.whaleCount} (infl. ${token.whaleInflows?.toFixed(2) ?? 0} SOL)`,
+            value: whalesFieldValue,
             inline: true
           }
         : null,
@@ -362,5 +407,12 @@ export async function sendKothAlertToDiscord(token: KothTokenPayload, watchers: 
   if (!response.ok) {
     const text = await response.text()
     console.error('[Discord] Failed to send KOTH alert:', response.status, text)
+    return null
+  }
+
+  try {
+    return await response.json()
+  } catch {
+    return { id: null }
   }
 }

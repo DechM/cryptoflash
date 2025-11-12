@@ -22,6 +22,12 @@ import { recordCronFailure, recordCronSuccess } from '@/lib/cron'
 // Rate limiting constants
 const MIN_POST_INTERVAL = 20 * 60 * 1000 // 20 minutes between posts
 const MAX_POSTS_PER_DAY = 15 // 15 posts/day = 450 posts/month (safe margin for 500/month free tier)
+const WHALE_RETENTION_HOURS = Number(process.env.WHALE_EVENT_RETENTION_HOURS || '48')
+const KOTH_REPOST_COOLDOWN_HOURS = Number(process.env.KOTH_REPOST_COOLDOWN_HOURS || '48')
+
+function getCooldownCutoff(hours: number): number {
+  return Date.now() - hours * 60 * 60 * 1000
+}
 
 async function getStoredResumeAt(): Promise<Date | null> {
   const { data } = await supabaseAdmin
@@ -47,6 +53,37 @@ async function setStoredResumeAt(unixSeconds: number | null) {
 
   if (error) {
     console.error('[Twitter Post] Failed to persist rate limit resume_at:', error)
+  }
+}
+
+async function markOlderWhalesAsPosted(cutoffIso: string) {
+  try {
+    await supabaseAdmin
+      .from('whale_events')
+      .update({ posted_to_twitter: true })
+      .eq('posted_to_twitter', false)
+      .lt('block_time', cutoffIso)
+  } catch (error) {
+    console.warn('[Twitter Post] Failed to mark older whale events as posted:', error)
+  }
+}
+
+async function cleanupWhaleRetention() {
+  if (WHALE_RETENTION_HOURS <= 0) return
+  const cutoffIso = new Date(getCooldownCutoff(WHALE_RETENTION_HOURS)).toISOString()
+  try {
+    await supabaseAdmin
+      .from('whale_events')
+      .delete()
+      .lt('block_time', cutoffIso)
+
+    await supabaseAdmin
+      .from('whale_events')
+      .delete()
+      .is('block_time', null)
+      .lt('created_at', cutoffIso)
+  } catch (error) {
+    console.warn('[Twitter Post] Failed to prune stale whale events:', error)
   }
 }
 
@@ -141,6 +178,7 @@ async function handleTwitterPost() {
     .from('whale_events')
     .select('*')
     .eq('posted_to_twitter', false)
+    .gte('block_time', new Date(Date.now() - 90 * 60 * 1000).toISOString())
     .order('block_time', { ascending: false })
     .limit(1)
     .maybeSingle<WhaleEvent>()
@@ -179,15 +217,17 @@ async function handleTwitterPost() {
       )
 
       updatePromises.push(
-        supabaseAdmin.from('twitter_posts').insert({
-          token_address: pendingWhale.tx_hash,
-          token_name: pendingWhale.token_name || pendingWhale.token_symbol || pendingWhale.token_address,
-          token_symbol: pendingWhale.token_symbol,
-          score: pendingWhale.amount_usd || null,
-          progress: null,
-          tweet_id: tweetResult.id,
-          posted_at: new Date().toISOString()
-        })
+        supabaseAdmin
+          .from('twitter_posts')
+          .upsert({
+            token_address: pendingWhale.tx_hash,
+            token_name: pendingWhale.token_name || pendingWhale.token_symbol || pendingWhale.token_address,
+            token_symbol: pendingWhale.token_symbol,
+            score: pendingWhale.amount_usd || null,
+            progress: null,
+            tweet_id: tweetResult.id,
+            posted_at: new Date().toISOString()
+          }, { onConflict: 'token_address' })
       )
 
       const updateResults = await Promise.allSettled(updatePromises)
@@ -196,6 +236,11 @@ async function handleTwitterPost() {
           console.error('[Twitter Post] Failed to persist whale tweet metadata', idx, result.reason)
         }
       })
+
+      if (pendingWhale.block_time) {
+        await markOlderWhalesAsPosted(pendingWhale.block_time)
+      }
+      await cleanupWhaleRetention()
 
       await setStoredResumeAt(null)
 
@@ -215,6 +260,8 @@ async function handleTwitterPost() {
       console.error('[Twitter Post] Failed to post whale tweet - postTweet returned null/undefined')
     }
   }
+
+  await cleanupWhaleRetention()
 
   // Fetch latest KOTH tokens
   const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/g, '') || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')).replace(/\/$/, '')
@@ -293,9 +340,19 @@ async function handleTwitterPost() {
   // Get already posted tokens
   const { data: postedTokens } = await supabaseAdmin
     .from('twitter_posts')
-    .select('token_address')
+    .select('token_address, posted_at')
 
-  const postedAddresses = new Set(postedTokens?.map((t) => t.token_address) || [])
+  const reuseCutoff = getCooldownCutoff(KOTH_REPOST_COOLDOWN_HOURS)
+  const postedAddresses = new Set(
+    (postedTokens || [])
+      .filter((t) => {
+        if (!t?.token_address) return false
+        if (!t.posted_at) return true
+        const postedTs = new Date(t.posted_at).getTime()
+        return Number.isNaN(postedTs) ? true : postedTs >= reuseCutoff
+      })
+      .map((t) => t.token_address)
+  )
   console.log(`[Twitter Post] Found ${postedAddresses.size} already posted tokens`)
 
   // Filter out already posted tokens
@@ -372,15 +429,17 @@ async function handleTwitterPost() {
       console.log(`[Twitter Post] Successfully posted tweet for ${token.symbol}: ${tweetResult.id}`)
       
       // Save to database
-      const { error: insertError } = await supabaseAdmin.from('twitter_posts').insert({
-        token_address: token.tokenAddress,
-        token_name: token.name,
-        token_symbol: token.symbol,
-        score: token.score,
-        progress: token.progress,
-        tweet_id: tweetResult.id,
-        posted_at: new Date().toISOString()
-      })
+      const { error: insertError } = await supabaseAdmin
+        .from('twitter_posts')
+        .upsert({
+          token_address: token.tokenAddress,
+          token_name: token.name,
+          token_symbol: token.symbol,
+          score: token.score,
+          progress: token.progress,
+          tweet_id: tweetResult.id,
+          posted_at: new Date().toISOString()
+        }, { onConflict: 'token_address' })
 
       if (insertError) {
         console.error(`[Twitter Post] Error saving to database:`, insertError)

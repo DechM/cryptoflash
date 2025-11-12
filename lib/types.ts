@@ -87,6 +87,9 @@ export interface WhaleEvent {
   fee?: number | null
   posted_to_twitter: boolean
   tweet_id?: string | null
+  posted_to_discord?: boolean
+  discord_message_id?: string | null
+  discord_posted_at?: string | null
   created_at: string
   chain?: string | null
   network?: string | null

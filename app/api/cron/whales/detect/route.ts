@@ -19,6 +19,7 @@ export const dynamic = 'force-dynamic'
 
 const DEFAULT_TOKEN_LIMIT = Number(process.env.WHALE_ALERT_TOKEN_LIMIT || '10')
 const PER_TOKEN_DELAY_MS = Number(process.env.WHALE_ALERT_DELAY_MS || '1500')
+const WHALE_RETENTION_HOURS = Number(process.env.WHALE_EVENT_RETENTION_HOURS || '48')
 
 export async function GET(request: NextRequest) {
   if (!isSupabaseConfigured) {
@@ -139,12 +140,23 @@ export async function GET(request: NextRequest) {
           summary.inserted += payload.length
           for (const item of payload) {
             try {
-            await sendWhaleEventToDiscord({
-              ...item,
-              id: crypto.randomUUID(),
-              created_at: item.created_at ?? new Date().toISOString(),
-              posted_to_twitter: false
-            })
+              const discordMessage = await sendWhaleEventToDiscord({
+                ...item,
+                id: crypto.randomUUID(),
+                created_at: item.created_at ?? new Date().toISOString(),
+                posted_to_twitter: false
+              })
+
+              if (discordMessage?.id) {
+                await supabaseAdmin
+                  .from('whale_events')
+                  .update({
+                    posted_to_discord: true,
+                    discord_message_id: discordMessage.id,
+                    discord_posted_at: new Date().toISOString()
+                  })
+                  .eq('tx_hash', item.tx_hash)
+              }
             } catch (discordError) {
               console.warn('[Whale Detect] Failed to post to Discord:', discordError)
             }
@@ -156,6 +168,25 @@ export async function GET(request: NextRequest) {
       }
 
       await delay(PER_TOKEN_DELAY_MS)
+    }
+
+    // Cleanup: remove whale events outside retention window to keep feed fresh
+    try {
+      if (WHALE_RETENTION_HOURS > 0) {
+        const cutoff = new Date(Date.now() - WHALE_RETENTION_HOURS * 60 * 60 * 1000).toISOString()
+        await supabaseAdmin
+          .from('whale_events')
+          .delete()
+          .lt('block_time', cutoff)
+
+        await supabaseAdmin
+          .from('whale_events')
+          .delete()
+          .is('block_time', null)
+          .lt('created_at', cutoff)
+      }
+    } catch (cleanupError) {
+      console.warn('[Whale Detect] Failed to cleanup old whale events:', cleanupError)
     }
 
     await recordCronSuccess('whales:detect', summary)
