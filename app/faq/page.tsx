@@ -15,43 +15,43 @@ export const metadata = {
 
 const faqs = [
   {
-    question: 'Какво представляват KOTH alert-ите?',
+    question: 'What are KOTH alerts?',
     answer:
-      'KOTH (King of the Hill) alert-ите се задействат, когато Pump.fun токен премине определен AI Snipe Score. Стандартният праг е 95% за Free, 85% за Pro и 80% за Ultimate план.',
+      'King of the Hill (KOTH) alerts trigger when a Pump.fun token crosses a configured AI Snipe Score threshold. Free fires at 95%, Pro at 85%, and Ultimate at 80%.',
   },
   {
-    question: 'Имам ли нужда от Discord, за да получавам аларми?',
+    question: 'Do I need Discord to receive alerts?',
     answer: (
       <>
-        Да. Свързването на Discord е задължително. Отиди в{' '}
+        Yes. Discord linking is required to receive CryptoFlash notifications. Go to{' '}
         <Link prefetch={false} href="/alerts" className="text-[#00FFA3] hover:underline">
           Alerts &gt; Manage
         </Link>{' '}
-        и натисни “Link Discord”, за да дадеш достъп на CryptoFlash бота.
+        and click “Link Discord” to authorise the CryptoFlash bot.
       </>
     ),
   },
   {
-    question: 'Как работят Whale Alerts?',
+    question: 'How do Whale Alerts work?',
     answer:
-      'Whale Alerts са включени в Ultimate плана. След като активираш абонамента, автоматично получаваш достъп до Discord канала с всички $20K+ трансфери и curated постове в X/Twitter.',
+      'Whale Alerts are bundled with the Ultimate plan. Once your subscription is active, the private Discord channel posts every $20K+ transfer together with curated X/Twitter updates.',
   },
   {
-    question: 'Как се извършват плащанията?',
+    question: 'How are payments handled?',
     answer: (
       <>
-        Плащанията стават чрез Solana Pay. На страницата{' '}
+        Billing is processed through Solana Pay. On the{' '}
         <Link prefetch={false} href="/premium" className="text-[#00FFA3] hover:underline">
           Pricing
         </Link>{' '}
-        избери план и следвай стъпките за QR/Phantom плащане. При успех ще видиш страница “Payment Successful”.
+        page select a plan and follow the QR/Phantom flow. After confirmation you will land on the “Payment Successful” page.
       </>
     ),
   },
   {
-    question: 'Мога ли да експортирам данните си?',
+    question: 'Can I export my data?',
     answer:
-      'Pro и Ultimate плановете позволяват експортиране на dashboard данни и alert history. Използвай бутона “Export” в KOTH dashboard секцията.',
+      'Both Pro and Ultimate support CSV export for dashboard data and alert history. Use the “Export” button in the KOTH dashboard section.',
   },
 ]
 
@@ -97,10 +97,10 @@ export default function FaqPage() {
           <section className="space-y-4 text-center">
             <h1 className="text-3xl md:text-4xl font-heading text-white">CryptoFlash FAQ</h1>
             <p className="text-base md:text-lg text-[#b8c5d6]">
-              Събрахме най-често задаваните въпроси за KOTH alert-ите, Discord интеграцията, Whale Alerts и плащанията.
-              Ако не откриеш нужния отговор, свържи се с нас през{' '}
+              Answers to the most common questions about KOTH alerts, Discord linking, Whale Alerts and billing.
+              Need more help? Reach out via the{' '}
               <Link prefetch={false} href="/contact" className="text-[#00FFA3] hover:underline">
-                контактната форма
+                contact form
               </Link>.
             </p>
           </section>
@@ -115,25 +115,25 @@ export default function FaqPage() {
           </section>
 
           <section className="glass-card rounded-2xl p-6 md:p-8 space-y-4">
-            <h2 className="text-lg md:text-xl font-heading text-white">Допълнителни ресурси</h2>
+            <h2 className="text-lg md:text-xl font-heading text-white">Additional resources</h2>
             <ul className="list-disc list-inside text-sm md:text-base text-[#b8c5d6] space-y-2">
               <li>
                 <Link prefetch={false} href="/whale-alerts" className="text-[#00FFA3] hover:underline">
                   Whale Alerts Dashboard
                 </Link>{' '}
-                – виж какво получаваш с Ultimate плана
+                – see what is included with the Ultimate plan.
               </li>
               <li>
                 <Link prefetch={false} href="/blog/cryptoflash-sniper-workflow" className="text-[#00FFA3] hover:underline">
                   CryptoFlash Sniper Workflow
                 </Link>{' '}
-                – стъпка по стъпка за KOTH операционна система
+                – a step-by-step operating system for KOTH sniping.
               </li>
               <li>
                 <Link prefetch={false} href="/leaderboard" className="text-[#00FFA3] hover:underline">
                   Pump.fun Leaderboard
                 </Link>{' '}
-                – следи топ портфейлите и техните резултати
+                – track top-performing wallets and their results.
               </li>
             </ul>
           </section>
