@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import Script from 'next/script'
 import { useEffect, useMemo, useState } from 'react'
-import { formatDistanceToNow } from 'date-fns'
 import {
   Activity,
   ArrowRight,
@@ -78,6 +77,37 @@ function formatTokenAmount(value?: number | null) {
     return `${formatNumber(value, 2)} tokens`
   }
   return `${value.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 })}`
+}
+
+function formatRelativeTime(value?: Date | string | null) {
+  if (!value) return 'just now'
+  const timestamp = value instanceof Date ? value.getTime() : new Date(value).getTime()
+  if (!Number.isFinite(timestamp)) return 'just now'
+
+  const now = Date.now()
+  let diffSeconds = Math.round((now - timestamp) / 1000)
+  const suffix = diffSeconds >= 0 ? 'ago' : 'from now'
+  diffSeconds = Math.abs(diffSeconds)
+
+  const units = [
+    { limit: 60, divisor: 1, unit: 'second' },
+    { limit: 3600, divisor: 60, unit: 'minute' },
+    { limit: 86400, divisor: 3600, unit: 'hour' },
+    { limit: 604800, divisor: 86400, unit: 'day' },
+    { limit: 2629800, divisor: 604800, unit: 'week' },
+    { limit: 31557600, divisor: 2629800, unit: 'month' },
+    { limit: Infinity, divisor: 31557600, unit: 'year' },
+  ]
+
+  for (const { limit, divisor, unit } of units) {
+    if (diffSeconds < limit) {
+      const value = Math.max(1, Math.floor(diffSeconds / divisor))
+      const plural = value === 1 ? unit : `${unit}s`
+      return `${value} ${plural} ${suffix}`
+    }
+  }
+
+  return 'just now'
 }
 
 async function safeCopy(value: string) {
@@ -264,9 +294,7 @@ export default function WhaleAlertsPage() {
               ))}
 
               <div className="ml-auto flex items-center gap-3 text-xs text-[#6b7280]">
-                {lastUpdated && (
-                  <span>Updated {formatDistanceToNow(lastUpdated, { addSuffix: true })}</span>
-                )}
+                {lastUpdated && <span>Updated {formatRelativeTime(lastUpdated)}</span>}
                 <button
                   onClick={() => fetchEvents(filter)}
                   className={cn(
@@ -399,7 +427,7 @@ export default function WhaleAlertsPage() {
                       <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#1f2937] to-[#0f172a] flex items-center justify-center text-xl">🐳</div>
                       <div>
                         <p className="text-sm text-[#6b7280]">
-                          {event.block_time ? formatDistanceToNow(new Date(event.block_time), { addSuffix: true }) : 'Just now'}
+                          {event.block_time ? formatRelativeTime(event.block_time) : 'Just now'}
                         </p>
                         <h3 className="text-lg font-semibold text-white">
                           {event.token_symbol || formatAddress(event.token_address, 6)}
@@ -473,7 +501,7 @@ export default function WhaleAlertsPage() {
                       {selectedEvent.token_name || selectedEvent.token_symbol || formatAddress(selectedEvent.token_address, 6)}
                     </h2>
                     <p className="text-sm text-[#94A3B8]">
-                      Detected {selectedEvent.block_time ? formatDistanceToNow(new Date(selectedEvent.block_time), { addSuffix: true }) : 'just now'}
+                      Detected {selectedEvent.block_time ? formatRelativeTime(selectedEvent.block_time) : 'just now'}
                     </p>
                   </div>
                   <div className="text-right space-y-1">

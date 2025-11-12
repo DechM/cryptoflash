@@ -2,12 +2,17 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { usePlan } from "@/hooks/usePlan";
 import { useSession } from "@/hooks/useSession";
 import type { PlanId } from "@/lib/plan";
 import { Crown, Zap, Shield, Sparkles, Check, Lock } from "lucide-react";
-import { SolanaPayModal } from "./SolanaPayModal";
 import Link from "next/link";
+
+const SolanaPayModal = dynamic(
+  () => import("./SolanaPayModal").then((mod) => mod.SolanaPayModal),
+  { ssr: false, loading: () => null }
+);
 
 function Card({
   title,
