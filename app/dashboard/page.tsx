@@ -3,16 +3,47 @@
 import { useEffect, useState } from 'react'
 import { Token } from '@/lib/types'
 import { Navbar } from '@/components/Navbar'
-import { TokenTable } from '@/components/TokenTable'
-import { Heatmap } from '@/components/Heatmap'
 import { AdvancedFilters, FilterState } from '@/components/AdvancedFilters'
 import { exportToCSV } from '@/lib/utils'
 import { useFeature } from '@/hooks/useFeature'
 import { RefreshCw, Zap, Download } from 'lucide-react'
 import useSWR from 'swr'
 import Script from 'next/script'
+import dynamic from 'next/dynamic'
 
 const fetcher = (url: string) => fetch(url).then(res => res.json())
+
+function HeatmapSkeleton() {
+  return (
+    <div className="glass-card rounded-xl p-6">
+      <div className="h-6 w-40 bg-white/10 rounded mb-4 animate-pulse" />
+      <div className="h-72 w-full rounded-2xl bg-white/5 border border-white/10 animate-pulse" />
+    </div>
+  )
+}
+
+function TableSkeleton() {
+  return (
+    <div className="glass-card rounded-xl p-6 md:p-8">
+      <div className="h-6 w-48 bg-white/10 rounded mb-6 animate-pulse" />
+      <div className="space-y-3">
+        {Array.from({ length: 6 }).map((_, index) => (
+          <div key={index} className="h-14 bg-white/5 rounded-lg border border-white/10 animate-pulse" />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+const Heatmap = dynamic(
+  () => import('@/components/Heatmap').then(mod => mod.Heatmap),
+  { ssr: false, loading: () => <HeatmapSkeleton /> }
+)
+
+const TokenTable = dynamic(
+  () => import('@/components/TokenTable').then(mod => mod.TokenTable),
+  { ssr: false, loading: () => <TableSkeleton /> }
+)
 
 export default function DashboardPage() {
   const [tokens, setTokens] = useState<Token[]>([])
