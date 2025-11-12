@@ -41,6 +41,7 @@ export function Navbar() {
                 <Link
                   key={item.href}
                   href={item.href}
+                  prefetch={false}
                   className={`px-4 md:px-5 py-2 md:py-2.5 rounded-xl transition-all duration-200 font-medium min-w-[100px] md:min-w-[120px] text-center text-sm md:text-base ${
                     isActive
                       ? 'bg-gradient-to-r from-[#00FFA3]/20 to-[#00D1FF]/20 text-[#00FFA3] border border-[#00FFA3]/30 shadow-lg shadow-[#00FFA3]/20 hover:scale-105'
@@ -58,6 +59,7 @@ export function Navbar() {
             {isAdminEmail(user?.email) && (
               <Link
                 href="/monitoring"
+                prefetch={false}
                 className={`px-4 md:px-5 py-2 md:py-2.5 rounded-xl transition-all duration-200 font-medium min-w-[100px] md:min-w-[120px] text-center text-sm md:text-base ${
                   pathname === '/monitoring'
                     ? 'bg-gradient-to-r from-[#00FFA3]/20 to-[#00D1FF]/20 text-[#00FFA3] border border-[#00FFA3]/30 shadow-lg shadow-[#00FFA3]/20 hover:scale-105'
@@ -114,6 +116,7 @@ export function Navbar() {
             ) : (
               <Link
                 href={`/login?next=${encodeURIComponent(pathname || '/dashboard')}`}
+                prefetch={false}
                 className="btn-cta-login px-4 md:px-5 py-2 md:py-2.5 rounded-xl text-sm md:text-base min-h-[44px]"
               >
                 <LogIn className="h-3.5 w-3.5 md:h-4 md:w-4" />
@@ -127,6 +130,7 @@ export function Navbar() {
             {!sessionLoading && !user && (
               <Link
                 href={`/login?next=${encodeURIComponent(pathname || '/dashboard')}`}
+                prefetch={false}
                 className="btn-cta-login"
               >
                 <LogIn className="h-3.5 w-3.5" />
@@ -169,6 +173,7 @@ export function Navbar() {
                   <Link
                     key={item.href}
                     href={item.href}
+                    prefetch={false}
                     onClick={() => setShowMobileMenu(false)}
                     className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                       isActive
@@ -183,8 +188,9 @@ export function Navbar() {
               })}
 
               {isAdminEmail(user?.email) && (
-                <Link
+              <Link
                   href="/monitoring"
+                prefetch={false}
                   onClick={() => setShowMobileMenu(false)}
                   className={cn(
                     'flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200',
