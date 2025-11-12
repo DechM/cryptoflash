@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
 import { AlertCircle, Check, Zap, Lock, ExternalLink } from 'lucide-react'
 
 import { Navbar } from '@/components/Navbar'
@@ -204,11 +203,7 @@ export default function AlertsPageContent() {
       <Navbar />
 
       <main className="w-full px-4 sm:px-6 lg:px-8 py-8">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
+        <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold gradient-text mb-2">
             Set Up Alerts
           </h1>
@@ -221,14 +216,9 @@ export default function AlertsPageContent() {
               <span className="font-semibold text-white">{plan.toUpperCase()}</span>
             </span>
           </div>
-        </motion.div>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="glass rounded-xl p-4 md:p-6 lg:p-8"
-        >
+        <div className="glass rounded-xl p-4 md:p-6 lg:p-8">
           {plan === 'free' && (
             <div className="mb-6 p-4 rounded-lg bg-[#ffd700]/10 border border-[#ffd700]/30">
               <div className="flex items-start space-x-3">
@@ -245,16 +235,12 @@ export default function AlertsPageContent() {
           )}
 
           {success && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="mb-6 p-4 rounded-lg bg-[#00FFA3]/20 border border-[#00FFA3]/30 bounce-in"
-            >
+            <div className="mb-6 p-4 rounded-lg bg-[#00FFA3]/20 border border-[#00FFA3]/30 bounce-in">
               <div className="flex items-center space-x-2">
                 <Check className="h-5 w-5 text-[#00FFA3]" />
                 <span className="text-[#00FFA3] font-semibold">Alert created successfully!</span>
               </div>
-            </motion.div>
+            </div>
           )}
 
           {checkingDiscord && (
@@ -279,11 +265,7 @@ export default function AlertsPageContent() {
           )}
 
           {discordStatus?.linked === false && !checkingDiscord && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="mb-6 p-4 rounded-lg bg-purple-500/10 border border-purple-500/30"
-            >
+            <div className="mb-6 p-4 rounded-lg bg-purple-500/10 border border-purple-500/30">
               <div className="flex items-start space-x-3">
                 <AlertCircle className="h-5 w-5 text-purple-400 mt-0.5 flex-shrink-0" />
                 <div className="flex-1 space-y-3">
@@ -315,15 +297,11 @@ export default function AlertsPageContent() {
                   </p>
                 </div>
               </div>
-            </motion.div>
+            </div>
           )}
 
           {discordStatus?.linked && !checkingDiscord && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="mb-6 p-4 rounded-lg bg-[#00FFA3]/20 border border-[#00FFA3]/30"
-            >
+            <div className="mb-6 p-4 rounded-lg bg-[#00FFA3]/20 border border-[#00FFA3]/30">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center space-x-2">
                   <Check className="h-5 w-5 text-[#00FFA3]" />
@@ -354,7 +332,7 @@ export default function AlertsPageContent() {
                   </button>
                 </div>
               </div>
-            </motion.div>
+            </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -441,7 +419,7 @@ export default function AlertsPageContent() {
               </p>
             </div>
           </div>
-        </motion.div>
+        </div>
       </main>
     </div>
   )

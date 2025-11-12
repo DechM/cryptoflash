@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Navbar } from '@/components/Navbar'
 import { Loader2, AlertCircle } from 'lucide-react'
-import { motion } from 'framer-motion'
 
 function RegisterPageContent() {
   const router = useRouter()
@@ -132,11 +131,7 @@ function RegisterPageContent() {
       
       <main className="w-full px-4 sm:px-6 lg:px-8 py-12">
         <div className="max-w-md mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="glass rounded-2xl p-6 md:p-8 border border-white/10"
-          >
+          <div className="glass rounded-2xl p-6 md:p-8 border border-white/10">
             <h1 className="text-2xl md:text-3xl font-bold gradient-text mb-2 text-center">
               Create Account
             </h1>
@@ -145,14 +140,10 @@ function RegisterPageContent() {
             </p>
 
             {error && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/30 flex items-start space-x-3"
-              >
+              <div className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/30 flex items-start space-x-3">
                 <AlertCircle className="h-5 w-5 text-red-400 mt-0.5 flex-shrink-0" />
                 <p className="text-sm text-red-400">{error}</p>
-              </motion.div>
+              </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -253,7 +244,7 @@ function RegisterPageContent() {
                 Sign in
               </Link>
             </p>
-          </motion.div>
+          </div>
         </div>
       </main>
     </div>

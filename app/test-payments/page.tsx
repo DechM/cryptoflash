@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { Navbar } from '@/components/Navbar'
 import { CheckCircle, XCircle, Loader2, Sparkles, Zap } from 'lucide-react'
-import { motion } from 'framer-motion'
 
 interface TestResult {
   plan: 'free' | 'pro' | 'ultimate'
@@ -165,11 +164,7 @@ export default function TestPaymentsPage() {
       
       <main className="w-full px-4 sm:px-6 lg:px-8 py-10">
         <div className="max-w-4xl mx-auto space-y-6">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-8"
-          >
+          <div className="text-center mb-8">
             <h1 className="text-3xl md:text-4xl font-bold gradient-text mb-4">
               Payment Testing
             </h1>
@@ -179,10 +174,10 @@ export default function TestPaymentsPage() {
             <p className="text-sm text-[#6b7280] mt-2">
               Requires: ALLOW_MOCK_PAYMENT=true in Vercel
             </p>
-          </motion.div>
+          </div>
 
           <div className="grid md:grid-cols-3 gap-4">
-            <motion.button
+            <button
               onClick={testFree}
               disabled={testing}
               className="glass rounded-xl p-6 text-center hover:bg-white/10 transition-colors disabled:opacity-50"
@@ -190,9 +185,9 @@ export default function TestPaymentsPage() {
               <Zap className="h-8 w-8 mx-auto mb-2 text-[#6b7280]" />
               <div className="font-semibold text-white">Test FREE</div>
               <div className="text-xs text-[#6b7280] mt-1">Switch to Free</div>
-            </motion.button>
+            </button>
 
-            <motion.button
+            <button
               onClick={() => testPlan('pro')}
               disabled={testing}
               className="glass rounded-xl p-6 text-center hover:bg-white/10 transition-colors disabled:opacity-50 border border-[#00FFA3]/20"
@@ -200,9 +195,9 @@ export default function TestPaymentsPage() {
               <CheckCircle className="h-8 w-8 mx-auto mb-2 text-[#00FFA3]" />
               <div className="font-semibold text-white">Test PRO</div>
               <div className="text-xs text-[#6b7280] mt-1">19.99 USDC (Mock)</div>
-            </motion.button>
+            </button>
 
-            <motion.button
+            <button
               onClick={() => testPlan('ultimate')}
               disabled={testing}
               className="glass rounded-xl p-6 text-center hover:bg-white/10 transition-colors disabled:opacity-50 border border-[#FF2E86]/20"
@@ -210,7 +205,7 @@ export default function TestPaymentsPage() {
               <Sparkles className="h-8 w-8 mx-auto mb-2 text-[#FF2E86]" />
               <div className="font-semibold text-white">Test ULTIMATE</div>
               <div className="text-xs text-[#6b7280] mt-1">39.99 USDC (Mock)</div>
-            </motion.button>
+            </button>
           </div>
 
           {testing && (
@@ -221,11 +216,7 @@ export default function TestPaymentsPage() {
           )}
 
           {results.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="glass rounded-xl p-6 space-y-4"
-            >
+            <div className="glass rounded-xl p-6 space-y-4">
               <h2 className="text-xl font-bold text-white mb-4">Test Results</h2>
               {results.map((result, index) => (
                 <div
@@ -258,7 +249,7 @@ export default function TestPaymentsPage() {
                   </div>
                 </div>
               ))}
-            </motion.div>
+            </div>
           )}
 
           <div className="glass rounded-xl p-6 text-sm text-[#6b7280]">

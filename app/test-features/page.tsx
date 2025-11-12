@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { Navbar } from '@/components/Navbar'
 import { CheckCircle, XCircle, Loader2, AlertCircle } from 'lucide-react'
-import { motion } from 'framer-motion'
 import { useFeature } from '@/hooks/useFeature'
 
 interface FeatureTest {
@@ -202,11 +201,7 @@ export default function TestFeaturesPage() {
       
       <main className="w-full px-4 sm:px-6 lg:px-8 py-10">
         <div className="max-w-6xl mx-auto space-y-6">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-8"
-          >
+          <div className="text-center mb-8">
             <h1 className="text-3xl md:text-4xl font-bold gradient-text mb-4">
               Feature Gating Test
             </h1>
@@ -214,18 +209,14 @@ export default function TestFeaturesPage() {
               Current Plan: <span className="font-semibold text-white">{plan.toUpperCase()}</span>
             </p>
             {allPassed && (
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="mt-4 inline-flex items-center space-x-2 px-4 py-2 rounded-lg bg-[#00FFA3]/20 border border-[#00FFA3]/30"
-              >
+              <div className="mt-4 inline-flex items-center space-x-2 px-4 py-2 rounded-lg bg-[#00FFA3]/20 border border-[#00FFA3]/30">
                 <CheckCircle className="h-5 w-5 text-[#00FFA3]" />
                 <span className="text-[#00FFA3] font-semibold">
                   All {totalCount} tests passed! ✅
                 </span>
-              </motion.div>
+              </div>
             )}
-          </motion.div>
+          </div>
 
           <div className="glass rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
@@ -243,11 +234,8 @@ export default function TestFeaturesPage() {
             ) : (
               <div className="space-y-3">
                 {tests.map((test, index) => (
-                  <motion.div
+                  <div
                     key={index}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.05 }}
                     className={`p-4 rounded-lg border ${
                       test.passed
                         ? 'bg-[#00FFA3]/10 border-[#00FFA3]/30'
@@ -275,7 +263,7 @@ export default function TestFeaturesPage() {
                         </div>
                       </div>
                     </div>
-                  </motion.div>
+                  </div>
                 ))}
               </div>
             )}

@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { Navbar } from '@/components/Navbar'
 import { Trophy, Medal, Award, TrendingUp } from 'lucide-react'
-import { motion } from 'framer-motion'
 import useSWR from 'swr'
 import { formatAddress } from '@/lib/utils'
 
@@ -48,11 +47,7 @@ export default function LeaderboardPage() {
       <Navbar />
 
       <main className="w-full px-4 sm:px-6 lg:px-8 py-8">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8 text-center"
-        >
+        <div className="mb-8 text-center">
           <Trophy className="h-16 w-16 mx-auto mb-4 text-[#ffd700]" />
           <h1 className="text-3xl md:text-4xl font-bold gradient-text mb-2">
             Leaderboard
@@ -67,14 +62,9 @@ export default function LeaderboardPage() {
               KOTH alerts
             </Link>.
           </p>
-        </motion.div>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="glass-card rounded-xl p-4 md:p-6 lg:p-8 overflow-x-auto"
-        >
+        <div className="glass-card rounded-xl p-4 md:p-6 lg:p-8 overflow-x-auto">
           <div className="min-w-full">
             <table className="w-full text-sm md:text-base">
               <thead>
@@ -109,11 +99,8 @@ export default function LeaderboardPage() {
                 </tr>
               )}
               {leaderboard.map((entry, index) => (
-                <motion.tr
+                <tr
                   key={entry.wallet}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.3 + index * 0.05 }}
                   className={`border-b border-white/5 hover:bg-white/5 transition-colors ${getRankColor(entry.rank)}`}
                 >
                   <td className="py-3 md:py-4 px-2 md:px-4">
@@ -136,26 +123,21 @@ export default function LeaderboardPage() {
                       <span className="text-[#00FFA3] font-semibold text-xs md:text-sm">{entry.success}%</span>
                     </div>
                   </td>
-                </motion.tr>
+                </tr>
               ))}
             </tbody>
           </table>
           </div>
-        </motion.div>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="mt-8 glass-card rounded-xl p-6 text-center"
-        >
+        <div className="mt-8 glass-card rounded-xl p-6 text-center">
           <p className="text-[#b8c5d6] mb-4">
             Want to see your wallet on the leaderboard?
           </p>
           <p className="text-sm text-[#6b7280]">
             Create alerts to start tracking your snipes and compete for the top spots
           </p>
-        </motion.div>
+        </div>
       </main>
     </div>
   )

@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { Navbar } from '@/components/Navbar'
 import { AlertCircle, Check, Zap, Lock } from 'lucide-react'
-import { motion } from 'framer-motion'
 import { useFeature } from '@/hooks/useFeature'
 import Link from 'next/link'
 
@@ -121,11 +120,7 @@ export default function AlertsPage() {
       <Navbar />
 
       <main className="w-full px-4 sm:px-6 lg:px-8 py-8">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
+        <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold gradient-text mb-2">
             Set Up Alerts
           </h1>
@@ -135,14 +130,9 @@ export default function AlertsPage() {
           <div className="mt-2 px-3 py-1 inline-block rounded-lg bg-white/5 border border-white/10">
             <span className="text-sm text-[#b8c5d6]">Current Plan: <span className="font-semibold text-white">{plan.toUpperCase()}</span></span>
           </div>
-        </motion.div>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="glass rounded-xl p-6 md:p-8"
-        >
+        <div className="glass rounded-xl p-6 md:p-8">
           {plan === 'free' && (
             <div className="mb-6 p-4 rounded-lg bg-[#ffd700]/10 border border-[#ffd700]/30">
               <div className="flex items-start space-x-3">
@@ -159,16 +149,12 @@ export default function AlertsPage() {
           )}
 
           {success && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="mb-6 p-4 rounded-lg bg-[#00ff88]/20 border border-[#00ff88]/30"
-            >
+            <div className="mb-6 p-4 rounded-lg bg-[#00ff88]/20 border border-[#00ff88]/30">
               <div className="flex items-center space-x-2">
                 <Check className="h-5 w-5 text-[#00ff88]" />
                 <span className="text-[#00ff88] font-semibold">Alert created successfully!</span>
               </div>
-            </motion.div>
+            </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -317,7 +303,7 @@ export default function AlertsPage() {
               </Link>
             </div>
           )}
-        </motion.div>
+        </div>
       </main>
     </div>
   )

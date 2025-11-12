@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { Navbar } from '@/components/Navbar'
 import { CheckCircle, Crown, ArrowRight } from 'lucide-react'
-import { motion } from 'framer-motion'
 import Link from 'next/link'
 
 export default function PremiumSuccessPage() {
@@ -21,37 +20,18 @@ export default function PremiumSuccessPage() {
       <Navbar />
 
       <main className="container mx-auto px-4 py-12 max-w-2xl">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center"
-        >
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: 'spring' }}
-            className="mb-6"
-          >
+        <div className="text-center">
+          <div className="mb-6">
             <CheckCircle className="h-24 w-24 mx-auto text-[#00FFA3]" />
-          </motion.div>
+          </div>
 
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="text-4xl md:text-5xl font-bold gradient-text mb-4"
-          >
+          <h1 className="text-4xl md:text-5xl font-bold gradient-text mb-4">
             Welcome to CryptoFlash Pro!
-          </motion.h1>
+          </h1>
 
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="text-xl text-[#b8c5d6] mb-8"
-          >
+          <p className="text-xl text-[#b8c5d6] mb-8">
             Your subscription is active. Start sniping early!
-          </motion.p>
+          </p>
 
           {loading ? (
             <div className="glass rounded-xl p-8">
@@ -59,12 +39,7 @@ export default function PremiumSuccessPage() {
               <p className="mt-4 text-[#b8c5d6]">Activating your Pro account...</p>
             </div>
           ) : (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="glass rounded-xl p-8 space-y-6"
-            >
+            <div className="glass rounded-xl p-8 space-y-6">
               <div className="flex items-center justify-center space-x-2 mb-6">
                 <Crown className="h-8 w-8 text-[#ffd700]" />
                 <span className="text-2xl font-bold text-white">Pro Features Unlocked</span>
@@ -110,9 +85,9 @@ export default function PremiumSuccessPage() {
                   <ArrowRight className="h-5 w-5" />
                 </Link>
               </div>
-            </motion.div>
+            </div>
           )}
-        </motion.div>
+        </div>
       </main>
     </div>
   )
