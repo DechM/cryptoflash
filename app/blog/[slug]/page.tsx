@@ -115,7 +115,7 @@ export default async function BlogArticlePage({ params }: BlogPageProps) {
 
       <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8 max-w-none">
         <div className="mb-10 space-y-4">
-          <Link
+          <Link prefetch={false}
             href="/blog"
             className="inline-flex items-center text-sm text-[#94A3B8] hover:text-[#00FFA3] transition-colors"
           >
@@ -158,13 +158,13 @@ export default async function BlogArticlePage({ params }: BlogPageProps) {
             Set up CryptoFlash alerts, overlay whale inflows and execute your KOTH strategy with data instead of hype.
           </p>
           <div className="flex flex-wrap gap-3">
-            <Link
+            <Link prefetch={false}
               href="/alerts"
               className="inline-flex items-center px-4 py-2 rounded-lg bg-[#00FFA3] text-[#050712] font-semibold hover:opacity-90 transition-opacity"
             >
               Configure Alerts
             </Link>
-            <Link
+            <Link prefetch={false}
               href="/whale-alerts"
               className="inline-flex items-center px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white font-semibold hover:bg-white/20 transition-colors"
             >

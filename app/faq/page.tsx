@@ -24,7 +24,7 @@ const faqs = [
     answer: (
       <>
         Да. Свързването на Discord е задължително. Отиди в{' '}
-        <Link href="/alerts" className="text-[#00FFA3] hover:underline">
+        <Link prefetch={false} href="/alerts" className="text-[#00FFA3] hover:underline">
           Alerts &gt; Manage
         </Link>{' '}
         и натисни “Link Discord”, за да дадеш достъп на CryptoFlash бота.
@@ -41,7 +41,7 @@ const faqs = [
     answer: (
       <>
         Плащанията стават чрез Solana Pay. На страницата{' '}
-        <Link href="/premium" className="text-[#00FFA3] hover:underline">
+        <Link prefetch={false} href="/premium" className="text-[#00FFA3] hover:underline">
           Pricing
         </Link>{' '}
         избери план и следвай стъпките за QR/Phantom плащане. При успех ще видиш страница “Payment Successful”.
@@ -90,7 +90,7 @@ export default function FaqPage() {
             <p className="text-base md:text-lg text-[#b8c5d6]">
               Събрахме най-често задаваните въпроси за KOTH alert-ите, Discord интеграцията, Whale Alerts и плащанията.
               Ако не откриеш нужния отговор, свържи се с нас през{' '}
-              <Link href="/contact" className="text-[#00FFA3] hover:underline">
+              <Link prefetch={false} href="/contact" className="text-[#00FFA3] hover:underline">
                 контактната форма
               </Link>.
             </p>
@@ -109,19 +109,19 @@ export default function FaqPage() {
             <h2 className="text-lg md:text-xl font-heading text-white">Допълнителни ресурси</h2>
             <ul className="list-disc list-inside text-sm md:text-base text-[#b8c5d6] space-y-2">
               <li>
-                <Link href="/whale-alerts" className="text-[#00FFA3] hover:underline">
+                <Link prefetch={false} href="/whale-alerts" className="text-[#00FFA3] hover:underline">
                   Whale Alerts Dashboard
                 </Link>{' '}
                 – виж какво получаваш с Ultimate плана
               </li>
               <li>
-                <Link href="/blog/cryptoflash-sniper-workflow" className="text-[#00FFA3] hover:underline">
+                <Link prefetch={false} href="/blog/cryptoflash-sniper-workflow" className="text-[#00FFA3] hover:underline">
                   CryptoFlash Sniper Workflow
                 </Link>{' '}
                 – стъпка по стъпка за KOTH операционна система
               </li>
               <li>
-                <Link href="/leaderboard" className="text-[#00FFA3] hover:underline">
+                <Link prefetch={false} href="/leaderboard" className="text-[#00FFA3] hover:underline">
                   Pump.fun Leaderboard
                 </Link>{' '}
                 – следи топ портфейлите и техните резултати

@@ -42,27 +42,27 @@ export function Footer() {
               <h3 className="text-sm font-semibold text-[#F8FAFC] mb-4">Quick Links</h3>
               <ul className="space-y-2">
                 <li>
-                  <Link href="/dashboard" className="text-sm text-[#94A3B8] hover:text-[#00FFA3] transition-colors">
+                  <Link prefetch={false} href="/dashboard" className="text-sm text-[#94A3B8] hover:text-[#00FFA3] transition-colors">
                     Dashboard
                   </Link>
                 </li>
                 <li>
-                  <Link href="/alerts" className="text-sm text-[#94A3B8] hover:text-[#00FFA3] transition-colors">
+                  <Link prefetch={false} href="/alerts" className="text-sm text-[#94A3B8] hover:text-[#00FFA3] transition-colors">
                     Alerts
                   </Link>
                 </li>
                 <li>
-                  <Link href="/leaderboard" className="text-sm text-[#94A3B8] hover:text-[#00FFA3] transition-colors">
+                  <Link prefetch={false} href="/leaderboard" className="text-sm text-[#94A3B8] hover:text-[#00FFA3] transition-colors">
                     Leaderboard
                   </Link>
                 </li>
                 <li>
-                  <Link href="/premium" className="text-sm text-[#94A3B8] hover:text-[#00FFA3] transition-colors">
+                  <Link prefetch={false} href="/premium" className="text-sm text-[#94A3B8] hover:text-[#00FFA3] transition-colors">
                     Premium
                   </Link>
                 </li>
                 <li>
-                  <Link href="/blog" className="text-sm text-[#94A3B8] hover:text-[#00FFA3] transition-colors">
+                  <Link prefetch={false} href="/blog" className="text-sm text-[#94A3B8] hover:text-[#00FFA3] transition-colors">
                     Blog
                   </Link>
                 </li>
@@ -74,22 +74,22 @@ export function Footer() {
               <h3 className="text-sm font-semibold text-[#F8FAFC] mb-4">Legal</h3>
               <ul className="space-y-2">
                 <li>
-                  <Link href="/terms" className="text-sm text-[#94A3B8] hover:text-[#00FFA3] transition-colors">
+                  <Link prefetch={false} href="/terms" className="text-sm text-[#94A3B8] hover:text-[#00FFA3] transition-colors">
                     Terms of Service
                   </Link>
                 </li>
                 <li>
-                  <Link href="/privacy" className="text-sm text-[#94A3B8] hover:text-[#00FFA3] transition-colors">
+                  <Link prefetch={false} href="/privacy" className="text-sm text-[#94A3B8] hover:text-[#00FFA3] transition-colors">
                     Privacy Policy
                   </Link>
                 </li>
                 <li>
-                  <Link href="/disclaimer" className="text-sm text-[#94A3B8] hover:text-[#00FFA3] transition-colors">
+                  <Link prefetch={false} href="/disclaimer" className="text-sm text-[#94A3B8] hover:text-[#00FFA3] transition-colors">
                     Disclaimer
                   </Link>
                 </li>
                 <li>
-                  <Link href="/contact" className="text-sm text-[#94A3B8] hover:text-[#00FFA3] transition-colors">
+                  <Link prefetch={false} href="/contact" className="text-sm text-[#94A3B8] hover:text-[#00FFA3] transition-colors">
                     Contact
                   </Link>
                 </li>

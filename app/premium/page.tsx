@@ -91,7 +91,7 @@ export default function PremiumPage() {
               <p className="text-[#b8c5d6]">
                 Free users get late-stage confirmations at 95% score. Pro unlocks alerts at 85% and faster refresh intervals,
                 while Ultimate fires as early as 80% with whale flow context. Manage your rules in{" "}
-                <Link href="/alerts" className="text-[#00FFA3] hover:underline">
+                <Link prefetch={false} href="/alerts" className="text-[#00FFA3] hover:underline">
                   Alerts &gt; Manage
                 </Link>.
               </p>
@@ -108,7 +108,7 @@ export default function PremiumPage() {
               </h2>
               <p className="text-[#b8c5d6]">
                 Ultimate includes real-time cross-chain whale tracking. Get embeds for every $20K+ transfer across supported networks and auto-posts to Twitter/X. See a live preview on{" "}
-                <Link href="/whale-alerts" className="text-[#00FFA3] hover:underline">
+                <Link prefetch={false} href="/whale-alerts" className="text-[#00FFA3] hover:underline">
                   Whale Alerts
                 </Link>.
               </p>
@@ -126,11 +126,11 @@ export default function PremiumPage() {
             </h2>
             <p className="text-[#b8c5d6]">
               Read our{" "}
-              <Link href="/blog/cryptoflash-sniper-workflow" className="text-[#00FFA3] hover:underline">
+              <Link prefetch={false} href="/blog/cryptoflash-sniper-workflow" className="text-[#00FFA3] hover:underline">
                 CryptoFlash Sniper Workflow guide
               </Link>{" "}
               or{" "}
-              <Link href="/contact" className="text-[#00FFA3] hover:underline">
+              <Link prefetch={false} href="/contact" className="text-[#00FFA3] hover:underline">
                 contact us
               </Link>{" "}
               for tailored onboarding. We help teams set up playbooks, Discord routing and alert hygiene.

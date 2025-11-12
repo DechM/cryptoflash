@@ -295,7 +295,7 @@ export default function AlertsPage() {
                   </ul>
                 </div>
               </div>
-              <Link
+              <Link prefetch={false}
                 href="/premium"
                 className="inline-block px-6 py-2 rounded-lg bg-gradient-to-r from-[#ff006e] to-[#ff6b35] text-white font-semibold hover:opacity-90 transition-opacity"
               >

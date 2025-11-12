@@ -22,7 +22,7 @@ const benefits = [
     title: 'Early alerts built in',
     body: (
       <>
-        Connect your <Link href="/alerts" className="text-[#00FFA3] hover:underline">Alerts</Link> rules to get notified
+        Connect your <Link prefetch={false} href="/alerts" className="text-[#00FFA3] hover:underline">Alerts</Link> rules to get notified
         when scores cross 95/85/80 thresholds based on your plan. Export alert history to review each trade.
       </>
     ),
@@ -31,7 +31,7 @@ const benefits = [
     title: 'Whale flow context',
     body: (
       <>
-        Layer <Link href="/whale-alerts" className="text-[#00FFA3] hover:underline">Whale Alerts</Link> to validate demand
+        Layer <Link prefetch={false} href="/whale-alerts" className="text-[#00FFA3] hover:underline">Whale Alerts</Link> to validate demand
         before entering. Ultimate members see cross-chain whale embeds and curated X/Twitter posts.
       </>
     ),
@@ -54,10 +54,10 @@ export default function KothTrackerPage() {
               Anticipate the unlock, time entries with confidence and export your data for review.
             </p>
             <div className="flex flex-wrap justify-center gap-3 text-sm text-[#94A3B8]">
-              <Link href="/premium" className="px-4 py-2 rounded-lg bg-[#00FFA3]/20 border border-[#00FFA3]/40 text-[#00FFA3] hover:bg-[#00FFA3]/30 transition-colors">
+              <Link prefetch={false} href="/premium" className="px-4 py-2 rounded-lg bg-[#00FFA3]/20 border border-[#00FFA3]/40 text-[#00FFA3] hover:bg-[#00FFA3]/30 transition-colors">
                 View plans
               </Link>
-              <Link href="/dashboard" className="px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white hover:bg-white/20 transition-colors">
+              <Link prefetch={false} href="/dashboard" className="px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white hover:bg-white/20 transition-colors">
                 Open dashboard
               </Link>
             </div>
@@ -95,18 +95,18 @@ export default function KothTrackerPage() {
             <h2 className="text-xl md:text-2xl font-heading text-white">Next steps</h2>
             <p className="text-sm md:text-base text-[#b8c5d6]">
               New to KOTH sniping? Start with our{' '}
-              <Link href="/blog/koth-progression-playbook" className="text-[#00FFA3] hover:underline">
+              <Link prefetch={false} href="/blog/koth-progression-playbook" className="text-[#00FFA3] hover:underline">
                 KOTH Progression Playbook
               </Link>{' '}
               and{' '}
-              <Link href="/blog/cryptoflash-sniper-workflow" className="text-[#00FFA3] hover:underline">
+              <Link prefetch={false} href="/blog/cryptoflash-sniper-workflow" className="text-[#00FFA3] hover:underline">
                 Sniper Workflow guide
               </Link>. When you are ready, upgrade on{' '}
-              <Link href="/premium" className="text-[#00FFA3] hover:underline">
+              <Link prefetch={false} href="/premium" className="text-[#00FFA3] hover:underline">
                 CryptoFlash Pricing
               </Link>{' '}
               and configure your personal alert rules in{' '}
-              <Link href="/alerts" className="text-[#00FFA3] hover:underline">
+              <Link prefetch={false} href="/alerts" className="text-[#00FFA3] hover:underline">
                 Alerts &gt; Manage
               </Link>.
             </p>

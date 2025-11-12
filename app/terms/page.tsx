@@ -89,7 +89,7 @@ export default function TermsPage() {
               <h2 className="text-2xl font-bold text-[#F8FAFC] mt-8 mb-4">6. Data and Privacy</h2>
               <p className="text-[#b8c5d6] leading-relaxed">
                 Your use of the Service is also governed by our Privacy Policy. 
-                Please review our <Link href="/privacy" className="text-[#00FFA3] hover:underline">Privacy Policy</Link> to understand our practices.
+                Please review our <Link prefetch={false} href="/privacy" className="text-[#00FFA3] hover:underline">Privacy Policy</Link> to understand our practices.
               </p>
             </section>
 

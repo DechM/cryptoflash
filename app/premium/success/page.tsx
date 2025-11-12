@@ -77,7 +77,7 @@ export default function PremiumSuccessPage() {
               </div>
 
               <div className="pt-6 border-t border-white/10">
-                <Link
+                <Link prefetch={false}
                   href="/dashboard"
                   className="w-full inline-flex items-center justify-center space-x-2 px-6 py-3 rounded-lg bg-gradient-to-r from-[#00FFA3] to-[#00D1FF] text-black font-semibold hover:opacity-90 transition-opacity glow-mint"
                 >

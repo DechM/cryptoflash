@@ -141,7 +141,7 @@ function LoginPageContent() {
                     {urlMessage ? decodeURIComponent(urlMessage) : 'Please try signing up again or contact support.'}
                   </p>
                   {urlError === 'expired' && (
-                    <Link
+                    <Link prefetch={false}
                       href="/register"
                       className="text-xs text-blue-400 hover:underline mt-1 inline-block"
                     >
@@ -195,7 +195,7 @@ function LoginPageContent() {
               </div>
 
               <div className="flex items-center justify-between">
-                <Link
+                <Link prefetch={false}
                   href="/forgot-password"
                   className="text-sm text-[#00FFA3] hover:underline"
                 >
@@ -258,7 +258,7 @@ function LoginPageContent() {
 
             <p className="mt-6 text-center text-sm text-[#6b7280]">
               Don't have an account?{' '}
-              <Link href={`/register?next=${encodeURIComponent(next)}`} className="text-[#00FFA3] hover:underline">
+              <Link prefetch={false} href={`/register?next=${encodeURIComponent(next)}`} className="text-[#00FFA3] hover:underline">
                 Sign up
               </Link>
             </p>

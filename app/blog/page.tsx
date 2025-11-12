@@ -54,11 +54,11 @@ export default function BlogPage() {
           </p>
           <p className="text-sm text-[#94A3B8] mt-3">
             Looking for live data? Hop over to our{' '}
-            <Link href="/whale-alerts" className="text-[#00FFA3] hover:underline">
+            <Link prefetch={false} href="/whale-alerts" className="text-[#00FFA3] hover:underline">
               Whale Alerts feed
             </Link>{' '}
             or{' '}
-            <Link href="/dashboard" className="text-[#00FFA3] hover:underline">
+            <Link prefetch={false} href="/dashboard" className="text-[#00FFA3] hover:underline">
               KOTH dashboard
             </Link>{' '}
             and plug these playbooks into action.
@@ -68,7 +68,7 @@ export default function BlogPage() {
         {/* Blog Posts List */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
           {blogPosts.map((post) => (
-            <Link
+            <Link prefetch={false}
               key={post.slug}
               href={`/blog/${post.slug}`}
               className="glass-card rounded-xl p-6 hover:scale-105 transition-transform duration-300 hover:border-[#00FFA3]/30"

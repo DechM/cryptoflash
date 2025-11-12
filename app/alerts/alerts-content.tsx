@@ -413,8 +413,8 @@ export default function AlertsPageContent() {
             <div className="p-4 rounded-lg bg-white/5 border border-white/10">
               <h2 className="text-lg font-semibold text-white mb-2">Need faster signals?</h2>
               <p className="text-sm text-[#b8c5d6]">
-                Upgrade to <Link href="/pricing" className="text-[#00FFA3] underline">Pro</Link> or{' '}
-                <Link href="/pricing" className="text-[#00FFA3] underline">Ultimate</Link> for earlier thresholds,
+                Upgrade to <Link prefetch={false} href="/pricing" className="text-[#00FFA3] underline">Pro</Link> or{' '}
+                <Link prefetch={false} href="/pricing" className="text-[#00FFA3] underline">Ultimate</Link> for earlier thresholds,
                 more tracked tokens, and premium analytics. Ultimate also unlocks Whale Alerts via Discord.
               </p>
             </div>

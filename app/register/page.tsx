@@ -240,7 +240,7 @@ function RegisterPageContent() {
 
             <p className="mt-6 text-center text-sm text-[#6b7280]">
               Already have an account?{' '}
-              <Link href={`/login?next=${encodeURIComponent(next)}`} className="text-[#00FFA3] hover:underline">
+              <Link prefetch={false} href={`/login?next=${encodeURIComponent(next)}`} className="text-[#00FFA3] hover:underline">
                 Sign in
               </Link>
             </p>

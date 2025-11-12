@@ -54,11 +54,11 @@ export default function LeaderboardPage() {
           </h1>
           <p className="text-[#b8c5d6]">
             Top wallets sniping Pump.fun KOTH tokens. Want to join them? Explore the{' '}
-            <Link href="/koth-tracker" className="text-[#00FFA3] hover:underline">
+            <Link prefetch={false} href="/koth-tracker" className="text-[#00FFA3] hover:underline">
               KOTH Tracker
             </Link>{' '}
             and subscribe to{' '}
-            <Link href="/alerts" className="text-[#00FFA3] hover:underline">
+            <Link prefetch={false} href="/alerts" className="text-[#00FFA3] hover:underline">
               KOTH alerts
             </Link>.
           </p>

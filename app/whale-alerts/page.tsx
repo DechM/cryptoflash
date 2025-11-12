@@ -230,11 +230,11 @@ export default function WhaleAlertsPage() {
                   </p>
                   <p className="text-[#94A3B8] text-sm md:text-base">
                     Unlock Ultimate to receive Discord embeds and automated hype posts, or layer alerts with your{" "}
-                    <Link href="/alerts" className="text-[#00FFA3] hover:underline">
+                    <Link prefetch={false} href="/alerts" className="text-[#00FFA3] hover:underline">
                       KOTH rules
                     </Link>{" "}
                     for faster conviction. View plan details on{" "}
-                    <Link href="/premium" className="text-[#00FFA3] hover:underline">
+                    <Link prefetch={false} href="/premium" className="text-[#00FFA3] hover:underline">
                       CryptoFlash Pricing
                     </Link>.
                   </p>
@@ -305,7 +305,7 @@ export default function WhaleAlertsPage() {
               <h2 className="text-lg md:text-xl font-heading text-white">Why whale flow matters for KOTH</h2>
               <p className="text-sm md:text-base text-[#b8c5d6]">
                 Track concentrated capital before liquidity unlocks. Use whale inflows to confirm{" "}
-                <Link href="/dashboard" className="text-[#00FFA3] hover:underline">
+                <Link prefetch={false} href="/dashboard" className="text-[#00FFA3] hover:underline">
                   KOTH dashboard signals
                 </Link>{" "}
                 and avoid chasing exhausted curves.
@@ -324,7 +324,7 @@ export default function WhaleAlertsPage() {
               </p>
               <p className="text-xs md:text-sm text-[#94A3B8]">
                 Tip: Pair alerts with scheduled review sessions or include them in your{" "}
-                <Link href="/blog/koth-progression-playbook" className="text-[#00FFA3] hover:underline">
+                <Link prefetch={false} href="/blog/koth-progression-playbook" className="text-[#00FFA3] hover:underline">
                   KOTH strategy playbook
                 </Link>{" "}
                 for consistent execution.
