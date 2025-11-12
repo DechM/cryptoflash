@@ -64,7 +64,7 @@ export default function HomePage() {
     <div className="min-h-screen w-screen flex flex-col bg-[#050B18]">
       <MarketingNavbar />
 
-      <main className="w-screen min-h-screen overflow-x-hidden pt-[calc(var(--nav-height)+8px)] md:pt-[calc(var(--nav-height)+20px)]">
+      <main className="w-screen min-h-screen overflow-x-hidden pt-[calc(var(--nav-height)+4px)] md:pt-[calc(var(--nav-height)+18px)]">
         <section className="relative w-full px-6 md:px-12 xl:px-24 pb-20">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-[420px] bg-gradient-to-r from-[#00ffa3]/15 via-transparent to-[#1d4ed8]/20 blur-3xl" />
           <div className="pointer-events-none absolute inset-x-0 bottom-[-240px] h-[480px] bg-gradient-to-l from-[#1d4ed8]/20 via-transparent to-[#00ffa3]/10 blur-3xl" />
