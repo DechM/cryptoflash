@@ -43,6 +43,18 @@ body,
   width: 100%;
 }
 
+body {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: auto 0 0 0;
+  height: env(safe-area-inset-bottom, 0px);
+  pointer-events: none;
+}
+
 html {
   scroll-behavior: smooth;
 }

@@ -11,8 +11,8 @@ const navLinks = [
 
 export function MarketingNavbar() {
   return (
-    <nav className="glass sticky top-0 z-40 w-full border-b border-white/10 backdrop-blur-xl bg-[#0B1020]/80">
-      <div className="w-full py-4">
+    <nav className="glass sticky top-0 z-40 w-screen border-b border-white/10 backdrop-blur-xl bg-[#0B1020]/80">
+      <div className="w-full px-4 md:px-6 py-4">
         <div className="flex items-center justify-between gap-4">
           <Link
             prefetch={false}
@@ -63,7 +63,7 @@ export function MarketingNavbar() {
           </div>
         </div>
 
-        <div className="md:hidden mt-3 flex overflow-x-auto gap-2 pb-1">
+        <div className="md:hidden mt-3 flex overflow-x-auto gap-2 pb-1 no-scrollbar">
           {navLinks.map((item) => (
             <Link
               key={item.href}

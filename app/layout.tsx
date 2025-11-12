@@ -76,7 +76,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark h-full w-full">
-      <body className={`${inter.variable} ${poppins.variable} font-sans antialiased min-h-screen w-screen overflow-x-hidden bg-[#050B18]`}>
+      <body
+        className={`${inter.variable} ${poppins.variable} font-sans antialiased min-h-screen w-screen overflow-x-hidden bg-[#050B18]`}
+        style={{ "--nav-height": "72px" } as React.CSSProperties}
+      >
         {/* Google Analytics */}
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-L3NYZ6V64K"
