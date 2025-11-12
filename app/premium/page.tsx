@@ -64,14 +64,16 @@ export default function PremiumPage() {
         }}
       />
 
-      <main className="w-full px-4 sm:px-6 lg:px-8 py-10">
-        <div className="w-full space-y-12 max-w-6xl mx-auto">
+      <main className="w-screen flex-1">
+        <div className="w-screen space-y-12">
           <div className="text-center space-y-4">
-            <Crown className="h-16 w-16 mx-auto text-[#ffd700]" />
+            <div className="flex justify-center">
+              <Crown className="h-16 w-16 text-[#ffd700]" />
+            </div>
             <h1 className="text-3xl md:text-4xl font-heading font-semibold text-white">
               Pricing for KOTH Snipers & Whale Watchers
             </h1>
-            <p className="text-base md:text-xl text-[#b8c5d6] max-w-3xl mx-auto">
+            <p className="text-base md:text-xl text-[#b8c5d6]">
               Pick the CryptoFlash plan that matches your trading stack. Upgrade to unlock earlier KOTH alerts, cross-chain whale notifications and premium analytics.
             </p>
             <div className="flex flex-wrap justify-center gap-3 text-sm text-[#94A3B8]">

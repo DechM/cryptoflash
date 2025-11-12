@@ -92,8 +92,8 @@ export default function FaqPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify([faqSchema, breadcrumbSchema]) }}
       />
 
-      <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-10">
-        <div className="max-w-4xl mx-auto space-y-10">
+      <main className="w-screen flex-1">
+        <div className="w-screen space-y-10">
           <section className="space-y-4 text-center">
             <h1 className="text-3xl md:text-4xl font-heading text-white">CryptoFlash FAQ</h1>
             <p className="text-base md:text-lg text-[#b8c5d6]">

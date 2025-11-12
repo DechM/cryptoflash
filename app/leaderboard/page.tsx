@@ -46,9 +46,11 @@ export default function LeaderboardPage() {
     <div className="min-h-screen bg-[#0B1020] w-full">
       <Navbar />
 
-      <main className="w-full px-4 sm:px-6 lg:px-8 py-8">
+      <main className="w-screen flex-1">
         <div className="mb-8 text-center">
-          <Trophy className="h-16 w-16 mx-auto mb-4 text-[#ffd700]" />
+          <div className="flex justify-center mb-4">
+            <Trophy className="h-16 w-16 text-[#ffd700]" />
+          </div>
           <h1 className="text-3xl md:text-4xl font-bold gradient-text mb-2">
             Leaderboard
           </h1>

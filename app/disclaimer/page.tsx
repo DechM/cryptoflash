@@ -15,7 +15,7 @@ export default function DisclaimerPage() {
     <div className="min-h-screen bg-[#0B1020] w-full flex flex-col">
       <MarketingNavbar />
       
-      <main className="w-full px-4 sm:px-6 lg:px-8 py-12 max-w-4xl mx-auto flex-grow">
+      <main className="w-screen flex-grow">
         <div className="glass-card rounded-xl p-6 md:p-8">
           <h1 className="text-4xl font-bold gradient-text mb-6">Disclaimer</h1>
           <p className="text-sm text-[#94A3B8] mb-8">Last updated: November 6, 2024</p>

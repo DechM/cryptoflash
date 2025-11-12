@@ -60,13 +60,13 @@ export default function KothTrackerPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
 
-      <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-10">
-        <div className="max-w-5xl mx-auto space-y-12">
+      <main className="w-screen flex-1">
+        <div className="w-screen space-y-12">
           <section className="text-center space-y-4">
             <h1 className="text-3xl md:text-4xl font-heading font-semibold text-white">
               Real-time Pump.fun KOTH Tracker
             </h1>
-            <p className="text-base md:text-xl text-[#b8c5d6] max-w-3xl mx-auto">
+            <p className="text-base md:text-xl text-[#b8c5d6]">
               CryptoFlash surfaces every Pump.fun King of the Hill candidate with live scores, liquidity and whale flow.
               Anticipate the unlock, time entries with confidence and export your data for review.
             </p>

@@ -6,9 +6,9 @@ export function Footer() {
   const siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'CryptoFlash'
 
   return (
-    <footer className="border-t border-white/10 bg-[#0B1020]/50 backdrop-blur-xl mt-auto">
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-12">
-        <div className="max-w-7xl mx-auto">
+    <footer className="border-t border-white/10 bg-[#0B1020]/50 backdrop-blur-xl mt-auto w-full">
+      <div className="w-full py-12">
+        <div className="w-full">
           {/* Main Footer Content */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             {/* Brand Column */}

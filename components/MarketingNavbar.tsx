@@ -12,7 +12,7 @@ const navLinks = [
 export function MarketingNavbar() {
   return (
     <nav className="glass sticky top-0 z-40 w-full border-b border-white/10 backdrop-blur-xl bg-[#0B1020]/80">
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
+      <div className="w-full py-4">
         <div className="flex items-center justify-between gap-4">
           <Link
             prefetch={false}

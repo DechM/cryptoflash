@@ -19,10 +19,10 @@ export default function PremiumSuccessPage() {
     <div className="min-h-screen bg-[#0B1020]">
       <Navbar />
 
-      <main className="container mx-auto px-4 py-12 max-w-2xl">
-        <div className="text-center">
-          <div className="mb-6">
-            <CheckCircle className="h-24 w-24 mx-auto text-[#00FFA3]" />
+      <main className="w-screen flex-1">
+        <div className="text-center w-full">
+          <div className="mb-6 flex justify-center">
+            <CheckCircle className="h-24 w-24 text-[#00FFA3]" />
           </div>
 
           <h1 className="text-4xl md:text-5xl font-bold gradient-text mb-4">
@@ -35,7 +35,9 @@ export default function PremiumSuccessPage() {
 
           {loading ? (
             <div className="glass rounded-xl p-8">
-              <div className="animate-spin h-8 w-8 border-4 border-[#00FFA3] border-t-transparent rounded-full mx-auto"></div>
+              <div className="flex justify-center">
+                <div className="animate-spin h-8 w-8 border-4 border-[#00FFA3] border-t-transparent rounded-full"></div>
+              </div>
               <p className="mt-4 text-[#b8c5d6]">Activating your Pro account...</p>
             </div>
           ) : (

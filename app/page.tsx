@@ -43,8 +43,8 @@ export default function HomePage() {
     <div className="min-h-screen bg-[#0B1020] w-full flex flex-col">
       <MarketingNavbar />
 
-      <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-12 flex-1">
-        <div className="max-w-6xl mx-auto space-y-16">
+      <main className="flex-1 w-screen">
+        <div className="w-screen space-y-16">
           <section className="text-center space-y-6">
             <span className="inline-flex items-center px-4 py-1.5 rounded-full text-xs font-semibold tracking-widest uppercase bg-white/10 text-[#00FFA3] border border-[#00FFA3]/30">
               Pump.fun Traders + Whale Watchers
@@ -52,7 +52,7 @@ export default function HomePage() {
             <h1 className="text-3xl md:text-5xl font-heading font-semibold text-white leading-tight">
               CryptoFlash keeps you ahead of KOTH unlocks and $20K+ whale moves
             </h1>
-            <p className="text-base md:text-lg text-[#b8c5d6] max-w-3xl mx-auto">
+            <p className="text-base md:text-lg text-[#b8c5d6]">
               Combine real-time KOTH telemetry, automated Discord alerts and cross-chain whale intelligence to react before the curve unlocks. Designed for traders who need signal, not noise.
             </p>
             <div className="flex flex-wrap justify-center gap-3">
@@ -91,7 +91,7 @@ export default function HomePage() {
                 <h3 className="text-xl md:text-2xl font-heading text-white">
                   Alerts that actually move with the market
                 </h3>
-                <p className="text-sm md:text-base text-[#b8c5d6] max-w-2xl">
+                <p className="text-sm md:text-base text-[#b8c5d6]">
                   CryptoFlash cron jobs monitor CoinGecko, Bitquery and your custom alert rules every few minutes. Discord roles are synced automatically so your team sees alerts instantly without juggling bots.
                 </p>
                 <ul className="grid gap-2 text-sm text-[#94A3B8] md:grid-cols-2">
@@ -100,7 +100,7 @@ export default function HomePage() {
                   ))}
                 </ul>
               </div>
-              <div className="glass-card rounded-xl border border-white/10 px-6 py-5 text-left max-w-sm">
+              <div className="glass-card rounded-xl border border-white/10 px-6 py-5 text-left">
                 <p className="text-xs uppercase tracking-widest text-[#64748b] mb-2">Latest whale push</p>
                 <p className="text-sm text-[#94A3B8] mb-4">
                   $482K buy spotted on Base — posted to Discord + X with context and wallet flow breakdown.

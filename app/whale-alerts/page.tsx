@@ -307,8 +307,8 @@ export default function WhaleAlertsPage() {
         }}
       />
 
-      <main className="w-full px-4 sm:px-6 lg:px-12 py-10 flex-grow">
-        <div className="max-w-7xl mx-auto space-y-10">
+      <main className="flex-grow w-screen">
+        <div className="w-screen space-y-10">
           <header className="space-y-6">
             <div className="space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-4">
@@ -544,7 +544,7 @@ export default function WhaleAlertsPage() {
 
       {selectedEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
-          <div className="relative max-w-3xl w-full glass-card rounded-3xl border border-white/10 p-6 md:p-8">
+          <div className="relative w-full glass-card rounded-3xl border border-white/10 p-6 md:p-8">
               <button
                 onClick={() => setSelectedEvent(null)}
                 className="absolute top-4 right-4 text-[#94A3B8] hover:text-white"

@@ -17,7 +17,7 @@ export default function ContactPage() {
     <div className="min-h-screen bg-[#0B1020] w-full flex flex-col">
       <MarketingNavbar />
       
-      <main className="w-full px-4 sm:px-6 lg:px-8 py-12 max-w-4xl mx-auto flex-grow">
+      <main className="w-screen flex-grow">
         <div className="glass-card rounded-xl p-6 md:p-8">
           <h1 className="text-4xl font-bold gradient-text mb-6">Contact Us</h1>
           <p className="text-lg text-[#b8c5d6] mb-6">
@@ -64,7 +64,7 @@ export default function ContactPage() {
                     <Link prefetch={false} href="/alerts" className="text-[#00FFA3] hover:underline">
                       Alerts page
                     </Link>
-                    , link your Discord account, и създай правила за токени, които искаш да следиш.
+                    , link your Discord account, and create the token rules you want to monitor.
                   </p>
                 </div>
                 <div>
@@ -92,7 +92,7 @@ export default function ContactPage() {
                     <Link prefetch={false} href="/premium" className="text-[#00FFA3] underline">
                       Ultimate
                     </Link>{' '}
-                    for earlier alerts, повече токени и Whale Alerts.
+                    for earlier alerts, more tracked tokens, and Whale Alerts.
                   </p>
                 </div>
                 <div>

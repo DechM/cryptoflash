@@ -123,7 +123,7 @@ export default async function BlogArticlePage({ params }: BlogPageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify([articleSchema, breadcrumbSchema]) }}
       />
 
-      <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8 max-w-none">
+      <main className="w-screen flex-1">
         <div className="mb-10 space-y-4">
           <Link prefetch={false}
             href="/blog"
