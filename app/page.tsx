@@ -59,14 +59,14 @@ export default function HomePage() {
               <Link
                 prefetch={false}
                 href="/dashboard"
-                className="btn-cta-login px-6 py-3 rounded-xl text-sm md:text-base"
+                className="btn-cta-login inline-flex items-center justify-center px-6 py-3 rounded-xl text-sm md:text-base"
               >
                 Open KOTH Dashboard
               </Link>
               <Link
                 prefetch={false}
                 href="/premium"
-                className="px-6 py-3 rounded-xl border border-white/20 text-sm md:text-base text-white hover:bg-white/10 transition-colors"
+                className="inline-flex items-center justify-center px-6 py-3 rounded-xl border border-white/20 text-sm md:text-base text-white hover:bg-white/10 transition-colors"
               >
                 View Premium Plans
               </Link>
@@ -125,14 +125,14 @@ export default function HomePage() {
               <Link
                 prefetch={false}
                 href="/alerts"
-                className="px-5 py-3 rounded-xl border border-white/20 text-sm md:text-base text-white hover:bg-white/10 transition-colors"
+                className="inline-flex items-center justify-center px-5 py-3 rounded-xl border border-white/20 text-sm md:text-base text-white hover:bg-white/10 transition-colors"
               >
                 Configure Alerts
               </Link>
               <Link
                 prefetch={false}
                 href="/faq"
-                className="px-5 py-3 rounded-xl text-sm md:text-base text-[#00FFA3] border border-[#00FFA3]/30 hover:bg-[#00FFA3]/10 transition-colors"
+                className="inline-flex items-center justify-center px-5 py-3 rounded-xl text-sm md:text-base text-[#00FFA3] border border-[#00FFA3]/30 hover:bg-[#00FFA3]/10 transition-colors"
               >
                 Read the FAQ
               </Link>
