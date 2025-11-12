@@ -63,13 +63,13 @@ export function MarketingNavbar() {
           </div>
         </div>
 
-        <div className="md:hidden mt-3 flex overflow-x-auto gap-2 pb-1 no-scrollbar">
+        <div className="md:hidden mt-2 flex overflow-x-auto gap-2 pb-1 px-1 no-scrollbar">
           {navLinks.map((item) => (
             <Link
               key={item.href}
               prefetch={false}
               href={item.href}
-              className="px-3 py-1.5 rounded-full text-xs font-medium text-[#b8c5d6] border border-white/10 whitespace-nowrap hover:text-white hover:border-white/30 transition-colors"
+              className="shrink-0 rounded-full border border-white/15 bg-white/[0.06] px-3 py-1.5 text-xs font-medium text-[#c8d3e3] whitespace-nowrap hover:bg-white/15 hover:text-white transition-colors"
             >
               {item.label}
             </Link>

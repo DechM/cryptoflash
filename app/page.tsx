@@ -21,25 +21,25 @@ const heroStats = [
 ];
 
 const heroBullets = [
-  "Track bonding-curve progress, AI Snipe Score и velocity без spreadsheets.",
-  "Автоматизирай Discord/X постове секунди след като кит натисне.",
-  "Рол-базиран достъп – free потребители виждат публичните канали, екипът ти premium signal.",
+  "Track bonding-curve progress, AI Snipe Score and velocity without spreadsheets.",
+  "Automate Discord/X posts seconds after a whale move is detected.",
+  "Role-aware delivery keeps public users in public channels while premium teams see the full signal.",
 ];
 
 const productPillars = [
   {
     title: "Live KOTH Telemetry",
-    copy: "Следи прогрес, velocity и ликвидност за всяка крива. Виж кои токени се качват към KOTH преди да избухнат.",
+    copy: "Watch progress, velocity and liquidity for each curve. Spot which tokens are climbing toward KOTH before they break out.",
     icon: Sparkles,
   },
   {
     title: "Automated Discord Delivery",
-    copy: "Еднократно свързване, автоматично ролево синхронизиране. Ultimate екипите добавят свои правила без да управляват ботове.",
+    copy: "One link and you're live. Roles stay synced automatically so Ultimate teams can stack rules without bot maintenance.",
     icon: Zap,
   },
   {
     title: "Cross-chain Whale Radar",
-    copy: "Bitquery + CoinGecko ти дават $20K+ движения с wallet flow и връзка към транзакцията. Без пропуснат сигнал.",
+    copy: "Bitquery + CoinGecko power curated $20K+ moves with wallet flow, chain callouts and direct transaction links.",
     icon: Radar,
   },
 ];
@@ -47,15 +47,15 @@ const productPillars = [
 const workflowHighlights = [
   {
     title: "Hourly token refresh",
-    details: "CoinGecko + Bitquery държат топ токените свежи – без rate-limit изненади и без ръчни CSV-та.",
+    details: "CoinGecko + Bitquery keep the token list fresh every hour—no rate-limit surprises, no manual CSV juggling.",
   },
   {
     title: "Role-aware routing",
-    details: "Discord ролите се синкват автоматично. Без дублирани ботове, без пропуснат premium канал.",
+    details: "Discord roles stay synced automatically. No duplicate bots, no missed premium channel access.",
   },
   {
     title: "Twitter-ready threads",
-    details: "Динамични hook-ове за X. Няма дублиран copy, няма compliance тревоги – всеки пост е fresh.",
+    details: "Dynamic hooks for X keep every post fresh—no duplicate copy, no compliance headaches.",
   },
 ];
 
@@ -64,12 +64,12 @@ export default function HomePage() {
     <div className="min-h-screen w-screen flex flex-col bg-[#050B18]">
       <MarketingNavbar />
 
-      <main className="w-screen min-h-screen overflow-x-hidden pt-[calc(var(--nav-height)+16px)] md:pt-[calc(var(--nav-height)+24px)]">
+      <main className="w-screen min-h-screen overflow-x-hidden pt-[calc(var(--nav-height)+8px)] md:pt-[calc(var(--nav-height)+20px)]">
         <section className="relative w-full px-6 md:px-12 xl:px-24 pb-20">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-[420px] bg-gradient-to-r from-[#00ffa3]/15 via-transparent to-[#1d4ed8]/20 blur-3xl" />
           <div className="pointer-events-none absolute inset-x-0 bottom-[-240px] h-[480px] bg-gradient-to-l from-[#1d4ed8]/20 via-transparent to-[#00ffa3]/10 blur-3xl" />
 
-          <div className="relative z-10 flex flex-col gap-10">
+          <div className="relative z-10 flex flex-col gap-8">
             <span className="inline-flex items-center px-5 py-2 rounded-full text-xs font-semibold tracking-[0.35em] uppercase bg-white/10 text-[#00FFA3] border border-[#00FFA3]/30">
               Pump.fun traders • Whale watchers • Discord-first teams
             </span>
@@ -90,7 +90,7 @@ export default function HomePage() {
                 ))}
               </ul>
             </div>
-            <div className="relative z-20 flex flex-wrap gap-4">
+            <div className="relative z-20 flex flex-wrap gap-3">
               <Link
                 prefetch={false}
                 href="/premium"
@@ -157,8 +157,7 @@ export default function HomePage() {
         </section>
 
         <section className="w-full px-6 md:px-12 xl:px-24 py-24">
-          <div className="relative rounded-[32px] border border-[#00FFA3]/25 bg-gradient-to-br from-[#00ffa3]/15 via-[#00ffa3]/10 to-transparent px-6 py-10 md:px-12 md:py-14 text-center space-y-6 md:space-y-8">
-            <div className="pointer-events-none absolute inset-0 rounded-[32px] bg-gradient-to-br from-transparent via-white/5 to-[#00ffa3]/10 blur-3xl" />
+          <div className="relative rounded-[32px] border border-[#00FFA3]/25 bg-gradient-to-br from-[#00ffa3]/12 via-[#00ffa3]/8 to-transparent px-6 py-10 md:px-12 md:py-14 text-center space-y-6 md:space-y-8">
             <h3 className="text-3xl md:text-4xl font-heading text-white">Ready to level up your signal?</h3>
             <p className="text-sm md:text-base text-[#0b2335]/80 leading-relaxed tracking-wide max-w-prose mx-auto">
               Join the traders automating KOTH unlocks, cross-chain whale flows and premium Discord delivery with CryptoFlash.
@@ -175,7 +174,7 @@ export default function HomePage() {
               <Link
                 prefetch={false}
                 href="/faq"
-                className="inline-flex items-center justify-center rounded-xl border border-[#04121f]/30 text-sm md:text-base text-[#04121f] px-6 py-3 hover:bg-white/20 transition-colors"
+                className="inline-flex items-center justify-center rounded-xl border border-[#04121f]/20 bg-white/80 text-sm md:text-base text-[#04121f] px-6 py-3 hover:bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-[#04121f]/40 focus:ring-offset-0"
               >
                 Read the FAQ
               </Link>
