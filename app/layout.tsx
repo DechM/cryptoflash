@@ -75,8 +75,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className={`${inter.variable} ${poppins.variable} font-sans antialiased w-full`}>
+    <html lang="en" className="dark h-full w-full">
+      <body className={`${inter.variable} ${poppins.variable} font-sans antialiased min-h-screen w-screen overflow-x-hidden bg-[#050B18]`}>
         {/* Google Analytics */}
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-L3NYZ6V64K"
@@ -144,7 +144,7 @@ export default function RootLayout({
             })
           }}
         />
-        <div className="flex flex-col min-h-screen">
+        <div className="flex flex-col min-h-screen w-full">
           {children}
           <Footer />
         </div>
