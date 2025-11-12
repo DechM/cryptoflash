@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { Filter, X } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
 
 interface AdvancedFiltersProps {
   onFilterChange: (filters: FilterState) => void
@@ -71,14 +70,8 @@ export function AdvancedFilters({ onFilterChange, userTier }: AdvancedFiltersPro
         )}
       </button>
 
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="mt-4 space-y-4 overflow-hidden"
-          >
+      {isOpen && (
+        <div className="mt-4 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-[#b8c5d6] mb-2">
@@ -171,9 +164,8 @@ export function AdvancedFilters({ onFilterChange, userTier }: AdvancedFiltersPro
                 <span>Clear Filters</span>
               </button>
             )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
     </div>
   )
 }

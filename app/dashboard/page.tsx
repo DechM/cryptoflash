@@ -9,7 +9,6 @@ import { AdvancedFilters, FilterState } from '@/components/AdvancedFilters'
 import { exportToCSV } from '@/lib/utils'
 import { useFeature } from '@/hooks/useFeature'
 import { RefreshCw, Zap, Download } from 'lucide-react'
-import { motion } from 'framer-motion'
 import useSWR from 'swr'
 import Script from 'next/script'
 
@@ -134,11 +133,7 @@ export default function DashboardPage() {
       
       <main className="w-full px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
+        <div className="mb-8">
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold gradient-text mb-2">
             KOTH Tracker
           </h1>
@@ -171,73 +166,44 @@ export default function DashboardPage() {
               Last updated: {lastUpdate.toLocaleTimeString()}
             </p>
           )}
-        </motion.div>
+        </div>
 
         {/* Stats Cards */}
         <div className="w-full grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1 }}
-            className="glass-card rounded-xl p-3 md:p-4 border border-[#00FFA3]/20 hover-lift hover-glow cursor-default"
-          >
+          <div className="glass-card rounded-xl p-3 md:p-4 border border-[#00FFA3]/20 hover-lift hover-glow cursor-default">
             <div className="text-xs md:text-sm text-[#b8c5d6] mb-1">Total Tokens</div>
             <div className="text-xl md:text-2xl font-bold text-[#00FFA3] number-transition">{tokens.length}</div>
-          </motion.div>
+          </div>
           
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
-            className="glass-card rounded-xl p-3 md:p-4 border border-[#00D1FF]/20 hover-lift hover-glow cursor-default"
-          >
+          <div className="glass-card rounded-xl p-3 md:p-4 border border-[#00D1FF]/20 hover-lift hover-glow cursor-default">
             <div className="text-xs md:text-sm text-[#b8c5d6] mb-1">KOTH Ready</div>
             <div className="text-xl md:text-2xl font-bold text-[#00D1FF] number-transition">
               {tokens.filter(t => t.progress >= 95).length}
             </div>
-          </motion.div>
+          </div>
           
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.3 }}
-            className="glass-card rounded-xl p-3 md:p-4 border border-[#ffd700]/20 hover-lift hover-glow cursor-default"
-          >
+          <div className="glass-card rounded-xl p-3 md:p-4 border border-[#ffd700]/20 hover-lift hover-glow cursor-default">
             <div className="text-xs md:text-sm text-[#b8c5d6] mb-1">High Score (90+)</div>
             <div className="text-xl md:text-2xl font-bold text-[#ffd700] number-transition">
               {tokens.filter(t => t.score >= 90).length}
             </div>
-          </motion.div>
+          </div>
           
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.4 }}
-            className="glass-card rounded-xl p-3 md:p-4 border border-[#FF2E86]/20 hover-lift hover-glow cursor-default"
-          >
+          <div className="glass-card rounded-xl p-3 md:p-4 border border-[#FF2E86]/20 hover-lift hover-glow cursor-default">
             <div className="text-xs md:text-sm text-[#b8c5d6] mb-1">Total Whales</div>
             <div className="text-xl md:text-2xl font-bold text-[#FF2E86] number-transition">
               {tokens.reduce((sum, t) => sum + t.whaleCount, 0)}
             </div>
-          </motion.div>
+          </div>
         </div>
 
         {/* Advanced Filters - Pro & Ultimate Only */}
         {isEnabled('filters.advanced') ? (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="mb-8"
-          >
+          <div className="mb-8">
             <AdvancedFilters onFilterChange={handleFilterChange} userTier={plan} />
-          </motion.div>
+          </div>
         ) : (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8 glass-card rounded-xl p-6 border border-[#ffd700]/30 text-center"
-          >
+          <div className="mb-8 glass-card rounded-xl p-6 border border-[#ffd700]/30 text-center">
             <p className="text-[#b8c5d6] mb-4">Advanced Filters are a Pro/Ultimate feature</p>
             <a
               href="/premium"
@@ -245,19 +211,14 @@ export default function DashboardPage() {
             >
               Upgrade to Pro
             </a>
-          </motion.div>
+          </div>
         )}
 
         {/* Heatmap */}
         {filteredTokens.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            className="mb-8"
-          >
+          <div className="mb-8">
             <Heatmap tokens={filteredTokens} />
-          </motion.div>
+          </div>
         )}
 
         {/* Token Table - Full Width */}
@@ -272,14 +233,9 @@ export default function DashboardPage() {
             <p className="text-[#b8c5d6]">No KOTH tokens found</p>
           </div>
         ) : (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
-            className="w-full"
-          >
+          <div className="w-full">
             <TokenTable tokens={filteredTokens} refreshInterval={refreshIntervalMs} />
-          </motion.div>
+          </div>
         )}
       </main>
     </div>

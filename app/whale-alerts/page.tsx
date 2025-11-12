@@ -4,7 +4,6 @@ import Link from 'next/link'
 import Script from 'next/script'
 import { useEffect, useMemo, useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
-import { AnimatePresence, motion } from 'framer-motion'
 import {
   Activity,
   ArrowRight,
@@ -222,11 +221,7 @@ export default function WhaleAlertsPage() {
       <main className="w-full px-4 sm:px-6 lg:px-12 py-10 flex-grow">
         <div className="max-w-7xl mx-auto space-y-10">
           <header className="space-y-6">
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="space-y-3"
-            >
+            <div className="space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <h1 className="text-3xl md:text-4xl font-bold gradient-text">Whale Alerts</h1>
@@ -250,7 +245,7 @@ export default function WhaleAlertsPage() {
                   <p className="text-xs text-[#6b7280]">USD per transfer</p>
                 </div>
               </div>
-            </motion.div>
+            </div>
 
             <div className="flex flex-wrap items-center gap-3">
               {(Object.keys(FILTER_LABELS) as FeedFilter[]).map(option => (
@@ -305,12 +300,7 @@ export default function WhaleAlertsPage() {
             </div>
           </header>
 
-          <motion.section
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="grid gap-6 md:grid-cols-2"
-          >
+          <section className="grid gap-6 md:grid-cols-2">
             <div className="glass-card rounded-2xl p-6 space-y-3">
               <h2 className="text-lg md:text-xl font-heading text-white">Why whale flow matters for KOTH</h2>
               <p className="text-sm md:text-base text-[#b8c5d6]">
@@ -340,7 +330,7 @@ export default function WhaleAlertsPage() {
                 for consistent execution.
               </p>
             </div>
-          </motion.section>
+          </section>
 
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <div className="glass-card rounded-2xl border border-white/10 p-4">
@@ -399,12 +389,9 @@ export default function WhaleAlertsPage() {
           ) : (
             <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
               {filteredEvents.map(event => (
-                <motion.button
+                <button
                   key={event.id}
                   onClick={() => setSelectedEvent(event)}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2 }}
                   className="glass-card w-full text-left rounded-2xl p-5 hover:border-[#00D1FF]/40 transition-all duration-200 focus:outline-none"
                 >
                   <div className="flex items-center justify-between mb-4">
@@ -461,28 +448,16 @@ export default function WhaleAlertsPage() {
                       <span>24h Vol: {formatUsd(event.volume_24h_usd ?? null)}</span>
                     </div>
                   </div>
-                </motion.button>
+                </button>
               ))}
             </div>
           )}
         </div>
       </main>
 
-      <AnimatePresence>
-        {selectedEvent && (
-          <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 30, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 30, scale: 0.96 }}
-              transition={{ type: 'spring', stiffness: 130, damping: 18 }}
-              className="relative max-w-3xl w-full glass-card rounded-3xl border border-white/10 p-6 md:p-8"
-            >
+      {selectedEvent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
+          <div className="relative max-w-3xl w-full glass-card rounded-3xl border border-white/10 p-6 md:p-8">
               <button
                 onClick={() => setSelectedEvent(null)}
                 className="absolute top-4 right-4 text-[#94A3B8] hover:text-white"
@@ -628,10 +603,9 @@ export default function WhaleAlertsPage() {
                   </div>
                 </div>
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import Script from "next/script";
-import { motion } from "framer-motion";
 import { Crown, ShieldCheck, BellRing, Activity } from "lucide-react";
 
 import PlanCards from "@/components/billing/PlanCards";
@@ -56,11 +55,7 @@ export default function PremiumPage() {
 
       <main className="w-full px-4 sm:px-6 lg:px-8 py-10">
         <div className="w-full space-y-12 max-w-6xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center space-y-4"
-          >
+          <div className="text-center space-y-4">
             <Crown className="h-16 w-16 mx-auto text-[#ffd700]" />
             <h1 className="text-3xl md:text-4xl font-heading font-semibold text-white">
               Pricing for KOTH Snipers & Whale Watchers
@@ -82,22 +77,13 @@ export default function PremiumPage() {
                 Live analytics dashboard
               </span>
             </div>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
+          <div>
             <PlanCards />
-          </motion.div>
+          </div>
 
-          <motion.section
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="grid gap-8 md:grid-cols-2"
-          >
+          <section className="grid gap-8 md:grid-cols-2">
             <div className="glass-card rounded-2xl p-6 space-y-4">
               <h2 className="text-xl md:text-2xl font-heading text-white">
                 KOTH alerts tuned for every plan
@@ -132,14 +118,9 @@ export default function PremiumPage() {
                 <li>• Chain + flow breakdown for quick decisions</li>
               </ul>
             </div>
-          </motion.section>
+          </section>
 
-          <motion.section
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="glass-card rounded-2xl p-6 md:p-8 space-y-4"
-          >
+          <section className="glass-card rounded-2xl p-6 md:p-8 space-y-4">
             <h2 className="text-xl md:text-2xl font-heading text-white">
               Need help picking a plan?
             </h2>
@@ -154,7 +135,7 @@ export default function PremiumPage() {
               </Link>{" "}
               for tailored onboarding. We help teams set up playbooks, Discord routing and alert hygiene.
             </p>
-          </motion.section>
+          </section>
         </div>
       </main>
     </div>

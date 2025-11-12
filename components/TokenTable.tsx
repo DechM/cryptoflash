@@ -5,7 +5,6 @@ import { getScoreColor, getScoreBgColor } from '@/lib/score'
 import { formatAddress, formatNumber, copyToClipboard, getPumpFunUrl } from '@/lib/utils'
 import { Copy, ExternalLink, TrendingUp, TrendingDown } from 'lucide-react'
 import { useState } from 'react'
-import { motion } from 'framer-motion'
 
 interface TokenTableProps {
   tokens: Token[]
@@ -39,11 +38,8 @@ export function TokenTable({ tokens, refreshInterval = 60000 }: TokenTableProps)
           </thead>
           <tbody>
             {tokens.map((token, index) => (
-              <motion.tr
+              <tr
                 key={token.tokenAddress}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.02 }}
                 className="border-b border-white/5 hover:bg-white/5 transition-all duration-200 hover-lift"
               >
                 <td className="py-3 md:py-4 px-2 md:px-4">
@@ -131,7 +127,7 @@ export function TokenTable({ tokens, refreshInterval = 60000 }: TokenTableProps)
                     <ExternalLink className="h-3 w-3 md:h-4 md:w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
                   </a>
                 </td>
-              </motion.tr>
+              </tr>
             ))}
           </tbody>
         </table>
