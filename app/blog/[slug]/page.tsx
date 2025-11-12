@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Script from 'next/script'
 
-import { Navbar } from '@/components/Navbar'
+import { MarketingNavbar } from '@/components/MarketingNavbar'
 import postsModule from '../posts'
 import type { BlogPost } from '../posts'
 
@@ -104,7 +104,7 @@ export default async function BlogArticlePage({ params }: BlogPageProps) {
 
   return (
     <div className="min-h-screen bg-[#0B1020] w-full">
-      <Navbar />
+      <MarketingNavbar />
 
       <Script
         id={`article-schema-${post.slug}`}

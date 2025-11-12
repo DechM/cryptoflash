@@ -1,7 +1,7 @@
 import Script from 'next/script'
 import Link from 'next/link'
 
-import { Navbar } from '@/components/Navbar'
+import { MarketingNavbar } from '@/components/MarketingNavbar'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://cryptoflash.app').replace(/\/$/, '')
 
@@ -74,7 +74,7 @@ const faqSchema = {
 export default function FaqPage() {
   return (
     <div className="min-h-screen bg-[#0B1020] w-full">
-      <Navbar />
+      <MarketingNavbar />
 
       <Script
         id="faq-structured-data"

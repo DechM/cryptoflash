@@ -1,6 +1,6 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
-import { Navbar } from '@/components/Navbar'
+import { MarketingNavbar } from '@/components/MarketingNavbar'
 import postsModule from './posts'
 import type { BlogPost } from './posts'
 
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
 export default function BlogPage() {
   return (
     <div className="min-h-screen bg-[#0B1020] w-full">
-      <Navbar />
+      <MarketingNavbar />
       
       <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8 max-w-none">
         {/* Header */}

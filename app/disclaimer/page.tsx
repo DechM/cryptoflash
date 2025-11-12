@@ -1,5 +1,5 @@
 import { Metadata } from 'next'
-import { Navbar } from '@/components/Navbar'
+import { MarketingNavbar } from '@/components/MarketingNavbar'
 
 export const metadata: Metadata = {
   title: 'Disclaimer | CryptoFlash',
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 export default function DisclaimerPage() {
   return (
     <div className="min-h-screen bg-[#0B1020] w-full flex flex-col">
-      <Navbar />
+      <MarketingNavbar />
       
       <main className="w-full px-4 sm:px-6 lg:px-8 py-12 max-w-4xl mx-auto flex-grow">
         <div className="glass-card rounded-xl p-6 md:p-8">

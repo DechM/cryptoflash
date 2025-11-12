@@ -1,6 +1,6 @@
 import Link from 'next/link'
 
-import { Navbar } from '@/components/Navbar'
+import { MarketingNavbar } from '@/components/MarketingNavbar'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://cryptoflash.app').replace(/\/$/, '')
 
@@ -41,7 +41,7 @@ const benefits = [
 export default function KothTrackerPage() {
   return (
     <div className="min-h-screen bg-[#0B1020] w-full">
-      <Navbar />
+      <MarketingNavbar />
 
       <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-10">
         <div className="max-w-5xl mx-auto space-y-12">
