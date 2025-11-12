@@ -102,6 +102,16 @@ export default async function BlogArticlePage({ params }: BlogPageProps) {
     url: articleUrl
   }
 
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: baseUrl },
+      { '@type': 'ListItem', position: 2, name: 'Blog', item: `${baseUrl}/blog` },
+      { '@type': 'ListItem', position: 3, name: post.title, item: articleUrl }
+    ]
+  }
+
   return (
     <div className="min-h-screen bg-[#0B1020] w-full">
       <MarketingNavbar />
@@ -110,7 +120,7 @@ export default async function BlogArticlePage({ params }: BlogPageProps) {
         id={`article-schema-${post.slug}`}
         type="application/ld+json"
         strategy="afterInteractive"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify([articleSchema, breadcrumbSchema]) }}
       />
 
       <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8 max-w-none">

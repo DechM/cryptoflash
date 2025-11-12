@@ -1,5 +1,6 @@
 import Link from 'next/link'
 
+import Script from 'next/script'
 import { MarketingNavbar } from '@/components/MarketingNavbar'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://cryptoflash.app').replace(/\/$/, '')
@@ -39,9 +40,25 @@ const benefits = [
 ]
 
 export default function KothTrackerPage() {
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": siteUrl },
+      { "@type": "ListItem", "position": 2, "name": "KOTH Tracker", "item": `${siteUrl}/koth-tracker` }
+    ]
+  }
+
   return (
     <div className="min-h-screen bg-[#0B1020] w-full">
       <MarketingNavbar />
+
+      <Script
+        id="koth-tracker-breadcrumb-schema"
+        type="application/ld+json"
+        strategy="afterInteractive"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
 
       <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-10">
         <div className="max-w-5xl mx-auto space-y-12">

@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
+import Script from 'next/script'
 import { MarketingNavbar } from '@/components/MarketingNavbar'
 import postsModule from './posts'
 import type { BlogPost } from './posts'
@@ -39,9 +40,25 @@ export const metadata: Metadata = {
 }
 
 export default function BlogPage() {
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": siteUrl },
+      { "@type": "ListItem", "position": 2, "name": "Blog", "item": `${siteUrl}/blog` }
+    ]
+  }
+
   return (
     <div className="min-h-screen bg-[#0B1020] w-full">
       <MarketingNavbar />
+
+      <Script
+        id="blog-breadcrumb-schema"
+        type="application/ld+json"
+        strategy="afterInteractive"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
       
       <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8 max-w-none">
         {/* Header */}

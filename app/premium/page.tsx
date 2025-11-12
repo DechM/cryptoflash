@@ -10,6 +10,47 @@ import { Navbar } from "@/components/Navbar";
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://cryptoflash.app").replace(/\/$/, "")
 
 export default function PremiumPage() {
+  const productSchema = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": "CryptoFlash Premium Plans",
+    "description": "Subscription plans for CryptoFlash alerts, including Pro and Ultimate tiers for KOTH tracking and cross-chain whale alerts.",
+    "url": `${siteUrl}/premium`,
+    "brand": {
+      "@type": "Brand",
+      "name": "CryptoFlash"
+    },
+    "offers": [
+      {
+        "@type": "Offer",
+        "name": "Pro Plan",
+        "price": "19.99",
+        "priceCurrency": "USDC",
+        "availability": "https://schema.org/InStock",
+        "url": `${siteUrl}/premium`,
+        "description": "Early KOTH alerts, faster refresh intervals and premium analytics."
+      },
+      {
+        "@type": "Offer",
+        "name": "Ultimate Plan",
+        "price": "39.99",
+        "priceCurrency": "USDC",
+        "availability": "https://schema.org/InStock",
+        "url": `${siteUrl}/premium`,
+        "description": "Everything from Pro plus Whale Alerts, Discord roles and priority features."
+      }
+    ]
+  }
+
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": siteUrl },
+      { "@type": "ListItem", "position": 2, "name": "Premium", "item": `${siteUrl}/premium` }
+    ]
+  }
+
   return (
     <div className="min-h-screen bg-[#0B1020] w-full">
       <Navbar />
@@ -19,37 +60,7 @@ export default function PremiumPage() {
         type="application/ld+json"
         strategy="afterInteractive"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "Product",
-            "name": "CryptoFlash Premium Plans",
-            "description": "Subscription plans for CryptoFlash alerts, including Pro and Ultimate tiers for KOTH tracking and cross-chain whale alerts.",
-            "url": `${siteUrl}/premium`,
-            "brand": {
-              "@type": "Brand",
-              "name": "CryptoFlash"
-            },
-            "offers": [
-              {
-                "@type": "Offer",
-                "name": "Pro Plan",
-                "price": "19.99",
-                "priceCurrency": "USDC",
-                "availability": "https://schema.org/InStock",
-                "url": `${siteUrl}/premium`,
-                "description": "Early KOTH alerts, faster refresh intervals and premium analytics."
-              },
-              {
-                "@type": "Offer",
-                "name": "Ultimate Plan",
-                "price": "39.99",
-                "priceCurrency": "USDC",
-                "availability": "https://schema.org/InStock",
-                "url": `${siteUrl}/premium`,
-                "description": "Everything from Pro plus Whale Alerts, Discord roles and priority features."
-              }
-            ]
-          })
+          __html: JSON.stringify([productSchema, breadcrumbSchema])
         }}
       />
 

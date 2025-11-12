@@ -20,6 +20,8 @@ import { cn, copyToClipboard, formatAddress, formatNumber } from '@/lib/utils'
 
 const REFRESH_INTERVAL = Number(process.env.NEXT_PUBLIC_WHALE_REFRESH_MS || 60000)
 const MIN_WHALE_THRESHOLD = Number(process.env.NEXT_PUBLIC_WHALE_MIN_USD || process.env.WHALE_ALERT_MIN_USD || '20000')
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://cryptoflash.app').replace(/\/$/, '')
+const canonicalUrl = `${siteUrl}/whale-alerts`
 
 type FeedFilter = 'all' | 'transfer' | 'mint' | 'burn'
 type TimeFilter = '1h' | '6h' | '24h' | 'all'
@@ -245,6 +247,63 @@ export default function WhaleAlertsPage() {
               }
             ]
           })
+        }}
+      />
+      <Script
+        id="whale-alerts-howto-schema"
+        type="application/ld+json"
+        strategy="afterInteractive"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify([
+            {
+              "@context": "https://schema.org",
+              "@type": "HowTo",
+              "name": "How to activate CryptoFlash Whale Alerts",
+              "description": "Step-by-step instructions to link Discord and enable $20K+ whale notifications inside CryptoFlash.",
+              "totalTime": "PT5M",
+              "supply": [
+                { "@type": "HowToSupply", "name": "CryptoFlash account" },
+                { "@type": "HowToSupply", "name": "Discord account" },
+                { "@type": "HowToSupply", "name": "USDC balance for Solana Pay" }
+              ],
+              "tool": [
+                { "@type": "HowToTool", "name": "Solana wallet (Phantom or compatible)" }
+              ],
+              "step": [
+                {
+                  "@type": "HowToStep",
+                  "url": `${canonicalUrl}#link-discord`,
+                  "name": "Link your Discord profile",
+                  "text": "Visit Alerts > Manage, click Link Discord and authorise the CryptoFlash bot. This grants access to the private whale channel."
+                },
+                {
+                  "@type": "HowToStep",
+                  "url": `${canonicalUrl}#select-plan`,
+                  "name": "Select the Whale Alerts add-on",
+                  "text": "Open the Whale Alerts page and choose the Ultimate tier or dedicated add-on to unlock $20K+ transactions across top EVM chains."
+                },
+                {
+                  "@type": "HowToStep",
+                  "url": `${canonicalUrl}#confirm-payment`,
+                  "name": "Confirm Solana Pay payment",
+                  "text": "Scan the QR code with your Phantom wallet (desktop or mobile) and approve the USDC payment. Access activates instantly after confirmation."
+                }
+              ],
+              "estimatedCost": {
+                "@type": "MonetaryAmount",
+                "currency": "USD",
+                "value": "39.99"
+              }
+            },
+            {
+              "@context": "https://schema.org",
+              "@type": "BreadcrumbList",
+              "itemListElement": [
+                { "@type": "ListItem", "position": 1, "name": "Home", "item": siteUrl },
+                { "@type": "ListItem", "position": 2, "name": "Whale Alerts", "item": canonicalUrl }
+              ]
+            }
+          ])
         }}
       />
 
