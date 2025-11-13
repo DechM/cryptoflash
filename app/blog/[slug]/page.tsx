@@ -44,7 +44,11 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
     }
   }
 
-  type BlogPostExtended = BlogPost & { canonicalUrl?: string; tags?: string[] }
+  type BlogPostExtended = BlogPost & {
+    canonicalUrl?: string
+    tags?: string[]
+    heroImage?: { src: string; alt: string }
+  }
   const typedPost = post as BlogPostExtended
   const canonical = typedPost.canonicalUrl ?? `${baseUrl}/blog/${post.slug}`
   const description = post.hero ?? post.description
