@@ -2,7 +2,7 @@
 
 | Publish Date | Content Type | Title / Working Title | Primary Keywords | Target CTA | Notes |
 | --- | --- | --- | --- | --- | --- |
-| 2025-11-17 | Long-form Article (1500+ words) | How to Track $20K Whale Moves with Free APIs | `whale alerts free`, `Solana whale tracker`, `crypto whale intelligence` | Join Discord (free tier) | Include architecture diagrams + Bitquery rate-limit tips. |
+| 2025-11-17 | Long-form Article (1500+ words) | Why $20K+ Whale Moves Still Lead the Market | `whale alerts`, `crypto whale intelligence`, `smart money tracking` | Join Discord (free tier) | Live at `/blog/why-20k-whale-moves-matter`. Promote across socials. |
 | 2025-11-19 | Weekly Recap | Whale & KOTH Radar – Week of Nov 10 | `weekly whale recap`, `pump.fun highlights` | Subscribe to newsletter | Pull stats from dashboard + embed charts. |
 | 2025-11-21 | FAQ Update | What is KOTH? (Progress, Scores, Alerts) | `KOTH tracker`, `pump.fun king of the hill explained` | Configure Alerts page | Expand existing FAQ entries, add internal links. |
 | 2025-11-24 | Long-form Article | From Signal to Execution: Discord Alert Workflow | `discord crypto alerts`, `cryptoflash walkthrough` | Start Whale Alerts trial | Screenshot every step, highlight TTF (time-to-fire). |

@@ -14,6 +14,53 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'whale-koth-radar-week-of-nov-10',
+    title: 'Whale & KOTH Radar – Week of November 10',
+    description:
+      'Weekly recap of the largest cross-chain whale flows, KOTH candidates to watch and Mayhem Mode signals that moved the market between November 10 and 16.',
+    date: '2025-11-19',
+    readTime: '8 min read',
+    hero: 'Smart money rotated hard into Base and Solana this week—three wallets alone pushed $1.4M. Here is the data that shaped every Discord alert.',
+    sections: [
+      {
+        heading: '1. Whale Flow Highlights',
+        body: [
+          'Top move: 0x8e1…9d3b accumulated $482K of WSTETH on Base across three transactions in 27 minutes. Liquidity on Aerodrome stayed above $3.2M, signalling conviction rather than exit liquidity extraction.',
+          'Runner-up: A tagged pump.fun sniper wallet rotated 18,400 SOL (~$1.38M) into two fresh Mayhem tokens ahead of Terminal tweets. Discord fired in under 55 seconds; both tokens doubled before cooling off.',
+          'Keep an eye on: USDC inflows into LayerZero and Wormhole bridge contracts climbed 22% w/w – historically this precedes stablecoin deployment into Solana KOTH plays.'
+        ]
+      },
+      {
+        heading: '2. KOTH Progress Watchlist',
+        body: [
+          'Prime candidates:',
+          '• $ALCHEMIST – 87% progress, curve velocity 4.8%/hr, AI Snipe Score 91. Whale inflows remained net positive despite two exhaust alerts.',
+          '• $BASEMENT – 79% progress but climbing fast; two Ultimate wallets added $140K collectively. If momentum holds, expect unlock inside 24 hours.',
+          '• $ARCANE – 65% progress, low liquidity but recurring $5K clips from three wallets. Keep it on exploration watch.'
+        ]
+      },
+      {
+        heading: '3. Mayhem & Agent Notes',
+        body: [
+          'Mayhem Mode pushed 12 “Mega” triggers this week; 8 overlapped with our whale alerts. The overlap rate of 66% reinforces that large wallets are driving terminal agents.',
+          'Agents trended toward Base pairs during US session and rotated back to Solana overnight. Schedule your alert windows accordingly—02:00–05:00 UTC saw the highest probability of fresh Solana inflows.'
+        ]
+      },
+      {
+        heading: '4. Playbook for the Coming Days',
+        body: [
+          'Refresh Discord alert tiers: set exploration alerts at 60–65% progress for the watchlist coins above. Accumulation alerts should fire only when whale inflows exceed $25K over a 30-minute window.',
+          'Prepare exit plans: log each alert-driven trade and set auto-reminders to review if inflows stall. Use the Takeaway list below as your Monday stand-up agenda.'
+        ]
+      }
+    ],
+    keyTakeaways: [
+      'Base and Solana continue to attract the majority of $20K+ flows—allocate monitoring time accordingly.',
+      'KOTH plays $ALCHEMIST and $BASEMENT are closest to unlock; tighten alert thresholds around them.',
+      'Mayhem agent triggers aligned with 66% of whale alerts—treat overlaps as high-conviction events.'
+    ]
+  },
+  {
     slug: 'why-20k-whale-moves-matter',
     title: 'Why $20K+ Whale Moves Still Lead the Market',
     description:
