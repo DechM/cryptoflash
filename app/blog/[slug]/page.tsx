@@ -48,6 +48,9 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
     canonicalUrl?: string
     tags?: string[]
     heroImage?: { src: string; alt: string }
+    author?: string
+    authorRole?: string
+    authorAvatar?: string
   }
   const typedPost = post as BlogPostExtended
   const canonical = typedPost.canonicalUrl ?? `${baseUrl}/blog/${post.slug}`
@@ -90,6 +93,9 @@ export default async function BlogArticlePage({ params }: BlogPageProps) {
     canonicalUrl?: string
     tags?: string[]
     heroImage?: { src: string; alt: string }
+    author?: string
+    authorRole?: string
+    authorAvatar?: string
   }
   const typedPost = post as BlogPostExtended
 
