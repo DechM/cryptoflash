@@ -63,13 +63,13 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
       publishedTime: post.date,
       authors: ['CryptoFlash'],
       tags: typedPost.tags,
-      images: post.heroImage?.src ? [{ url: post.heroImage.src, alt: post.heroImage.alt }] : undefined
+      images: typedPost.heroImage?.src ? [{ url: typedPost.heroImage.src, alt: typedPost.heroImage.alt }] : undefined
     },
     twitter: {
       card: 'summary_large_image',
       title: post.title,
       description,
-      images: post.heroImage?.src ? [post.heroImage.src] : undefined
+      images: typedPost.heroImage?.src ? [typedPost.heroImage.src] : undefined
     }
   }
 }
@@ -119,7 +119,7 @@ export default async function BlogArticlePage({ params }: BlogPageProps) {
           date={post.date}
           readTime={post.readTime}
           tags={typedPost.tags}
-          heroImage={post.heroImage}
+          heroImage={typedPost.heroImage}
           canonicalUrl={canonicalUrl}
           author={post.author}
           authorRole={post.authorRole}
