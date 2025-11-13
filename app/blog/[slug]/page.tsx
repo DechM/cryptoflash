@@ -60,7 +60,6 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
       type: 'article',
       publishedTime: post.date,
       authors: ['CryptoFlash'],
-      tags: post.tags,
       images: post.heroImage?.src ? [{ url: post.heroImage.src, alt: post.heroImage.alt }] : undefined
     },
     twitter: {
@@ -80,18 +79,8 @@ export default async function BlogArticlePage({ params }: BlogPageProps) {
     notFound()
   }
 
-  const fallbackRelated = blogPosts.filter(item => item.slug !== post.slug).slice(0, 3)
+  const relatedPosts = blogPosts.filter(item => item.slug !== post.slug).slice(0, 3)
   const canonicalUrl = post.canonicalUrl ?? `${baseUrl}/blog/${post.slug}`
-  const index = blogPosts.findIndex(item => item.slug === post.slug)
-  const previousPost = index > 0 ? blogPosts[index - 1] : null
-  const nextPost = index < blogPosts.length - 1 ? blogPosts[index + 1] : null
-  const relatedByTag = blogPosts
-    .filter(
-      item =>
-        item.slug !== post.slug &&
-        item.tags?.some(tag => post.tags?.includes(tag)),
-    )
-    .slice(0, 3)
 
   return (
     <div className="min-h-screen bg-[#0B1020] w-full">
@@ -116,24 +105,6 @@ export default async function BlogArticlePage({ params }: BlogPageProps) {
           tags={post.tags}
           heroImage={post.heroImage}
           canonicalUrl={canonicalUrl}
-          author={post.author}
-          authorRole={post.authorRole}
-          authorAvatar={post.authorAvatar}
-          previousPost={previousPost ? { slug: previousPost.slug, title: previousPost.title } : null}
-          nextPost={nextPost ? { slug: nextPost.slug, title: nextPost.title } : null}
-          relatedPosts={
-            relatedByTag.length > 0
-              ? relatedByTag.map(item => ({
-                  slug: item.slug,
-                  title: item.title,
-                  readTime: item.readTime,
-                }))
-              : fallbackRelated.map(item => ({
-                  slug: item.slug,
-                  title: item.title,
-                  readTime: item.readTime,
-                }))
-          }
         >
           {post.content}
 
@@ -148,6 +119,31 @@ export default async function BlogArticlePage({ params }: BlogPageProps) {
             </section>
           )}
 
+          {relatedPosts.length > 0 && (
+            <section className="mt-16">
+              <h2>Continue learning</h2>
+              <div className="grid gap-4 md:grid-cols-3 pt-4">
+                {relatedPosts.map(item => (
+                  <Link
+                    prefetch={false}
+                    key={item.slug}
+                    href={`/blog/${item.slug}`}
+                    className="rounded-xl border border-white/10 bg-white/5 p-5 hover:border-[#00FFA3]/40 transition-colors"
+                  >
+                    <h3 className="text-base font-heading text-white mb-2 leading-snug hover:text-[#00FFA3] transition-colors">
+                      {item.title}
+                    </h3>
+                    <p className="text-sm text-[#9aa6bf] leading-relaxed line-clamp-3">
+                      {item.description}
+                    </p>
+                    <span className="mt-3 inline-block text-xs text-[#6b7280] uppercase tracking-widest">
+                      {item.readTime}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
         </BlogPostLayout>
       </main>
     </div>

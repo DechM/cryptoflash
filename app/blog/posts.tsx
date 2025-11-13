@@ -16,9 +16,6 @@ export interface BlogPost {
   content: React.ReactNode
   keyTakeaways: string[]
   canonicalUrl?: string
-  author?: string
-  authorRole?: string
-  authorAvatar?: string
 }
 
 export const blogPosts: BlogPost[] = [
@@ -32,8 +29,6 @@ export const blogPosts: BlogPost[] = [
     hero:
       'Smart money rotated hard into Base and Solana this week—three wallets alone pushed $1.4M. Here is the data that shaped every Discord alert.',
     tags: ['Weekly Recap', 'Whales', 'KOTH'],
-    author: 'CryptoFlash Research',
-    authorRole: 'Whale Intelligence Team',
     canonicalUrl: 'https://cryptoflash.app/blog/whale-koth-radar-week-of-nov-10',
     content: (
       <>
@@ -111,8 +106,6 @@ export const blogPosts: BlogPost[] = [
     hero:
       'Institutional money has tells. When $20K+ hits a pool, liquidity, velocity and conviction change instantly. Here is how to read the alert feed like a pro.',
     tags: ['Whales', 'Execution', 'Strategy'],
-    author: 'CryptoFlash Research',
-    authorRole: 'On-chain Strategist',
     canonicalUrl: 'https://cryptoflash.app/blog/why-20k-whale-moves-matter',
     content: (
       <>
@@ -174,8 +167,6 @@ export const blogPosts: BlogPost[] = [
     readTime: '6 min read',
     hero: 'Master the curve before everyone else. CryptoFlash highlights when a bonding curve is almost crowning a champion.',
     tags: ['KOTH', 'Bonding Curves', 'Solana'],
-    author: 'CryptoFlash Research',
-    authorRole: 'Bonding Curve Analyst',
     canonicalUrl: 'https://cryptoflash.app/blog/koth-progression-playbook',
     content: (
       <>
@@ -237,8 +228,6 @@ export const blogPosts: BlogPost[] = [
     readTime: '7 min read',
     hero: 'Sniping is a process, not a gamble. This workflow keeps emotion out and data in.',
     tags: ['Workflow', 'Alerts', 'Discord'],
-    author: 'CryptoFlash Research',
-    authorRole: 'Tactical Ops',
     canonicalUrl: 'https://cryptoflash.app/blog/cryptoflash-sniper-workflow',
     content: (
       <>
@@ -290,8 +279,6 @@ export const blogPosts: BlogPost[] = [
     readTime: '6 min read',
     hero: 'Bonding curves are automated market makers in disguise. Master their economics to trade KOTH with confidence.',
     tags: ['Solana', 'Economics', 'KOTH'],
-    author: 'CryptoFlash Research',
-    authorRole: 'Market Structure Analyst',
     canonicalUrl: 'https://cryptoflash.app/blog/solana-bonding-curve-economics',
     content: (
       <>
