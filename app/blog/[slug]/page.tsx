@@ -135,9 +135,9 @@ export default async function BlogArticlePage({ params }: BlogPageProps) {
           tags={typedPost.tags}
           heroImage={typedPost.heroImage}
           canonicalUrl={canonicalUrl}
-          author={post.author}
-          authorRole={post.authorRole}
-          authorAvatar={post.authorAvatar}
+          author={typedPost.author}
+          authorRole={typedPost.authorRole}
+          authorAvatar={typedPost.authorAvatar}
           previousPost={previousPost ? { slug: previousPost.slug, title: previousPost.title } : null}
           nextPost={nextPost ? { slug: nextPost.slug, title: nextPost.title } : null}
           relatedPosts={
