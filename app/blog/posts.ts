@@ -14,6 +14,71 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'why-20k-whale-moves-matter',
+    title: 'Why $20K+ Whale Moves Still Lead the Market',
+    description:
+      'Understand the patterns we see across chains when six-figure wallets rotate, how to interpret the alert feed and how to react without blindly chasing size.',
+    date: '2025-11-17',
+    readTime: '9 min read',
+    hero: 'Institutional money has tells. When $20K+ hits a pool, liquidity, velocity and conviction change instantly. Here is how to read the alert feed like a pro.',
+    sections: [
+      {
+        heading: '1. Focus on Signals, Not Every Tick',
+        body: [
+          'Not every big transfer is actionable. We care about moves that hit deep liquidity, align with the trend and come from wallets with history. That is why the alert feed filters for sizeable orders, healthy liquidity pools and consistent behaviour.',
+          'When you see an alert fire, start by asking three questions: Is the liquidity thick enough for a trade? Does the move align with the token’s broader trend? Has this wallet made profitable plays before? If two answers are “yes”, the alert deserves your attention.'
+        ]
+      },
+      {
+        heading: '2. How to Read the Feed Without Panic',
+        body: [
+          'Every alert highlights: token, chain, USD value, token amount, sender → receiver snippet and a direct transaction link. Start with the body of the embed. “Flow” tells you whether capital is entering or leaving a pool.',
+          'Use the transaction link to confirm slippage and depth. If the wallet is new, assume speculative activity; if it is a tagged market maker, expect follow-up trades. Reactions should come after you verify these basics.'
+        ]
+      },
+      {
+        heading: '3. Spotting Momentum and Rotation',
+        body: [
+          'One alert rarely changes a trend. Multiple alerts in the same direction on the same token (or sector) do. Track the cadence: three alerts within an hour usually means a coordinated rotation.',
+          'Conversely, when you see a large outflow from a previously active wallet, reassess your exposure. Smart money exiting is as important as smart money entering.'
+        ]
+      },
+      {
+        heading: '4. Chains Behave Differently',
+        body: [
+          'Base and Ethereum whales often rotate between pools on the same DEX; Solana whales prefer to spread across fresh launches. Pay attention to chain context: a $20K move on Base typically signals a strategic rotation, while the same size on Solana might be a test buy for a memecoin before Mayhem kicks in.',
+          'CryptoFlash embeds chain and network in every alert so you can adapt your playbook per environment.'
+        ]
+      },
+      {
+        heading: '5. Executing Without Chasing',
+        body: [
+          'Build a checklist: confirm liquidity, check recent price action, decide entry size before clicking through. FOMO entries into illiquid pools are the fastest way to burn bankroll.',
+          'Set rules for how many alerts you need before acting. Some teams enter on the first buy if the wallet history is strong; others wait for a second or third confirmation. Document your rules and stick to them.'
+        ]
+      },
+      {
+        heading: '6. Using Alerts with KOTH & Mayhem Strategies',
+        body: [
+          'Combine whale alerts with KOTH progression or Terminal Mayhem filters. When a whale buy aligns with a KOTH candidate in the 80–90% range, conviction jumps. When Mayhem agents fire alongside a whale inflow, you know the move has momentum.',
+          'CryptoFlash surfaces the data – your edge comes from combining it with your own risk framework.'
+        ]
+      },
+      {
+        heading: '7. Build a Review Habit',
+        body: [
+          'Once a week, review the alerts that led to trades and the ones you ignored. Did the wallet continue buying? Did the pool dump afterward? This feedback loop helps you fine-tune thresholds and avoid false positives.',
+          'Log outcomes so future you knows which wallets to trust, which chains require faster reactions, and which alerts are simply noise.'
+        ]
+      }
+    ],
+    keyTakeaways: [
+      '$20K+ whale moves change liquidity dynamics—focus on those that hit deep pools with credible wallets.',
+      'Use the structured alert feed to confirm conviction instead of blindly chasing big transfers.',
+      'Review outcomes weekly so your playbook evolves with the market.'
+    ]
+  },
+  {
     slug: 'koth-progression-playbook',
     title: 'KOTH Progression Playbook: Reading Solana Bonding Curves',
     description:
