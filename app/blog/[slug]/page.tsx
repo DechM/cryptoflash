@@ -44,7 +44,7 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
     }
   }
 
-  type BlogPostExtended = BlogPost & { canonicalUrl?: string }
+  type BlogPostExtended = BlogPost & { canonicalUrl?: string; tags?: string[] }
   const typedPost = post as BlogPostExtended
   const canonical = typedPost.canonicalUrl ?? `${baseUrl}/blog/${post.slug}`
   const description = post.hero ?? post.description
@@ -62,7 +62,7 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
       type: 'article',
       publishedTime: post.date,
       authors: ['CryptoFlash'],
-      tags: post.tags,
+      tags: typedPost.tags,
       images: post.heroImage?.src ? [{ url: post.heroImage.src, alt: post.heroImage.alt }] : undefined
     },
     twitter: {
@@ -82,8 +82,11 @@ export default async function BlogArticlePage({ params }: BlogPageProps) {
     notFound()
   }
 
+  type BlogPostExtended = BlogPost & { canonicalUrl?: string; tags?: string[] }
+  const typedPost = post as BlogPostExtended
+
   const fallbackRelated = blogPosts.filter(item => item.slug !== post.slug).slice(0, 3)
-  const canonicalUrl = post.canonicalUrl ?? `${baseUrl}/blog/${post.slug}`
+  const canonicalUrl = typedPost.canonicalUrl ?? `${baseUrl}/blog/${post.slug}`
   const index = blogPosts.findIndex(item => item.slug === post.slug)
   const previousPost = index > 0 ? blogPosts[index - 1] : null
   const nextPost = index < blogPosts.length - 1 ? blogPosts[index + 1] : null
@@ -115,7 +118,7 @@ export default async function BlogArticlePage({ params }: BlogPageProps) {
           description={post.hero ?? post.description}
           date={post.date}
           readTime={post.readTime}
-          tags={post.tags}
+          tags={typedPost.tags}
           heroImage={post.heroImage}
           canonicalUrl={canonicalUrl}
           author={post.author}
