@@ -85,13 +85,6 @@ export function BlogPostLayout({
 
       <header className="border-b border-white/10 bg-gradient-to-b from-white/5 to-transparent">
         <div className="w-full px-6 md:px-12 lg:px-16 py-10 md:py-14">
-          <Link
-            prefetch={false}
-            href="/blog"
-            className="text-sm inline-flex items-center gap-2 text-white/60 hover:text-white/90 transition"
-          >
-            ← Back to blog
-          </Link>
           <h1 className="mt-5 text-4xl md:text-5xl font-extrabold tracking-tight text-white">{title}</h1>
           <div className="mt-4 flex flex-wrap gap-3 text-sm text-white/60">
             <time dateTime={date}>{formattedDate}</time>
