@@ -29,6 +29,17 @@ if (Array.isArray(rawPosts)) {
 
 const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://cryptoflash.app').replace(/\/$/, '')
 
+type BlogPostExtended = BlogPost & {
+  canonicalUrl?: string
+  tags?: string[]
+  heroImage?: { src: string; alt: string }
+  author?: string
+  authorRole?: string
+  authorAvatar?: string
+  content?: React.ReactNode
+  keyTakeaways?: string[]
+}
+
 export const dynamicParams = false
 
 export function generateStaticParams() {
@@ -45,16 +56,6 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
     }
   }
 
-  type BlogPostExtended = BlogPost & {
-    canonicalUrl?: string
-    tags?: string[]
-    heroImage?: { src: string; alt: string }
-    author?: string
-    authorRole?: string
-    authorAvatar?: string
-    content?: React.ReactNode
-    keyTakeaways?: string[]
-  }
   const typedPost = post as BlogPostExtended
   const canonical = typedPost.canonicalUrl ?? `${baseUrl}/blog/${post.slug}`
   const description = post.hero ?? post.description
@@ -92,14 +93,6 @@ export default async function BlogArticlePage({ params }: BlogPageProps) {
     notFound()
   }
 
-  type BlogPostExtended = BlogPost & {
-    canonicalUrl?: string
-    tags?: string[]
-    heroImage?: { src: string; alt: string }
-    author?: string
-    authorRole?: string
-    authorAvatar?: string
-  }
   const typedPost = post as BlogPostExtended
 
   const fallbackRelated = blogPosts.filter(item => item.slug !== post.slug).slice(0, 3)
