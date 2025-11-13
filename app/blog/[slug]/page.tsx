@@ -86,7 +86,11 @@ export default async function BlogArticlePage({ params }: BlogPageProps) {
     notFound()
   }
 
-  type BlogPostExtended = BlogPost & { canonicalUrl?: string; tags?: string[] }
+  type BlogPostExtended = BlogPost & {
+    canonicalUrl?: string
+    tags?: string[]
+    heroImage?: { src: string; alt: string }
+  }
   const typedPost = post as BlogPostExtended
 
   const fallbackRelated = blogPosts.filter(item => item.slug !== post.slug).slice(0, 3)
