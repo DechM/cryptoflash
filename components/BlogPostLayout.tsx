@@ -90,7 +90,7 @@ export function BlogPostLayout({
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       <header className="w-full border-b border-white/10 bg-gradient-to-b from-white/5 to-transparent">
-        <div className="mx-auto w-full max-w-5xl px-6 md:px-8 py-10 md:py-14 space-y-6">
+        <div className="w-full px-6 md:px-12 xl:px-24 py-10 md:py-14 space-y-6">
           <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-widest text-[#00ffa3]">
             <time dateTime={date} className="text-[#9feccd]">
               {new Date(date).toLocaleDateString("en-US", {
@@ -137,8 +137,8 @@ export function BlogPostLayout({
         </div>
       </header>
 
-      <div className="mx-auto w-full max-w-5xl px-6 md:px-8 py-10 md:py-14 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_260px] gap-12">
-        <div ref={contentRef} className="prose prose-invert max-w-prose prose-headings:scroll-mt-28 prose-p:leading-relaxed prose-li:leading-relaxed">
+      <div className="w-full px-6 md:px-12 xl:px-24 py-10 md:py-14 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_260px] gap-12">
+        <div ref={contentRef} className="prose prose-invert max-w-none prose-headings:scroll-mt-28 prose-p:leading-relaxed prose-li:leading-relaxed">
           {React.Children.map(children, child => {
             if (!child) return null
             if (typeof child === "string") {
@@ -198,7 +198,7 @@ export function BlogPostLayout({
       </div>
 
       <footer className="w-full border-t border-white/10">
-        <div className="mx-auto w-full max-w-5xl px-6 md:px-8 py-12">
+        <div className="w-full px-6 md:px-12 xl:px-24 py-12">
           <div className="rounded-3xl border border-[#00ffa3]/30 bg-[#00ffa3]/10 p-8 md:p-10 text-center space-y-4">
             <h3 className="text-white text-2xl md:text-3xl font-semibold">Track the next unlocks live on CryptoFlash</h3>
             <p className="max-w-prose mx-auto text-gray-300">
