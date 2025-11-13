@@ -61,56 +61,59 @@ export default function BlogPage() {
       />
       
       <main className="w-screen flex-1">
-        {/* Header */}
-        <div className="mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold gradient-text mb-4 font-heading">
-            CryptoFlash Blog
-          </h1>
-          <p className="text-lg text-[#b8c5d6] leading-relaxed">
-            Playbooks for traders who rely on CryptoFlash. Master KOTH progression, fine-tune sniper alerts and build conviction with real data.
-          </p>
-          <p className="text-sm text-[#94A3B8] mt-3">
-            Looking for live data? Hop over to our{' '}
-            <Link prefetch={false} href="/whale-alerts" className="text-[#00FFA3] hover:underline">
-              Whale Alerts feed
-            </Link>{' '}
-            or{' '}
-            <Link prefetch={false} href="/dashboard" className="text-[#00FFA3] hover:underline">
-              KOTH dashboard
-            </Link>{' '}
-            and plug these playbooks into action.
-          </p>
-        </div>
+        <div className="w-full px-6 md:px-12 xl:px-24 py-16">
+          {/* Header */}
+          <header className="mb-12 space-y-4 max-w-3xl">
+            <h1 className="text-4xl md:text-5xl font-bold gradient-text font-heading">
+              CryptoFlash Blog
+            </h1>
+            <p className="text-lg text-[#b8c5d6] leading-relaxed tracking-wide">
+              Playbooks for traders who rely on CryptoFlash. Master KOTH progression, fine-tune sniper alerts and build conviction with real data.
+            </p>
+            <p className="text-sm text-[#94A3B8]">
+              Looking for live data? Hop over to our{' '}
+              <Link prefetch={false} href="/whale-alerts" className="text-[#00FFA3] hover:underline">
+                Whale Alerts feed
+              </Link>{' '}
+              or{' '}
+              <Link prefetch={false} href="/dashboard" className="text-[#00FFA3] hover:underline">
+                KOTH dashboard
+              </Link>{' '}
+              and plug these playbooks into action.
+            </p>
+          </header>
 
-        {/* Blog Posts List */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-          {blogPosts.map((post) => (
-            <Link prefetch={false}
-              key={post.slug}
-              href={`/blog/${post.slug}`}
-              className="glass-card rounded-xl p-6 hover:scale-105 transition-transform duration-300 hover:border-[#00FFA3]/30"
-            >
-              <div className="mb-4">
-                <h2 className="text-xl font-bold text-[#F8FAFC] mb-2 hover:text-[#00FFA3] transition-colors font-heading">
-                  {post.title}
-                </h2>
-                <p className="text-sm text-[#94A3B8] mb-4 line-clamp-3">
-                  {post.description}
-                </p>
-              </div>
-              <div className="flex items-center justify-between text-xs text-[#6b7280]">
-                <span>{post.date}</span>
-                <span>{post.readTime}</span>
-              </div>
-            </Link>
-          ))}
-        </div>
+          {/* Blog Posts List */}
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            {blogPosts.map((post) => (
+              <Link
+                prefetch={false}
+                key={post.slug}
+                href={`/blog/${post.slug}`}
+                className="glass-card rounded-xl p-6 hover:border-[#00FFA3]/40 hover:-translate-y-1 transition duration-300 flex flex-col justify-between"
+              >
+                <div className="mb-4 space-y-3">
+                  <h2 className="text-xl font-bold text-[#F8FAFC] font-heading leading-snug hover:text-[#00FFA3] transition-colors">
+                    {post.title}
+                  </h2>
+                  <p className="text-sm text-[#94A3B8] leading-relaxed line-clamp-4">
+                    {post.description}
+                  </p>
+                </div>
+                <div className="flex items-center justify-between text-xs text-[#6b7280] uppercase tracking-widest">
+                  <span>{post.date}</span>
+                  <span>{post.readTime}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
 
-        {/* Coming Soon */}
-        <div className="mt-12 text-center">
-          <p className="text-[#94A3B8]">
-            More guides coming soon! Check back for updates.
-          </p>
+          {/* Coming Soon */}
+          <div className="mt-12 text-center">
+            <p className="text-[#94A3B8]">
+              More guides coming soon! Check back for updates.
+            </p>
+          </div>
         </div>
       </main>
     </div>
