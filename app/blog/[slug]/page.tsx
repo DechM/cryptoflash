@@ -98,7 +98,7 @@ export default async function BlogArticlePage({ params }: BlogPageProps) {
     .filter(
       item =>
         item.slug !== post.slug &&
-        item.tags?.some(tag => post.tags?.includes(tag)),
+        (item as BlogPostExtended).tags?.some(tag => typedPost.tags?.includes(tag)),
     )
     .slice(0, 3)
 
