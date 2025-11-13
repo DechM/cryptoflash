@@ -1,3 +1,4 @@
+import React from 'react'
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
@@ -51,6 +52,8 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
     author?: string
     authorRole?: string
     authorAvatar?: string
+    content?: React.ReactNode
+    keyTakeaways?: string[]
   }
   const typedPost = post as BlogPostExtended
   const canonical = typedPost.canonicalUrl ?? `${baseUrl}/blog/${post.slug}`
@@ -154,13 +157,13 @@ export default async function BlogArticlePage({ params }: BlogPageProps) {
                 }))
           }
         >
-          {post.content}
+          {typedPost.content}
 
-          {post.keyTakeaways.length > 0 && (
+          {(typedPost.keyTakeaways ?? post.keyTakeaways).length > 0 && (
             <section className="mt-12">
               <h2>Key Takeaways</h2>
               <ul>
-                {post.keyTakeaways.map(takeaway => (
+                {(typedPost.keyTakeaways ?? post.keyTakeaways).map(takeaway => (
                   <li key={takeaway}>{takeaway}</li>
                 ))}
               </ul>
