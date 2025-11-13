@@ -1,4 +1,4 @@
-import Link from "next/link"
+import Link from "next/link";
 
 const navLinks = [
   { href: "/koth-tracker", label: "KOTH Tracker" },
@@ -7,7 +7,7 @@ const navLinks = [
   { href: "/faq", label: "FAQ" },
   { href: "/blog", label: "Blog" },
   { href: "/contact", label: "Contact" },
-]
+];
 
 export function MarketingNavbar() {
   return (
@@ -23,7 +23,7 @@ export function MarketingNavbar() {
           </Link>
 
           <div className="hidden md:flex items-center gap-2">
-            {navLinks.map(item => (
+            {navLinks.map((item) => (
               <Link
                 key={item.href}
                 prefetch={false}
@@ -43,20 +43,28 @@ export function MarketingNavbar() {
             >
               Login
             </Link>
-            <Link prefetch={false} href="/premium" className="btn-cta-login px-4 py-2 rounded-xl text-sm">
+            <Link
+              prefetch={false}
+              href="/premium"
+              className="btn-cta-login px-4 py-2 rounded-xl text-sm"
+            >
               Get Started
             </Link>
           </div>
 
           <div className="md:hidden flex items-center gap-2">
-            <Link prefetch={false} href="/premium" className="btn-cta-login px-4 py-2 rounded-xl text-sm">
+            <Link
+              prefetch={false}
+              href="/premium"
+              className="btn-cta-login px-4 py-2 rounded-xl text-sm"
+            >
               Get Started
             </Link>
           </div>
         </div>
 
         <div className="md:hidden mt-2 flex overflow-x-auto gap-2 pb-1 px-2 no-scrollbar">
-          {navLinks.map(item => (
+          {navLinks.map((item) => (
             <Link
               key={item.href}
               prefetch={false}
@@ -69,6 +77,6 @@ export function MarketingNavbar() {
         </div>
       </div>
     </nav>
-  )
+  );
 }
 
