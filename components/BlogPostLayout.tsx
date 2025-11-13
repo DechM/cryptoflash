@@ -1,5 +1,3 @@
-'use client'
-
 import React, { startTransition, useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
 
