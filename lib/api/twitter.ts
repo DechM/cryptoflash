@@ -32,6 +32,14 @@ const WHALE_TWEET_HOOKS = [
   '⚡ Whale radar pinged live'
 ] as const
 
+const WHALE_SPECULATION_HOOKS = [
+  'Buying the dip?',
+  'Major move loading?',
+  'Rally signal?',
+  'Accumulation phase?',
+  'Smart money positioning?'
+] as const
+
 const KOTH_TWEET_HOOKS: Array<(token: TwitterToken) => string> = [
   token => `⚔️ $${formatTokenTag(token)} is storming the KOTH summit`,
   token => `🚀 KOTH radar pinged: $${formatTokenTag(token)} sprinting up the curve`,
@@ -39,6 +47,14 @@ const KOTH_TWEET_HOOKS: Array<(token: TwitterToken) => string> = [
   token => `👀 Sniper watch: $${formatTokenTag(token)} closing in on the crown`,
   token => `⚡ Early signal: $${formatTokenTag(token)} heating up the bonding curve`
 ]
+
+const KOTH_SPECULATION_HOOKS = [
+  'Unlock incoming?',
+  'Momentum building?',
+  'Early entry signal?',
+  'Whale accumulation?',
+  'Breakout loading?'
+] as const
 
 function pickRandom<T>(items: readonly T[]): T {
   if (!items.length) {
@@ -84,40 +100,71 @@ function formatTokenCompact(amount?: number | null) {
 }
 
 export function formatWhaleTweet(event: WhaleEvent): string {
-  const tokenName = event.token_name || ''
-  const tokenSymbol = event.token_symbol ? `$${event.token_symbol}` : ''
-  const headline = `${tokenName} ${tokenSymbol}`.trim() || `$${shortAddress(event.token_address, 4)}`
+  // Format token symbol with $ prefix (e.g., $ETH, $USDT, $BTC)
+  const tokenSymbol = event.token_symbol 
+    ? `$${event.token_symbol.toUpperCase()}` 
+    : event.token_name 
+    ? `$${event.token_name.toUpperCase().slice(0, 6)}`
+    : `$${shortAddress(event.token_address, 4)}`
 
   const valuePart = formatUsdCompact(event.amount_usd)
-  const tokenAmount = formatTokenCompact(event.amount_tokens)
-  const amountLine = tokenAmount ? `${valuePart} • ${tokenAmount} tokens` : valuePart
 
-  let descriptor = '🔁 Whale transfer'
-  if (event.event_type === 'mint') descriptor = '🪙 Minted supply'
-  if (event.event_type === 'burn') descriptor = '🔥 Supply burned'
-  if (event.event_type === 'exchange') descriptor = '🏛️ Exchange flow'
+  // Action emoji and label based on event type
+  let actionEmoji = '🐋'
+  let actionLabel = 'BUY'
+  if (event.event_type === 'sell') {
+    actionEmoji = '🔴'
+    actionLabel = 'SELL'
+  } else if (event.event_type === 'transfer') {
+    actionEmoji = '💸'
+    actionLabel = 'TRANSFER'
+  } else if (event.event_type === 'mint') {
+    actionEmoji = '💰'
+    actionLabel = 'MINT'
+  } else if (event.event_type === 'burn') {
+    actionEmoji = '🔥'
+    actionLabel = 'BURN'
+  }
 
   const sender = shortAddress(event.sender, 4)
   const receiver = shortAddress(event.receiver, 4)
-  const movementLine = `From ${sender} → ${receiver}`
+  const movementLine = sender && receiver ? `From: ${sender} → ${receiver}` : ''
 
-  const siteLink = 'cryptoflash.app/whale-alerts'
-  const hashtags = '#Solana #WhaleAlert #CryptoFlash'
+  // Transaction link
+  const txLink = event.tx_url || `https://cryptoflash.app/whale-alerts`
+
+  // Speculation hook for engagement
+  const speculation = pickRandom(WHALE_SPECULATION_HOOKS)
+
+  // Hashtags - use token symbol if available
+  const tokenHashtag = event.token_symbol ? `#${event.token_symbol.toUpperCase()}` : '#Crypto'
+  const hashtags = `#Crypto #WhaleAlert ${tokenHashtag}`
 
   const hook = pickRandom(WHALE_TWEET_HOOKS)
 
-  return `${hook}
+  const lines = [
+    hook,
+    '',
+    `${valuePart} whale just moved`,
+    '',
+    `Token: ${tokenSymbol}`,
+    `Action: ${actionLabel} ${actionEmoji}`,
+  ]
 
-${headline}
-💰 ${amountLine}
-${descriptor}
-${movementLine}
+  if (movementLine) {
+    lines.push(movementLine)
+  }
 
-👉 Watch live: ${siteLink}
+  lines.push(
+    '',
+    `${speculation} 👀🔥`,
+    '',
+    `Tx: ${txLink}`,
+    '',
+    hashtags
+  )
 
-${hashtags}
-
-⚠️ DYOR • NFA`
+  return lines.join('\n')
 }
 
 /**
@@ -130,24 +177,24 @@ export function formatTwitterPost(token: TwitterToken): string {
   const progress = token.progress || 0
   const score = token.score || 0
 
-  const progressLine = `⚡ Progress: ${progress.toFixed(1)}% • Score ${score.toFixed(1)}`
+  const progressLine = `Progress: ${progress.toFixed(1)}% • Score: ${score.toFixed(1)}`
 
   let secondaryLine: string | null = null
   if (typeof token.whaleUsd === 'number' && token.whaleUsd > 0) {
-    const windowText = token.whaleWindow || 'recently'
-    secondaryLine = `🐳 Whale flow: +${formatUsdCompact(token.whaleUsd)} (${windowText})`
+    const windowText = token.whaleWindow || 'last 1h'
+    secondaryLine = `Whale flow: +${formatUsdCompact(token.whaleUsd)} (${windowText})`
   } else if (typeof token.priceUsd === 'number') {
-    secondaryLine = `💵 Price: $${token.priceUsd.toFixed(6)}`
+    secondaryLine = `Price: $${token.priceUsd.toFixed(6)}`
   }
 
   const hook = pickRandom(KOTH_TWEET_HOOKS)(token)
+  const speculation = pickRandom(KOTH_SPECULATION_HOOKS)
+
+  const tokenTag = formatTokenTag(token)
+  const siteLink = 'cryptoflash.app'
 
   const lines = [
     hook,
-    '',
-    `$${token.symbol} // KOTH RACE ⚔️`,
-    '',
-    'Progress surges. Whales circling. Score ticking up.',
     '',
     progressLine,
   ]
@@ -158,10 +205,12 @@ export function formatTwitterPost(token: TwitterToken): string {
 
   lines.push(
     '',
-    `CA: ${token.address}`,
+    `${speculation} 👀🔥`,
     '',
-    '👁‍🗨 Track it live on CryptoFlash.',
-    'Follow @CryptoFlashGuru for instant alerts.'
+    `CA: ${token.address}`,
+    `Track live: ${siteLink}`,
+    '',
+    '#KOTH #Solana #CryptoFlash'
   )
 
   return lines.join('\n')
