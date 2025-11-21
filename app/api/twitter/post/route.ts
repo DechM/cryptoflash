@@ -25,6 +25,11 @@ const MAX_POSTS_PER_DAY = 15 // 15 posts/day = 450 posts/month (safe margin for 
 const WHALE_RETENTION_HOURS = Number(process.env.WHALE_EVENT_RETENTION_HOURS || '48')
 const KOTH_REPOST_COOLDOWN_HOURS = Number(process.env.KOTH_REPOST_COOLDOWN_HOURS || '48')
 
+// Twitter-specific thresholds and limits
+const TWITTER_WHALE_MIN_USD = Number(process.env.TWITTER_WHALE_MIN_USD || '300000') // Only post whales >= $300k
+const MAX_WHALE_POSTS_PER_DAY = 2 // Max 2 whale alerts per day
+const MAX_KOTH_POSTS_PER_DAY = 2 // Max 2 KOTH alerts per day
+
 function getCooldownCutoff(hours: number): number {
   return Date.now() - hours * 60 * 60 * 1000
 }
@@ -173,17 +178,35 @@ async function handleTwitterPost() {
   }
 
 
-  // Check for pending whale events before KOTH tweets
-  const { data: pendingWhale } = await supabaseAdmin
-    .from('whale_events')
-    .select('*')
-    .eq('posted_to_twitter', false)
-    .gte('block_time', new Date(Date.now() - 90 * 60 * 1000).toISOString())
-    .order('block_time', { ascending: false })
-    .limit(1)
-    .maybeSingle<WhaleEvent>()
+  // Check daily whale post limit (whale events have null progress, KOTH have progress >= 69)
+  const { count: whalePostsToday } = await supabaseAdmin
+    .from('twitter_posts')
+    .select('*', { count: 'exact', head: true })
+    .gte('posted_at', today.toISOString())
+    .not('tweet_id', 'is', null)
+    .is('progress', null) // Whale events don't have progress field
 
-  if (pendingWhale && (pendingWhale.amount_usd || 0) >= MIN_WHALE_ALERT_USD) {
+  const whalePostsCount = whalePostsToday || 0
+  console.log(`[Twitter Post] Whale posts today: ${whalePostsCount}/${MAX_WHALE_POSTS_PER_DAY}`)
+
+  // Check for pending whale events before KOTH tweets (only if under daily limit)
+  let pendingWhale: WhaleEvent | null = null
+  if (whalePostsCount < MAX_WHALE_POSTS_PER_DAY) {
+    const { data: whaleData } = await supabaseAdmin
+      .from('whale_events')
+      .select('*')
+      .eq('posted_to_twitter', false)
+      .gte('block_time', new Date(Date.now() - 90 * 60 * 1000).toISOString())
+      .order('amount_usd', { ascending: false }) // Get largest whales first
+      .limit(1)
+      .maybeSingle<WhaleEvent>()
+
+    pendingWhale = whaleData || null
+  } else {
+    console.log(`[Twitter Post] Whale post limit reached (${whalePostsCount}/${MAX_WHALE_POSTS_PER_DAY}), skipping whale checks`)
+  }
+
+  if (pendingWhale && (pendingWhale.amount_usd || 0) >= TWITTER_WHALE_MIN_USD) {
     console.log('[Twitter Post] Found whale event candidate:', pendingWhale.tx_hash, 'USD', pendingWhale.amount_usd)
     const tweetText = formatWhaleTweet(pendingWhale)
     const tweetResult = await postTweet(tweetText)
@@ -262,6 +285,33 @@ async function handleTwitterPost() {
   }
 
   await cleanupWhaleRetention()
+
+  // Check daily KOTH post limit
+  const { count: kothPostsToday } = await supabaseAdmin
+    .from('twitter_posts')
+    .select('*', { count: 'exact', head: true })
+    .gte('posted_at', today.toISOString())
+    .not('tweet_id', 'is', null)
+    .not('progress', 'is', null)
+    .gte('progress', 69) // KOTH tokens have progress >= 69%
+
+  const kothPostsCount = kothPostsToday || 0
+  console.log(`[Twitter Post] KOTH posts today: ${kothPostsCount}/${MAX_KOTH_POSTS_PER_DAY}`)
+
+  if (kothPostsCount >= MAX_KOTH_POSTS_PER_DAY) {
+    console.log(`[Twitter Post] KOTH post limit reached (${kothPostsCount}/${MAX_KOTH_POSTS_PER_DAY}), skipping KOTH posts`)
+    await recordCronSuccess('twitter:post', {
+      postedCount: 0,
+      reason: 'koth-daily-limit',
+      kothPostsCount
+    })
+    return NextResponse.json({
+      success: false,
+      message: 'KOTH daily limit reached',
+      kothPostsCount,
+      whalePostsCount
+    })
+  }
 
   // Fetch latest KOTH tokens
   const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/g, '') || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')).replace(/\/$/, '')
@@ -384,7 +434,9 @@ async function handleTwitterPost() {
     return NextResponse.json(payload)
   }
 
-  const MAX_TOKENS_PER_RUN = 1
+  // Calculate how many KOTH posts we can still make today
+  const remainingKothSlots = MAX_KOTH_POSTS_PER_DAY - kothPostsCount
+  const MAX_TOKENS_PER_RUN = Math.min(remainingKothSlots, 2) // Max 2 KOTH posts per run, but respect daily limit
 
   // Sort by score DESC and take top tokens (rate limit safe)
   const topTokens = newTokens

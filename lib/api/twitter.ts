@@ -130,8 +130,8 @@ export function formatWhaleTweet(event: WhaleEvent): string {
   const receiver = shortAddress(event.receiver, 4)
   const movementLine = sender && receiver ? `From: ${sender} → ${receiver}` : ''
 
-  // Transaction link
-  const txLink = event.tx_url || `https://cryptoflash.app/whale-alerts`
+  // Link to our website instead of Etherscan
+  const siteLink = 'cryptoflash.app/whale-alerts'
 
   // Speculation hook for engagement
   const speculation = pickRandom(WHALE_SPECULATION_HOOKS)
@@ -159,7 +159,7 @@ export function formatWhaleTweet(event: WhaleEvent): string {
     '',
     `${speculation} 👀🔥`,
     '',
-    `Tx: ${txLink}`,
+    `View on: ${siteLink}`,
     '',
     hashtags
   )
@@ -191,7 +191,7 @@ export function formatTwitterPost(token: TwitterToken): string {
   const speculation = pickRandom(KOTH_SPECULATION_HOOKS)
 
   const tokenTag = formatTokenTag(token)
-  const siteLink = 'cryptoflash.app'
+  const siteLink = 'cryptoflash.app/dashboard'
 
   const lines = [
     hook,
@@ -207,8 +207,7 @@ export function formatTwitterPost(token: TwitterToken): string {
     '',
     `${speculation} 👀🔥`,
     '',
-    `CA: ${token.address}`,
-    `Track live: ${siteLink}`,
+    `View on: ${siteLink}`,
     '',
     '#KOTH #Solana #CryptoFlash'
   )
