@@ -296,6 +296,33 @@ CREATE TABLE IF NOT EXISTS discord_links (
 CREATE INDEX IF NOT EXISTS idx_discord_links_user_id ON discord_links(user_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_discord_links_discord_user_id ON discord_links(discord_user_id);
 
+-- News Posts Table (for RSS news tracking)
+CREATE TABLE IF NOT EXISTS news_posts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,
+  description TEXT,
+  link TEXT NOT NULL UNIQUE,
+  source TEXT NOT NULL,
+  hook TEXT,
+  is_us_related BOOLEAN DEFAULT FALSE,
+  priority INTEGER DEFAULT 0,
+  image_url TEXT,
+  pub_date TIMESTAMPTZ,
+  posted_to_twitter BOOLEAN DEFAULT FALSE,
+  tweet_id TEXT,
+  posted_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_news_posts_link ON news_posts(link);
+CREATE INDEX IF NOT EXISTS idx_news_posts_posted_to_twitter ON news_posts(posted_to_twitter);
+CREATE INDEX IF NOT EXISTS idx_news_posts_priority ON news_posts(priority DESC);
+CREATE INDEX IF NOT EXISTS idx_news_posts_pub_date ON news_posts(pub_date DESC);
+
+CREATE TRIGGER update_news_posts_updated_at BEFORE UPDATE ON news_posts
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 CREATE TABLE IF NOT EXISTS discord_oauth_states (
   state TEXT PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,

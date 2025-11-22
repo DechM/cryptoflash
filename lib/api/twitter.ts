@@ -56,6 +56,19 @@ const KOTH_SPECULATION_HOOKS = [
   'Breakout loading?'
 ] as const
 
+const NEWS_HOOK_WORDS = [
+  'JUST IN',
+  'BREAKING',
+  'UPDATE',
+  'CONFIRMED',
+  'EXCLUSIVE',
+  'LEAKED',
+  'HAPPENING NOW',
+  'EMERGENCY',
+  'ALERT',
+  'FLASH'
+] as const
+
 function pickRandom<T>(items: readonly T[]): T {
   if (!items.length) {
     throw new Error('Cannot pick a random item from an empty array')
@@ -97,6 +110,46 @@ function formatTokenCompact(amount?: number | null) {
   if (amount >= 1_000_000) return `${(amount / 1_000_000).toFixed(1)}M`
   if (amount >= 1_000) return `${(amount / 1_000).toFixed(1)}K`
   return amount.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 })
+}
+
+/**
+ * Format news post for Twitter
+ * Format: "JUST IN: 🇺🇸 [title]" or "BREAKING: [title]"
+ * No hashtags, US flag for US-related news
+ */
+export function formatNewsTweet(news: {
+  title: string
+  hook?: string
+  isUSRelated: boolean
+  link: string
+}): string {
+  const hook = news.hook || 'JUST IN'
+  const flag = news.isUSRelated ? '🇺🇸 ' : ''
+  
+  // Clean title (remove existing hook if present, trim)
+  let cleanTitle = news.title.trim()
+  const upperTitle = cleanTitle.toUpperCase()
+  
+  // Remove hook from title if it's already there
+  for (const h of NEWS_HOOK_WORDS) {
+    if (upperTitle.startsWith(h)) {
+      cleanTitle = cleanTitle.slice(h.length).trim()
+      // Remove colon if present
+      if (cleanTitle.startsWith(':')) {
+        cleanTitle = cleanTitle.slice(1).trim()
+      }
+      break
+    }
+  }
+  
+  // Limit title length (Twitter limit is 280, reserve space for hook + flag + link)
+  const maxTitleLength = 200
+  if (cleanTitle.length > maxTitleLength) {
+    cleanTitle = cleanTitle.slice(0, maxTitleLength - 3) + '...'
+  }
+  
+  // Format: "JUST IN: 🇺🇸 [title]"
+  return `${hook}: ${flag}${cleanTitle}`
 }
 
 export function formatWhaleTweet(event: WhaleEvent): string {

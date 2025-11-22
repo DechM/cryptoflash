@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { postTweet, formatTwitterPost, formatWhaleTweet } from '@/lib/api/twitter'
+import { postTweet, formatTwitterPost, formatWhaleTweet, formatNewsTweet } from '@/lib/api/twitter'
 import { Token, WhaleEvent } from '@/lib/types'
 import { MIN_WHALE_ALERT_USD } from '@/lib/whales'
 import { recordCronFailure, recordCronSuccess } from '@/lib/cron'
@@ -27,8 +27,9 @@ const KOTH_REPOST_COOLDOWN_HOURS = Number(process.env.KOTH_REPOST_COOLDOWN_HOURS
 
 // Twitter-specific thresholds and limits
 const TWITTER_WHALE_MIN_USD = Number(process.env.TWITTER_WHALE_MIN_USD || '300000') // Only post whales >= $300k
-const MAX_WHALE_POSTS_PER_DAY = 2 // Max 2 whale alerts per day
-const MAX_KOTH_POSTS_PER_DAY = 2 // Max 2 KOTH alerts per day
+const MAX_WHALE_POSTS_PER_DAY = 4 // Max 4 whale alerts per day (increased from 2)
+const MAX_KOTH_POSTS_PER_DAY = 1 // Max 1 KOTH alert per day (decreased from 2)
+const MAX_NEWS_POSTS_PER_DAY = 8 // Max 8 news posts per day
 
 function getCooldownCutoff(hours: number): number {
   return Date.now() - hours * 60 * 60 * 1000
@@ -285,6 +286,97 @@ async function handleTwitterPost() {
   }
 
   await cleanupWhaleRetention()
+
+  // Check daily news post limit
+  const { count: newsPostsToday } = await supabaseAdmin
+    .from('news_posts')
+    .select('*', { count: 'exact', head: true })
+    .gte('posted_at', today.toISOString())
+    .not('tweet_id', 'is', null)
+    .eq('posted_to_twitter', true)
+
+  const newsPostsCount = newsPostsToday || 0
+  console.log(`[Twitter Post] News posts today: ${newsPostsCount}/${MAX_NEWS_POSTS_PER_DAY}`)
+
+  // Check for pending news items (only if under daily limit)
+  let pendingNews: { id: string; title: string; hook?: string; is_us_related: boolean; link: string } | null = null
+  if (newsPostsCount < MAX_NEWS_POSTS_PER_DAY) {
+    const { data: newsData } = await supabaseAdmin
+      .from('news_posts')
+      .select('id, title, hook, is_us_related, link')
+      .eq('posted_to_twitter', false)
+      .order('priority', { ascending: false })
+      .order('pub_date', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    pendingNews = newsData || null
+  } else {
+    console.log(`[Twitter Post] News post limit reached (${newsPostsCount}/${MAX_NEWS_POSTS_PER_DAY}), skipping news checks`)
+  }
+
+  // Post news if available (before KOTH, but after whale)
+  if (pendingNews) {
+    console.log('[Twitter Post] Found news item candidate:', pendingNews.title)
+    const tweetText = formatNewsTweet({
+      title: pendingNews.title,
+      hook: pendingNews.hook || undefined,
+      isUSRelated: pendingNews.is_us_related || false,
+      link: pendingNews.link
+    })
+    const tweetResult = await postTweet(tweetText)
+
+    if (tweetResult && 'rateLimited' in tweetResult) {
+      console.warn('[Twitter Post] Twitter rate limit during news post. Skipping rest of job.')
+      const fallbackReset = Math.floor(Date.now() / 1000) + (20 * 60)
+      await setStoredResumeAt(tweetResult.resetAt || fallbackReset)
+      await recordCronSuccess('twitter:post', {
+        postedCount: 0,
+        reason: 'rate-limited-news',
+        resetAt: tweetResult.resetAt || null
+      })
+      return NextResponse.json({
+        success: false,
+        rateLimited: true,
+        rateLimitedUntil: tweetResult.resetAt || null,
+        message: 'Twitter rate limit hit while posting news'
+      })
+    }
+
+    if (tweetResult) {
+      console.log('[Twitter Post] Posted news tweet:', tweetResult.id)
+
+      const { error: updateError } = await supabaseAdmin
+        .from('news_posts')
+        .update({ 
+          posted_to_twitter: true, 
+          tweet_id: tweetResult.id,
+          posted_at: new Date().toISOString()
+        })
+        .eq('id', pendingNews.id)
+
+      if (updateError) {
+        console.error('[Twitter Post] Failed to update news post:', updateError)
+      }
+
+      await setStoredResumeAt(null)
+
+      const newsResult = {
+        success: true,
+        postedNews: true,
+        tweetId: tweetResult.id,
+        newsId: pendingNews.id
+      }
+      await recordCronSuccess('twitter:post', {
+        postedCount: 1,
+        mode: 'news',
+        tweetId: tweetResult.id
+      })
+      return NextResponse.json(newsResult)
+    } else {
+      console.error('[Twitter Post] Failed to post news tweet - postTweet returned null/undefined')
+    }
+  }
 
   // Check daily KOTH post limit
   const { count: kothPostsToday } = await supabaseAdmin
