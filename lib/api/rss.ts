@@ -18,28 +18,9 @@ export interface RSSFeed {
   items: RSSItem[]
 }
 
-const RSS_FEEDS = [
-  {
-    name: 'CoinDesk',
-    url: 'https://www.coindesk.com/arc/outboundfeeds/rss/'
-  },
-  {
-    name: 'CoinTelegraph',
-    url: 'https://cointelegraph.com/rss'
-  },
-  {
-    name: 'Decrypt',
-    url: 'https://decrypt.co/feed'
-  },
-  {
-    name: 'CryptoSlate',
-    url: 'https://cryptoslate.com/feed/'
-  },
-  {
-    name: 'The Block',
-    url: 'https://www.theblock.co/rss.xml'
-  }
-] as const
+// Old RSS feeds removed - now using X (Twitter) profile monitoring instead
+// This file is kept for potential future RSS needs, but RSS_FEEDS is empty
+const RSS_FEEDS = [] as const
 
 /**
  * Parse RSS XML string into structured data

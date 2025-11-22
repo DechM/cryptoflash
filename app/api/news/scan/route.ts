@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { fetchAllFeeds } from '@/lib/api/rss'
-import { filterNewsItems, FilteredNewsItem } from '@/lib/api/news'
+import { getMonitoredAccounts, getCachedUserId, getUserTweets } from '@/lib/api/x-monitor'
+import { filterXTweets, FilteredXNewsItem } from '@/lib/api/x-news'
 import { recordCronFailure, recordCronSuccess } from '@/lib/cron'
 
 export const runtime = 'nodejs'
@@ -9,8 +9,10 @@ export const dynamic = 'force-dynamic'
 
 /**
  * News Scan Cron Job
- * Scans RSS feeds every 5 minutes, filters relevant crypto news,
+ * Scans X (Twitter) accounts every 15 minutes, filters relevant crypto news,
  * and stores them in the database for Twitter posting
+ * 
+ * Free tier: 1 request / 15 mins per user
  */
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
@@ -19,54 +21,135 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    console.log('[News Scan] Starting RSS feed scan at', new Date().toISOString())
+    console.log('[News Scan] Starting X account scan at', new Date().toISOString())
 
-    // Fetch all RSS feeds
-    const feeds = await fetchAllFeeds()
-    console.log(`[News Scan] Fetched ${feeds.length} feeds`)
+    const accounts = getMonitoredAccounts()
+    console.log(`[News Scan] Monitoring ${accounts.length} X accounts`)
 
-    if (feeds.length === 0) {
-      await recordCronSuccess('news:scan', { scannedFeeds: 0, newItems: 0, note: 'No feeds available' })
-      return NextResponse.json({ success: true, scannedFeeds: 0, newItems: 0 })
+    if (accounts.length === 0) {
+      await recordCronSuccess('news:scan', { scannedAccounts: 0, newItems: 0, note: 'No accounts to monitor' })
+      return NextResponse.json({ success: true, scannedAccounts: 0, newItems: 0 })
     }
 
-    // Filter news items from all feeds
-    const allFilteredItems: FilteredNewsItem[] = []
-    for (const { feed, source } of feeds) {
-      const filtered = filterNewsItems(feed.items, source)
-      allFilteredItems.push(...filtered)
-      console.log(`[News Scan] ${source}: ${feed.items.length} items → ${filtered.length} relevant`)
+    // Get last processed tweet ID for each account (to avoid duplicates)
+    const { data: lastTweets } = await supabaseAdmin
+      .from('news_posts')
+      .select('source, tweet_id')
+      .not('tweet_id', 'is', null)
+      .order('created_at', { ascending: false })
+
+    const lastTweetMap = new Map<string, string>()
+    if (lastTweets) {
+      for (const post of lastTweets) {
+        if (post.source && post.tweet_id) {
+          const sourceKey = post.source.replace('X:', '')
+          if (!lastTweetMap.has(sourceKey)) {
+            lastTweetMap.set(sourceKey, post.tweet_id)
+          }
+        }
+      }
+    }
+
+    // Fetch tweets from all monitored accounts
+    const allFilteredItems: FilteredXNewsItem[] = []
+    let scannedCount = 0
+
+    for (const username of accounts) {
+      try {
+        // Get user ID (cached to avoid rate limits)
+        const userId = await getCachedUserId(username)
+        if (!userId) {
+          console.warn(`[News Scan] Could not get user ID for: ${username}`)
+          continue
+        }
+
+        // Get last tweet ID for this account
+        const sinceId = lastTweetMap.get(username)
+
+        // Fetch tweets (free tier: 1 request / 15 mins per user)
+        const tweets = await getUserTweets(userId, username, sinceId, 10)
+        scannedCount++
+
+        if (tweets.length === 0) {
+          console.log(`[News Scan] ${username}: No new tweets`)
+          continue
+        }
+
+        // Filter and score tweets
+        const filtered = filterXTweets(tweets, username)
+        allFilteredItems.push(...filtered)
+        console.log(`[News Scan] ${username}: ${tweets.length} tweets → ${filtered.length} relevant`)
+
+        // Rate limit: 1 request / 15 mins per user for free tier
+        // Add delay between accounts to respect rate limits
+        if (username !== accounts[accounts.length - 1]) {
+          await new Promise(resolve => setTimeout(resolve, 2000)) // 2 second delay
+        }
+      } catch (error: any) {
+        console.error(`[News Scan] Error processing ${username}:`, error.message)
+        continue
+      }
     }
 
     console.log(`[News Scan] Total relevant items: ${allFilteredItems.length}`)
 
     if (allFilteredItems.length === 0) {
-      await recordCronSuccess('news:scan', { scannedFeeds: feeds.length, newItems: 0, note: 'No relevant news found' })
-      return NextResponse.json({ success: true, scannedFeeds: feeds.length, newItems: 0 })
+      await recordCronSuccess('news:scan', { scannedAccounts: scannedCount, newItems: 0, note: 'No relevant news found' })
+      return NextResponse.json({ success: true, scannedAccounts: scannedCount, newItems: 0 })
     }
 
-    // Check which items are already in the database (by link)
-    const links = allFilteredItems.map(item => item.link)
-    const { data: existingPosts } = await supabaseAdmin
-      .from('news_posts')
-      .select('link')
-      .in('link', links)
+    // Check which items are already in the database (by tweet_id)
+    const tweetIds = allFilteredItems.map(item => item.tweetId).filter(Boolean)
+    
+    if (tweetIds.length === 0) {
+      await recordCronSuccess('news:scan', { 
+        scannedAccounts: scannedCount, 
+        newItems: 0, 
+        totalRelevant: allFilteredItems.length,
+        note: 'No tweet IDs to check' 
+      })
+      return NextResponse.json({ 
+        success: true, 
+        scannedAccounts: scannedCount, 
+        newItems: 0,
+        totalRelevant: allFilteredItems.length
+      })
+    }
 
-    const existingLinks = new Set(existingPosts?.map(p => p.link) || [])
-    const newItems = allFilteredItems.filter(item => !existingLinks.has(item.link))
+    // Check existing posts by tweet_id (in batches if needed)
+    const existingTweetIds = new Set<string>()
+    const batchSize = 100
+    
+    for (let i = 0; i < tweetIds.length; i += batchSize) {
+      const batch = tweetIds.slice(i, i + batchSize)
+      const { data: existingPosts } = await supabaseAdmin
+        .from('news_posts')
+        .select('tweet_id')
+        .in('tweet_id', batch)
+      
+      if (existingPosts) {
+        for (const post of existingPosts) {
+          if (post.tweet_id) {
+            existingTweetIds.add(post.tweet_id)
+          }
+        }
+      }
+    }
+    
+    const newItems = allFilteredItems.filter(item => !existingTweetIds.has(item.tweetId))
 
     console.log(`[News Scan] New items to store: ${newItems.length}`)
 
     if (newItems.length === 0) {
       await recordCronSuccess('news:scan', { 
-        scannedFeeds: feeds.length, 
+        scannedAccounts: scannedCount, 
         newItems: 0, 
         totalRelevant: allFilteredItems.length,
         note: 'All items already in database' 
       })
       return NextResponse.json({ 
         success: true, 
-        scannedFeeds: feeds.length, 
+        scannedAccounts: scannedCount, 
         newItems: 0,
         totalRelevant: allFilteredItems.length
       })
@@ -74,17 +157,17 @@ export async function GET(request: NextRequest) {
 
     // Insert new items into database
     const insertData = newItems.map(item => ({
-      title: item.title,
-      description: item.description || null,
-      link: item.link,
+      title: item.formattedText, // Use reformatted text as title
+      description: item.originalText || null, // Store original text in description
+      link: `https://twitter.com/${item.authorUsername}/status/${item.tweetId}`,
       source: item.source,
       hook: item.hook || null,
       is_us_related: item.isUSRelated,
       priority: item.priority,
       image_url: item.imageUrl || null,
-      pub_date: item.pubDate ? new Date(item.pubDate).toISOString() : null,
+      pub_date: item.createdAt ? new Date(item.createdAt).toISOString() : null,
       posted_to_twitter: false,
-      tweet_id: null,
+      tweet_id: item.tweetId, // Store original tweet ID
       posted_at: null
     }))
 
@@ -101,14 +184,14 @@ export async function GET(request: NextRequest) {
     console.log(`[News Scan] Successfully stored ${newItems.length} new items`)
 
     await recordCronSuccess('news:scan', {
-      scannedFeeds: feeds.length,
+      scannedAccounts: scannedCount,
       newItems: newItems.length,
       totalRelevant: allFilteredItems.length
     })
 
     return NextResponse.json({
       success: true,
-      scannedFeeds: feeds.length,
+      scannedAccounts: scannedCount,
       newItems: newItems.length,
       totalRelevant: allFilteredItems.length
     })

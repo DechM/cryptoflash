@@ -72,7 +72,7 @@ const CRYPTO_KEYWORDS = [
 ] as const
 
 // Keyword weights (higher = more important)
-const KEYWORD_WEIGHTS: Record<string, number> = {
+export const KEYWORD_WEIGHTS: Record<string, number> = {
   // Highest priority keywords
   'SEC': 30,
   'ETF APPROVED': 30,
@@ -115,7 +115,7 @@ const KEYWORD_WEIGHTS: Record<string, number> = {
 }
 
 // US-related keywords (for 🇺🇸 flag)
-const US_KEYWORDS = [
+export const US_KEYWORDS = [
   'TRUMP',
   'BIDEN',
   'HARRIS',
@@ -155,7 +155,7 @@ function hasHookWord(title: string): string | null {
 /**
  * Check if title or description contains crypto keywords and return the highest weight keyword
  */
-function getCryptoKeywordWeight(title: string, description?: string): number {
+export function getCryptoKeywordWeight(title: string, description?: string): number {
   const searchText = `${title} ${description || ''}`.toUpperCase()
   let maxWeight = 0
   
@@ -174,7 +174,7 @@ function getCryptoKeywordWeight(title: string, description?: string): number {
 /**
  * Check if news is US-related (for flag emoji)
  */
-function isUSRelated(title: string, description?: string): boolean {
+export function isUSRelated(title: string, description?: string): boolean {
   const searchText = `${title} ${description || ''}`.toUpperCase()
   
   for (const keyword of US_KEYWORDS) {
@@ -190,7 +190,7 @@ function isUSRelated(title: string, description?: string): boolean {
  * Calculate priority score (higher = more important)
  * Uses detailed weights for hooks, keywords, and bonuses
  */
-function calculatePriority(
+export function calculatePriority(
   hookWord: string | null,
   keywordWeight: number,
   isUS: boolean,

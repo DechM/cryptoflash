@@ -316,9 +316,11 @@ CREATE TABLE IF NOT EXISTS news_posts (
 );
 
 CREATE INDEX IF NOT EXISTS idx_news_posts_link ON news_posts(link);
+CREATE INDEX IF NOT EXISTS idx_news_posts_tweet_id ON news_posts(tweet_id);
 CREATE INDEX IF NOT EXISTS idx_news_posts_posted_to_twitter ON news_posts(posted_to_twitter);
 CREATE INDEX IF NOT EXISTS idx_news_posts_priority ON news_posts(priority DESC);
 CREATE INDEX IF NOT EXISTS idx_news_posts_pub_date ON news_posts(pub_date DESC);
+CREATE INDEX IF NOT EXISTS idx_news_posts_source ON news_posts(source);
 
 CREATE TRIGGER update_news_posts_updated_at BEFORE UPDATE ON news_posts
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
