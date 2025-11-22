@@ -29,7 +29,8 @@ const KOTH_REPOST_COOLDOWN_HOURS = Number(process.env.KOTH_REPOST_COOLDOWN_HOURS
 const TWITTER_WHALE_MIN_USD = Number(process.env.TWITTER_WHALE_MIN_USD || '300000') // Only post whales >= $300k
 const MAX_WHALE_POSTS_PER_DAY = 4 // Max 4 whale alerts per day (increased from 2)
 const MAX_KOTH_POSTS_PER_DAY = 1 // Max 1 KOTH alert per day (decreased from 2)
-const MAX_NEWS_POSTS_PER_DAY = 8 // Max 8 news posts per day
+const MAX_NEWS_POSTS_PER_DAY = 3 // Max 3 news posts per day (like Watcher.Guru - only top news)
+const MIN_NEWS_PRIORITY = 70 // Minimum priority score to post (only most important news)
 
 function getCooldownCutoff(hours: number): number {
   return Date.now() - hours * 60 * 60 * 1000
@@ -299,18 +300,26 @@ async function handleTwitterPost() {
   console.log(`[Twitter Post] News posts today: ${newsPostsCount}/${MAX_NEWS_POSTS_PER_DAY}`)
 
   // Check for pending news items (only if under daily limit)
-  let pendingNews: { id: string; title: string; hook?: string; is_us_related: boolean; link: string; image_url?: string | null } | null = null
+  // Only post news with priority >= 70 (most important news only)
+  let pendingNews: { id: string; title: string; hook?: string; is_us_related: boolean; link: string; image_url?: string | null; priority: number } | null = null
   if (newsPostsCount < MAX_NEWS_POSTS_PER_DAY) {
     const { data: newsData } = await supabaseAdmin
       .from('news_posts')
-      .select('id, title, hook, is_us_related, link, image_url')
+      .select('id, title, hook, is_us_related, link, image_url, priority')
       .eq('posted_to_twitter', false)
+      .gte('priority', MIN_NEWS_PRIORITY) // Only most important news
       .order('priority', { ascending: false })
       .order('pub_date', { ascending: false })
       .limit(1)
       .maybeSingle()
 
     pendingNews = newsData || null
+    
+    if (pendingNews) {
+      console.log(`[Twitter Post] Found news item with priority ${pendingNews.priority}: ${pendingNews.title}`)
+    } else {
+      console.log(`[Twitter Post] No news items found with priority >= ${MIN_NEWS_PRIORITY}`)
+    }
   } else {
     console.log(`[Twitter Post] News post limit reached (${newsPostsCount}/${MAX_NEWS_POSTS_PER_DAY}), skipping news checks`)
   }

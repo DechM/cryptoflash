@@ -19,6 +19,20 @@ const HOOK_WORDS = [
   'FLASH'
 ] as const
 
+// Hook word weights (higher = more important)
+const HOOK_WEIGHTS: Record<string, number> = {
+  'BREAKING': 50,
+  'EMERGENCY': 45,
+  'JUST IN': 40,
+  'EXCLUSIVE': 35,
+  'CONFIRMED': 30,
+  'LEAKED': 25,
+  'HAPPENING NOW': 20,
+  'UPDATE': 20,
+  'ALERT': 15,
+  'FLASH': 15
+}
+
 // Level 2: Crypto-specific keywords
 const CRYPTO_KEYWORDS = [
   'SEC',
@@ -56,6 +70,49 @@ const CRYPTO_KEYWORDS = [
   'DELISTING',
   'UPGRADE'
 ] as const
+
+// Keyword weights (higher = more important)
+const KEYWORD_WEIGHTS: Record<string, number> = {
+  // Highest priority keywords
+  'SEC': 30,
+  'ETF APPROVED': 30,
+  'ETF DENIED': 30,
+  'BITCOIN ETF': 30,
+  'ETHEREUM ETF': 30,
+  'SPOT ETF': 30,
+  // High priority keywords
+  'TRUMP': 25,
+  'BIDEN': 25,
+  'HARRIS': 25,
+  'HACK': 25,
+  'EXPLOIT': 25,
+  '$100M': 25,
+  // Medium-high priority keywords
+  'BLACKROCK': 20,
+  'GRAYSCALE': 20,
+  'REGULATION': 20,
+  'BAN': 20,
+  'MICHAEL SAYLOR': 20,
+  'MICROSTRATEGY': 20,
+  'GENSLER': 20,
+  // Medium priority keywords
+  'BINANCE': 15,
+  'COINBASE': 15,
+  'CZ': 15,
+  'WHALE ALERT': 15,
+  'LIQUIDATION': 15,
+  'AIRDROP': 15,
+  // Lower priority keywords (technical/news)
+  'LAYER 2': 10,
+  'MAINNET LAUNCH': 10,
+  'STAKING': 10,
+  'BURN': 10,
+  'TOKEN BURN': 10,
+  'PARTNERSHIP': 10,
+  'LISTING': 10,
+  'DELISTING': 10,
+  'UPGRADE': 10
+}
 
 // US-related keywords (for 🇺🇸 flag)
 const US_KEYWORDS = [
@@ -96,18 +153,22 @@ function hasHookWord(title: string): string | null {
 }
 
 /**
- * Check if title or description contains crypto keywords
+ * Check if title or description contains crypto keywords and return the highest weight keyword
  */
-function hasCryptoKeywords(title: string, description?: string): boolean {
+function getCryptoKeywordWeight(title: string, description?: string): number {
   const searchText = `${title} ${description || ''}`.toUpperCase()
+  let maxWeight = 0
   
   for (const keyword of CRYPTO_KEYWORDS) {
     if (searchText.includes(keyword)) {
-      return true
+      const weight = KEYWORD_WEIGHTS[keyword] || 10
+      if (weight > maxWeight) {
+        maxWeight = weight
+      }
     }
   }
   
-  return false
+  return maxWeight
 }
 
 /**
@@ -127,26 +188,45 @@ function isUSRelated(title: string, description?: string): boolean {
 
 /**
  * Calculate priority score (higher = more important)
- * Hook word + crypto keyword = highest priority
+ * Uses detailed weights for hooks, keywords, and bonuses
  */
 function calculatePriority(
-  hasHook: boolean,
-  hasCrypto: boolean,
-  hookWord?: string | null
+  hookWord: string | null,
+  keywordWeight: number,
+  isUS: boolean,
+  hasImage: boolean,
+  isFresh: boolean,
+  source: string
 ): number {
-  if (hasHook && hasCrypto) {
-    // Highest priority: both hook and crypto keywords
-    return 100
+  let score = 0
+  
+  // Hook word weight
+  if (hookWord) {
+    score += HOOK_WEIGHTS[hookWord] || 15
   }
-  if (hasHook) {
-    // Medium-high: hook word only
-    return 70
+  
+  // Keyword weight
+  score += keywordWeight
+  
+  // Bonuses
+  if (isUS) {
+    score += 10 // US-related bonus
   }
-  if (hasCrypto) {
-    // Medium: crypto keywords only
-    return 50
+  
+  if (hasImage) {
+    score += 5 // Image bonus
   }
-  return 0
+  
+  if (isFresh) {
+    score += 10 // Fresh news bonus (< 1 hour)
+  }
+  
+  // Source bonus (CoinDesk and CoinTelegraph are more reliable)
+  if (source === 'CoinDesk' || source === 'CoinTelegraph') {
+    score += 5
+  }
+  
+  return score
 }
 
 /**
@@ -157,16 +237,25 @@ export function filterNewsItems(
   source: string
 ): FilteredNewsItem[] {
   const filtered: FilteredNewsItem[] = []
+  const now = Date.now()
 
   for (const item of items) {
     const hook = hasHookWord(item.title)
-    const hasHook = hook !== null
-    const hasCrypto = hasCryptoKeywords(item.title, item.description)
+    const keywordWeight = getCryptoKeywordWeight(item.title, item.description)
     const isUS = isUSRelated(item.title, item.description)
+    const hasImage = !!item.imageUrl
+    
+    // Check if news is fresh (< 1 hour old)
+    let isFresh = false
+    if (item.pubDate) {
+      const pubTime = new Date(item.pubDate).getTime()
+      const hoursSincePub = (now - pubTime) / (1000 * 60 * 60)
+      isFresh = hoursSincePub < 1
+    }
 
     // Only include items with hook word OR crypto keywords
-    if (hasHook || hasCrypto) {
-      const priority = calculatePriority(hasHook, hasCrypto, hook)
+    if (hook || keywordWeight > 0) {
+      const priority = calculatePriority(hook, keywordWeight, isUS, hasImage, isFresh, source)
       
       filtered.push({
         ...item,
