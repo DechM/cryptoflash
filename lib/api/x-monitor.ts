@@ -51,10 +51,6 @@ const MONITORED_ACCOUNTS = [
   'CryptoCobain'
 ] as const
 
-// Cache for user IDs (to avoid hitting rate limits)
-// Free tier: 1 request / 24 hours per user for getUserByUsername
-const userIdCache = new Map<string, string>()
-
 /**
  * Get OAuth 1.0a headers for Twitter API
  */
@@ -238,26 +234,61 @@ export function getMonitoredAccounts(): readonly string[] {
 }
 
 /**
- * Get user ID with caching (to avoid rate limits)
+ * Get user ID from database cache (to avoid rate limits)
  * Free tier: 1 request / 24 hours per user for getUserByUsername
- * This function caches user IDs to avoid hitting rate limits
+ * This function uses database cache to avoid hitting rate limits
  */
 export async function getCachedUserId(username: string): Promise<string | null> {
-  // Check cache first
-  if (userIdCache.has(username)) {
-    return userIdCache.get(username) || null
-  }
+  const { supabaseAdmin } = await import('@/lib/supabase')
+  
+  try {
+    // Check database cache first
+    const { data: cached } = await supabaseAdmin
+      .from('x_user_ids')
+      .select('user_id, last_updated')
+      .eq('username', username.toLowerCase())
+      .maybeSingle()
 
-  // Fetch user ID (only once per 24 hours due to rate limits)
-  // Note: In production, you might want to store user IDs in database
-  const user = await getUserByUsername(username)
-  if (user) {
-    userIdCache.set(username, user.id)
-    console.log(`[X Monitor] Cached user ID for ${username}: ${user.id}`)
-    return user.id
-  }
+    if (cached?.user_id) {
+      // Check if cache is still valid (less than 23 hours old to be safe)
+      const lastUpdated = new Date(cached.last_updated).getTime()
+      const now = Date.now()
+      const hoursSinceUpdate = (now - lastUpdated) / (1000 * 60 * 60)
+      
+      if (hoursSinceUpdate < 23) {
+        // Cache is still valid, use it
+        console.log(`[X Monitor] Using cached user ID for ${username}`)
+        return cached.user_id
+      } else {
+        // Cache expired, try to refresh (but only if we haven't hit rate limit)
+        console.log(`[X Monitor] Cache expired for ${username}, attempting refresh...`)
+      }
+    }
 
-  console.warn(`[X Monitor] Could not get user ID for ${username}`)
-  return null
+    // Cache miss or expired - fetch from API (only if we haven't hit rate limit recently)
+    const user = await getUserByUsername(username)
+    if (user) {
+      // Save to database cache
+      await supabaseAdmin
+        .from('x_user_ids')
+        .upsert({
+          username: username.toLowerCase(),
+          user_id: user.id,
+          name: user.name,
+          last_updated: new Date().toISOString()
+        }, {
+          onConflict: 'username'
+        })
+      
+      console.log(`[X Monitor] Cached user ID for ${username}: ${user.id}`)
+      return user.id
+    }
+
+    console.warn(`[X Monitor] Could not get user ID for ${username}`)
+    return null
+  } catch (error: any) {
+    console.error(`[X Monitor] Error getting cached user ID for ${username}:`, error.message)
+    return null
+  }
 }
 

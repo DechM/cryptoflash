@@ -297,6 +297,18 @@ CREATE INDEX IF NOT EXISTS idx_discord_links_user_id ON discord_links(user_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_discord_links_discord_user_id ON discord_links(discord_user_id);
 
 -- News Posts Table (for RSS news tracking)
+-- X (Twitter) user IDs cache table
+-- Stores username -> user_id mapping to avoid rate limits (1 req/24h per user)
+CREATE TABLE IF NOT EXISTS x_user_ids (
+  username TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  name TEXT,
+  last_updated TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_x_user_ids_user_id ON x_user_ids(user_id);
+
 CREATE TABLE IF NOT EXISTS news_posts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title TEXT NOT NULL,
