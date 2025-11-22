@@ -166,6 +166,9 @@ export function formatNewsTweet(news: {
   }
   // If it's not a quote, just use the text as-is (no quotes needed)
   
+  // Remove URLs from title (no links to external sites)
+  cleanTitle = cleanTitle.replace(/(https?:\/\/[^\s]+|www\.[^\s]+|twitter\.com\/[^\s]+|x\.com\/[^\s]+|t\.co\/[^\s]+)/gi, '').trim()
+  
   // Limit title length (Twitter limit is 280, reserve space for hook + flag)
   const maxTitleLength = 200
   if (cleanTitle.length > maxTitleLength) {
@@ -293,7 +296,202 @@ export function formatTwitterPost(token: TwitterToken): string {
 }
 
 /**
- * Upload media to Twitter
+ * Upload video to Twitter using chunked upload (INIT → APPEND → FINALIZE)
+ * Returns media_id if successful
+ */
+async function uploadVideo(
+  videoUrl: string,
+  oauth: OAuth,
+  token: { key: string; secret: string }
+): Promise<string | null> {
+  try {
+    console.log('[Twitter Video] Starting video download:', videoUrl)
+    
+    // Download video
+    const videoResponse = await fetch(videoUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; CryptoFlash Video Downloader)'
+      }
+    })
+    
+    if (!videoResponse.ok) {
+      console.warn(`[Twitter Video] Failed to download video: ${videoResponse.status}`)
+      return null
+    }
+    
+    const videoBuffer = await videoResponse.arrayBuffer()
+    const videoSize = videoBuffer.byteLength
+    
+    console.log(`[Twitter Video] Downloaded ${videoSize} bytes`)
+    
+    // Step 1: INIT - Initialize upload
+    const initUrl = 'https://upload.twitter.com/1.1/media/upload.json'
+    const initParams = new URLSearchParams({
+      command: 'INIT',
+      media_type: 'video/mp4',
+      total_bytes: videoSize.toString()
+    })
+    
+    const initRequestData = {
+      url: `${initUrl}?${initParams.toString()}`,
+      method: 'POST'
+    }
+    
+    const initAuthHeader = oauth.toHeader(oauth.authorize(initRequestData, token))
+    const initResponse = await fetch(`${initUrl}?${initParams.toString()}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': initAuthHeader.Authorization
+      }
+    })
+    
+    if (!initResponse.ok) {
+      const errorData = await initResponse.json().catch(() => ({}))
+      console.error('[Twitter Video] INIT failed:', initResponse.status, errorData)
+      return null
+    }
+    
+    const initData = await initResponse.json()
+    const mediaId = initData.media_id_string
+    
+    if (!mediaId) {
+      console.error('[Twitter Video] No media_id from INIT')
+      return null
+    }
+    
+    console.log(`[Twitter Video] INIT successful, media_id: ${mediaId}`)
+    
+    // Step 2: APPEND - Upload video in chunks (5MB chunks)
+    const chunkSize = 5 * 1024 * 1024 // 5MB
+    const chunks = Math.ceil(videoSize / chunkSize)
+    
+    for (let segmentIndex = 0; segmentIndex < chunks; segmentIndex++) {
+      const start = segmentIndex * chunkSize
+      const end = Math.min(start + chunkSize, videoSize)
+      const chunk = videoBuffer.slice(start, end)
+      const chunkBase64 = Buffer.from(chunk).toString('base64')
+      
+      const appendParams = new URLSearchParams({
+        command: 'APPEND',
+        media_id: mediaId,
+        segment_index: segmentIndex.toString()
+      })
+      
+      const appendRequestData = {
+        url: `${initUrl}?${appendParams.toString()}`,
+        method: 'POST'
+      }
+      
+      const appendAuthHeader = oauth.toHeader(oauth.authorize(appendRequestData, token))
+      
+      const boundary = '----WebKitFormBoundary' + Math.random().toString(36).substring(2)
+      const formDataBody = [
+        `--${boundary}`,
+        'Content-Disposition: form-data; name="media"',
+        '',
+        chunkBase64,
+        `--${boundary}--`
+      ].join('\r\n')
+      
+      const appendResponse = await fetch(`${initUrl}?${appendParams.toString()}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': appendAuthHeader.Authorization,
+          'Content-Type': `multipart/form-data; boundary=${boundary}`
+        },
+        body: formDataBody
+      })
+      
+      if (!appendResponse.ok) {
+        const errorData = await appendResponse.json().catch(() => ({}))
+        console.error(`[Twitter Video] APPEND chunk ${segmentIndex} failed:`, appendResponse.status, errorData)
+        return null
+      }
+      
+      console.log(`[Twitter Video] APPEND chunk ${segmentIndex + 1}/${chunks} successful`)
+    }
+    
+    // Step 3: FINALIZE - Finalize upload
+    const finalizeParams = new URLSearchParams({
+      command: 'FINALIZE',
+      media_id: mediaId
+    })
+    
+    const finalizeRequestData = {
+      url: `${initUrl}?${finalizeParams.toString()}`,
+      method: 'POST'
+    }
+    
+    const finalizeAuthHeader = oauth.toHeader(oauth.authorize(finalizeRequestData, token))
+    const finalizeResponse = await fetch(`${initUrl}?${finalizeParams.toString()}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': finalizeAuthHeader.Authorization
+      }
+    })
+    
+    if (!finalizeResponse.ok) {
+      const errorData = await finalizeResponse.json().catch(() => ({}))
+      console.error('[Twitter Video] FINALIZE failed:', finalizeResponse.status, errorData)
+      return null
+    }
+    
+    const finalizeData = await finalizeResponse.json()
+    
+    // Wait for processing if needed
+    if (finalizeData.processing_info) {
+      const processingInfo = finalizeData.processing_info
+      let checkAfter = processingInfo.check_after_secs || 5
+      
+      while (processingInfo.state === 'pending' || processingInfo.state === 'in_progress') {
+        console.log(`[Twitter Video] Processing video, waiting ${checkAfter}s...`)
+        await new Promise(resolve => setTimeout(resolve, checkAfter * 1000))
+        
+        const statusParams = new URLSearchParams({
+          command: 'STATUS',
+          media_id: mediaId
+        })
+        
+        const statusRequestData = {
+          url: `${initUrl}?${statusParams.toString()}`,
+          method: 'GET'
+        }
+        
+        const statusAuthHeader = oauth.toHeader(oauth.authorize(statusRequestData, token))
+        const statusResponse = await fetch(`${initUrl}?${statusParams.toString()}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': statusAuthHeader.Authorization
+          }
+        })
+        
+        if (statusResponse.ok) {
+          const statusData = await statusResponse.json()
+          if (statusData.processing_info) {
+            Object.assign(processingInfo, statusData.processing_info)
+            checkAfter = processingInfo.check_after_secs || 5
+          }
+        } else {
+          break // Exit loop if status check fails
+        }
+      }
+      
+      if (processingInfo.state === 'failed') {
+        console.error('[Twitter Video] Video processing failed')
+        return null
+      }
+    }
+    
+    console.log(`[Twitter Video] Upload successful, media_id: ${mediaId}`)
+    return mediaId
+  } catch (error: any) {
+    console.error('[Twitter Video] Error uploading video:', error.message)
+    return null
+  }
+}
+
+/**
+ * Upload image to Twitter
  * Returns media_id if successful
  */
 async function uploadMedia(imageUrl: string, oauth: OAuth, token: { key: string; secret: string }): Promise<string | null> {
@@ -425,11 +623,12 @@ async function hasWatermark(imageUrl: string): Promise<boolean> {
 /**
  * Post a tweet to Twitter/X using API v2
  * Requires OAuth 1.0a User Context (not Bearer Token)
- * Supports optional image upload
+ * Supports optional image or video upload (priority: video > image > text only)
  */
 export async function postTweet(
   text: string, 
-  imageUrl?: string | null
+  imageUrl?: string | null,
+  videoUrl?: string | null
 ): Promise<TwitterPostResponse | { rateLimited: true; resetAt: number | null } | null> {
   const apiKey = process.env.TWITTER_API_KEY
   const apiSecret = process.env.TWITTER_API_SECRET
@@ -459,19 +658,32 @@ export async function postTweet(
       secret: accessTokenSecret
     }
 
-    // Upload media if image URL provided
+    // Upload media (priority: video > image > text only)
     let mediaId: string | null = null
-    if (imageUrl) {
-      // Check for watermark first
+    if (videoUrl) {
+      // Priority 1: Upload video if available
+      console.log('[Twitter Post] Uploading video...')
+      mediaId = await uploadVideo(videoUrl, oauth, token)
+      if (mediaId) {
+        console.log('[Twitter Post] Video uploaded successfully:', mediaId)
+      } else {
+        console.warn('[Twitter Post] Video upload failed, falling back to image if available')
+      }
+    }
+    
+    if (!mediaId && imageUrl) {
+      // Priority 2: Upload image if no video or video failed
+      // Check for watermark before uploading
       const hasWm = await hasWatermark(imageUrl)
       if (hasWm) {
-        console.log('[Twitter] Skipping image upload - watermark detected')
+        console.log('[Twitter Post] Skipping image upload - watermark detected')
       } else {
+        console.log('[Twitter Post] Uploading image...')
         mediaId = await uploadMedia(imageUrl, oauth, token)
         if (mediaId) {
-          console.log('[Twitter] Media uploaded successfully:', mediaId)
+          console.log('[Twitter Post] Image uploaded successfully:', mediaId)
         } else {
-          console.warn('[Twitter] Failed to upload media, posting without image')
+          console.warn('[Twitter Post] Failed to upload image, posting without media')
         }
       }
     }

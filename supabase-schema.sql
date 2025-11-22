@@ -307,6 +307,7 @@ CREATE TABLE IF NOT EXISTS news_posts (
   is_us_related BOOLEAN DEFAULT FALSE,
   priority INTEGER DEFAULT 0,
   image_url TEXT,
+  video_url TEXT,
   pub_date TIMESTAMPTZ,
   posted_to_twitter BOOLEAN DEFAULT FALSE,
   tweet_id TEXT,

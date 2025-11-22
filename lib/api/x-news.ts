@@ -21,6 +21,7 @@ export interface FilteredXNewsItem {
   isUSRelated: boolean
   priority: number
   imageUrl?: string
+  videoUrl?: string
   createdAt: string
   source: string
 }
@@ -88,6 +89,7 @@ export function filterXTweets(
         isUSRelated: isUS,
         priority,
         imageUrl: reformatted.imageUrl,
+        videoUrl: reformatted.videoUrl, // Priority: video > image
         createdAt: tweet.created_at,
         source: `X:${authorUsername}`
       })

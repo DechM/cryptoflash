@@ -13,6 +13,7 @@ export interface XTweet {
   author_username: string
   created_at: string
   media_urls?: string[]
+  video_urls?: string[]
   public_metrics?: {
     like_count?: number
     retweet_count?: number
@@ -138,7 +139,7 @@ export async function getUserTweets(
   maxResults: number = 10
 ): Promise<XTweet[]> {
   try {
-    let url = `https://api.twitter.com/2/users/${userId}/tweets?max_results=${maxResults}&tweet.fields=created_at,author_id,public_metrics&expansions=attachments.media_keys&media.fields=url,preview_image_url`
+    let url = `https://api.twitter.com/2/users/${userId}/tweets?max_results=${maxResults}&tweet.fields=created_at,author_id,public_metrics&expansions=attachments.media_keys&media.fields=url,preview_image_url,type,variants`
     
     if (sinceId) {
       url += `&since_id=${sinceId}`
@@ -162,23 +163,49 @@ export async function getUserTweets(
     const tweets: XTweet[] = []
 
     if (data.data && Array.isArray(data.data)) {
-      // Get media URLs from includes
-      const mediaMap = new Map<string, string>()
+      // Get media URLs from includes (separate images and videos)
+      const imageMap = new Map<string, string>()
+      const videoMap = new Map<string, string>()
+      
       if (data.includes?.media) {
         for (const media of data.includes.media) {
-          if (media.media_key && (media.url || media.preview_image_url)) {
-            mediaMap.set(media.media_key, media.url || media.preview_image_url)
+          if (media.media_key) {
+            // Check media type
+            if (media.type === 'video' || media.type === 'animated_gif') {
+              // For videos, get the best quality variant URL
+              if (media.variants && Array.isArray(media.variants) && media.variants.length > 0) {
+                // Find the highest bitrate variant (usually the best quality)
+                const sortedVariants = media.variants
+                  .filter((v: any) => v.url && v.content_type === 'video/mp4')
+                  .sort((a: any, b: any) => (b.bit_rate || 0) - (a.bit_rate || 0))
+                
+                if (sortedVariants.length > 0) {
+                  videoMap.set(media.media_key, sortedVariants[0].url)
+                }
+              }
+            } else if (media.type === 'photo') {
+              // For images, use url or preview_image_url
+              if (media.url || media.preview_image_url) {
+                imageMap.set(media.media_key, media.url || media.preview_image_url)
+              }
+            }
           }
         }
       }
 
       for (const tweet of data.data) {
         const mediaUrls: string[] = []
+        const videoUrls: string[] = []
+        
         if (tweet.attachments?.media_keys) {
           for (const key of tweet.attachments.media_keys) {
-            const url = mediaMap.get(key)
-            if (url) {
-              mediaUrls.push(url)
+            const imageUrl = imageMap.get(key)
+            const videoUrl = videoMap.get(key)
+            
+            if (videoUrl) {
+              videoUrls.push(videoUrl)
+            } else if (imageUrl) {
+              mediaUrls.push(imageUrl)
             }
           }
         }
@@ -190,6 +217,7 @@ export async function getUserTweets(
           author_username: username, // Use provided username
           created_at: tweet.created_at,
           media_urls: mediaUrls.length > 0 ? mediaUrls : undefined,
+          video_urls: videoUrls.length > 0 ? videoUrls : undefined,
           public_metrics: tweet.public_metrics
         })
       }

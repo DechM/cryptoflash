@@ -5,6 +5,10 @@ import { Token, WhaleEvent } from '@/lib/types'
 import { MIN_WHALE_ALERT_USD } from '@/lib/whales'
 import { recordCronFailure, recordCronSuccess } from '@/lib/cron'
 
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+export const maxDuration = 300 // 5 minutes for video download/upload
+
 /**
  * Twitter Post Endpoint
  * Called by Vercel Cron every 30 minutes
@@ -301,17 +305,17 @@ async function handleTwitterPost() {
 
   // Check for pending news items
   // WatcherGuru posts always get priority (bypass daily limit and priority threshold)
-  let pendingNews: { id: string; title: string; hook?: string; is_us_related: boolean; link: string; image_url?: string | null; priority: number } | null = null
+  let pendingNews: { id: string; title: string; hook?: string; is_us_related: boolean; link: string; image_url?: string | null; video_url?: string | null; priority: number } | null = null
   
-  // First, check for WatcherGuru posts (always post these, bypass limits)
-  const { data: watcherGuruNews } = await supabaseAdmin
-    .from('news_posts')
-    .select('id, title, hook, is_us_related, link, image_url, priority')
-    .eq('posted_to_twitter', false)
-    .like('source', 'X:WatcherGuru')
-    .order('pub_date', { ascending: false })
-    .limit(1)
-    .maybeSingle()
+    // First, check for WatcherGuru posts (always post these, bypass limits)
+    const { data: watcherGuruNews } = await supabaseAdmin
+      .from('news_posts')
+      .select('id, title, hook, is_us_related, link, image_url, video_url, priority')
+      .eq('posted_to_twitter', false)
+      .like('source', 'X:WatcherGuru')
+      .order('pub_date', { ascending: false })
+      .limit(1)
+      .maybeSingle()
 
   if (watcherGuruNews) {
     pendingNews = watcherGuruNews
@@ -320,7 +324,7 @@ async function handleTwitterPost() {
     // If no WatcherGuru post, check for other high-priority news
     const { data: newsData } = await supabaseAdmin
       .from('news_posts')
-      .select('id, title, hook, is_us_related, link, image_url, priority')
+      .select('id, title, hook, is_us_related, link, image_url, video_url, priority')
       .eq('posted_to_twitter', false)
       .gte('priority', MIN_NEWS_PRIORITY) // Only most important news
       .order('priority', { ascending: false })
@@ -348,7 +352,11 @@ async function handleTwitterPost() {
       isUSRelated: pendingNews.is_us_related || false,
       link: pendingNews.link
     })
-    const tweetResult = await postTweet(tweetText, pendingNews.image_url || null)
+    const tweetResult = await postTweet(
+      tweetText, 
+      pendingNews.image_url || null,
+      pendingNews.video_url || null // Priority: video > image > text only
+    )
 
     if (tweetResult && 'rateLimited' in tweetResult) {
       console.warn('[Twitter Post] Twitter rate limit during news post. Skipping rest of job.')

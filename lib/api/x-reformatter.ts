@@ -73,6 +73,7 @@ export interface ReformattedTweet {
   hasImportantKeywords: boolean
   shouldExclude: boolean
   imageUrl?: string
+  videoUrl?: string
 }
 
 /**
@@ -138,6 +139,15 @@ function shouldExclude(text: string, hasBreaking: boolean): boolean {
 }
 
 /**
+ * Remove all URLs from text (http://, https://, www., twitter.com, x.com, t.co)
+ */
+function removeUrls(text: string): string {
+  // Remove all URLs: http://, https://, www., twitter.com, x.com, t.co
+  const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+|twitter\.com\/[^\s]+|x\.com\/[^\s]+|t\.co\/[^\s]+)/gi
+  return text.replace(urlRegex, '').trim()
+}
+
+/**
  * Reformat tweet text (not copy-paste)
  */
 function reformatText(originalText: string, hook?: string): string {
@@ -153,6 +163,9 @@ function reformatText(originalText: string, hook?: string): string {
       }
     }
   }
+
+  // Remove all URLs (no links to external sites)
+  text = removeUrls(text)
 
   // Clean up common patterns
   text = text
@@ -217,7 +230,8 @@ export function reformatTweet(tweet: XTweet): ReformattedTweet {
     isUSRelated: isUS,
     hasImportantKeywords: hasImportant,
     shouldExclude: exclude,
-    imageUrl: tweet.media_urls?.[0] // Use first image if available
+    imageUrl: tweet.media_urls?.[0], // Use first image if available
+    videoUrl: tweet.video_urls?.[0] // Use first video if available (priority over image)
   }
 }
 

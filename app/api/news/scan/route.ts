@@ -165,6 +165,7 @@ export async function GET(request: NextRequest) {
       is_us_related: item.isUSRelated,
       priority: item.priority,
       image_url: item.imageUrl || null,
+      video_url: item.videoUrl || null,
       pub_date: item.createdAt ? new Date(item.createdAt).toISOString() : null,
       posted_to_twitter: false,
       tweet_id: item.tweetId, // Store original tweet ID
