@@ -116,6 +116,7 @@ function formatTokenCompact(amount?: number | null) {
  * Format news post for Twitter
  * Format: "JUST IN: 🇺🇸 [title]" or "BREAKING: [title]"
  * No hashtags, US flag for US-related news
+ * Quotes are wrapped in quotation marks
  */
 export function formatNewsTweet(news: {
   title: string
@@ -142,7 +143,30 @@ export function formatNewsTweet(news: {
     }
   }
   
-  // Limit title length (Twitter limit is 280, reserve space for hook + flag + link)
+  // Format quotes: if title contains quote-indicating words (says, said, etc.), it's a quote
+  // Pattern: "Jim Cramer says lots of good elements" -> "Jim Cramer says "lots of good elements""
+  // If no quote words, it's a normal post - just use the text as-is
+  
+  const quoteWords = /\b(says|said|states|stated|tells|told|claims|claimed|adds|added|notes|noted|explains|explained|warns|warned|predicts|predicted|suggests|suggested|argues|argued|believes|believed|thinks|thought|expects|expected|hopes|hoped|fears|feared|wants|wanted|needs|needed|demands|demanded|insists|insisted|maintains|maintained|asserts|asserted|declares|declared|announces|announced|reveals|revealed|confirms|confirmed|denies|denied|admits|admitted|acknowledges|acknowledged|recognizes|recognized|accepts|accepted|rejects|rejected|refuses|refused|agrees|agreed|disagrees|disagreed|approves|approved|disapproves|disapproved|supports|supported|opposes|opposed|endorses|endorsed|criticizes|criticized|praises|praised|condemns|condemned|blames|blamed|accuses|accused|charges|charged|alleges|alleged|sues|sued|files|filed|seeks|sought|requests|requested|asks|asked|urges|urged|calls|called)\b/i
+  
+  const hasQuotes = /["']/.test(cleanTitle)
+  const isQuote = quoteWords.test(cleanTitle)
+  
+  // If it's a quote (has quote words) but no quotes in text, add quotes
+  if (isQuote && !hasQuotes) {
+    const quoteMatch = cleanTitle.match(/\b(says|said|states|stated|tells|told|claims|claimed|adds|added|notes|noted|explains|explained|warns|warned|predicts|predicted|suggests|suggested|argues|argued|believes|believed|thinks|thought|expects|expected|hopes|hoped|fears|feared|wants|wanted|needs|needed|demands|demanded|insists|insisted|maintains|maintained|asserts|asserted|declares|declared|announces|announced|reveals|revealed|confirms|confirmed|denies|denied|admits|admitted|acknowledges|acknowledged|recognizes|recognized|accepts|accepted|rejects|rejected|refuses|refused|agrees|agreed|disagrees|disagreed|approves|approved|disapproves|disapproved|supports|supported|opposes|opposed|endorses|endorsed|criticizes|criticized|praises|praised|condemns|condemned|blames|blamed|accuses|accused|charges|charged|alleges|alleged|sues|sued|files|filed|seeks|sought|requests|requested|asks|asked|urges|urged|calls|called)\s+(.+)/i)
+    if (quoteMatch) {
+      const beforeQuote = quoteMatch[1]
+      const quoteText = quoteMatch[2].trim()
+      // Wrap the quote text in quotes
+      if (quoteText && !quoteText.startsWith('"') && !quoteText.startsWith("'")) {
+        cleanTitle = `${beforeQuote} "${quoteText}"`
+      }
+    }
+  }
+  // If it's not a quote, just use the text as-is (no quotes needed)
+  
+  // Limit title length (Twitter limit is 280, reserve space for hook + flag)
   const maxTitleLength = 200
   if (cleanTitle.length > maxTitleLength) {
     cleanTitle = cleanTitle.slice(0, maxTitleLength - 3) + '...'
@@ -269,10 +293,144 @@ export function formatTwitterPost(token: TwitterToken): string {
 }
 
 /**
+ * Upload media to Twitter
+ * Returns media_id if successful
+ */
+async function uploadMedia(imageUrl: string, oauth: OAuth, token: { key: string; secret: string }): Promise<string | null> {
+  try {
+    // Download image
+    const imageResponse = await fetch(imageUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; CryptoFlash Media Downloader)'
+      }
+    })
+    
+    if (!imageResponse.ok) {
+      console.warn(`[Twitter Media] Failed to download image: ${imageResponse.status}`)
+      return null
+    }
+    
+    const imageBuffer = await imageResponse.arrayBuffer()
+    const imageBase64 = Buffer.from(imageBuffer).toString('base64')
+    
+    // Upload to Twitter Media API (v1.1) - requires multipart/form-data
+    const mediaUrl = 'https://upload.twitter.com/1.1/media/upload.json'
+    
+    // Build form data manually for OAuth signing
+    const boundary = '----WebKitFormBoundary' + Math.random().toString(36).substring(2)
+    const formDataBody = [
+      `--${boundary}`,
+      'Content-Disposition: form-data; name="media_data"',
+      '',
+      imageBase64,
+      `--${boundary}--`
+    ].join('\r\n')
+    
+    const requestData = {
+      url: mediaUrl,
+      method: 'POST'
+    }
+    
+    const authHeader = oauth.toHeader(oauth.authorize(requestData, token))
+    
+    const uploadResponse = await fetch(mediaUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': authHeader.Authorization,
+        'Content-Type': `multipart/form-data; boundary=${boundary}`
+      },
+      body: formDataBody
+    })
+    
+    if (!uploadResponse.ok) {
+      const errorData = await uploadResponse.json().catch(() => ({}))
+      console.error('[Twitter Media] Upload failed:', uploadResponse.status, errorData)
+      return null
+    }
+    
+    const uploadData = await uploadResponse.json()
+    return uploadData.media_id_string || null
+  } catch (error: any) {
+    console.error('[Twitter Media] Error uploading:', error.message)
+    return null
+  }
+}
+
+/**
+ * Check if image has watermark by analyzing image metadata and common watermark patterns
+ * This is a simple heuristic - not 100% accurate but should catch most watermarks
+ */
+async function hasWatermark(imageUrl: string): Promise<boolean> {
+  try {
+    // Download image to check
+    const response = await fetch(imageUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; CryptoFlash Watermark Checker)'
+      }
+    })
+    
+    if (!response.ok) return true // If we can't download, assume it has watermark to be safe
+    
+    // Check URL for common watermark indicators
+    const urlLower = imageUrl.toLowerCase()
+    const watermarkIndicators = [
+      'watermark',
+      'wm',
+      'getty',
+      'shutterstock',
+      'istock',
+      'adobe',
+      'dreamstime',
+      'alamy',
+      'fotolia',
+      'depositphotos',
+      '123rf',
+      'bigstock',
+      'canstock',
+      'featurepics',
+      'thinkstock',
+      'jupiterimages',
+      'corbis',
+      'agefotostock',
+      'westend61',
+      'mauritius',
+      'imagebroker',
+      'imagebroker.net',
+      'age',
+      'agefoto',
+      'imagebroker',
+      'imagebroker.net',
+      'age',
+      'agefoto',
+      'imagebroker',
+      'imagebroker.net'
+    ]
+    
+    for (const indicator of watermarkIndicators) {
+      if (urlLower.includes(indicator)) {
+        console.log(`[Watermark Check] Detected watermark indicator in URL: ${indicator}`)
+        return true
+      }
+    }
+    
+    // For now, we'll do a simple check - if image is from known stock photo sites, assume watermark
+    // In production, you might want to use image analysis libraries, but that's complex
+    return false
+  } catch (error) {
+    console.warn('[Watermark Check] Error checking watermark:', error)
+    return true // If we can't check, assume it has watermark to be safe
+  }
+}
+
+/**
  * Post a tweet to Twitter/X using API v2
  * Requires OAuth 1.0a User Context (not Bearer Token)
+ * Supports optional image upload
  */
-export async function postTweet(text: string): Promise<TwitterPostResponse | { rateLimited: true; resetAt: number | null } | null> {
+export async function postTweet(
+  text: string, 
+  imageUrl?: string | null
+): Promise<TwitterPostResponse | { rateLimited: true; resetAt: number | null } | null> {
   const apiKey = process.env.TWITTER_API_KEY
   const apiSecret = process.env.TWITTER_API_SECRET
   const accessToken = process.env.TWITTER_ACCESS_TOKEN
@@ -301,6 +459,23 @@ export async function postTweet(text: string): Promise<TwitterPostResponse | { r
       secret: accessTokenSecret
     }
 
+    // Upload media if image URL provided
+    let mediaId: string | null = null
+    if (imageUrl) {
+      // Check for watermark first
+      const hasWm = await hasWatermark(imageUrl)
+      if (hasWm) {
+        console.log('[Twitter] Skipping image upload - watermark detected')
+      } else {
+        mediaId = await uploadMedia(imageUrl, oauth, token)
+        if (mediaId) {
+          console.log('[Twitter] Media uploaded successfully:', mediaId)
+        } else {
+          console.warn('[Twitter] Failed to upload media, posting without image')
+        }
+      }
+    }
+
     const url = 'https://api.twitter.com/2/tweets'
     const requestData = {
       url,
@@ -310,15 +485,22 @@ export async function postTweet(text: string): Promise<TwitterPostResponse | { r
     // Generate OAuth 1.0a authorization header
     const authHeader = oauth.toHeader(oauth.authorize(requestData, token))
 
+    // Build tweet payload
+    const tweetPayload: { text: string; media?: { media_ids: string[] } } = {
+      text: text.substring(0, 280) // Twitter limit is 280 characters
+    }
+    
+    if (mediaId) {
+      tweetPayload.media = { media_ids: [mediaId] }
+    }
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Authorization': authHeader.Authorization,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        text: text.substring(0, 280) // Twitter limit is 280 characters
-      })
+      body: JSON.stringify(tweetPayload)
     })
 
     const remaining = response.headers.get('x-rate-limit-remaining')

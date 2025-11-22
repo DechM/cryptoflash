@@ -299,11 +299,11 @@ async function handleTwitterPost() {
   console.log(`[Twitter Post] News posts today: ${newsPostsCount}/${MAX_NEWS_POSTS_PER_DAY}`)
 
   // Check for pending news items (only if under daily limit)
-  let pendingNews: { id: string; title: string; hook?: string; is_us_related: boolean; link: string } | null = null
+  let pendingNews: { id: string; title: string; hook?: string; is_us_related: boolean; link: string; image_url?: string | null } | null = null
   if (newsPostsCount < MAX_NEWS_POSTS_PER_DAY) {
     const { data: newsData } = await supabaseAdmin
       .from('news_posts')
-      .select('id, title, hook, is_us_related, link')
+      .select('id, title, hook, is_us_related, link, image_url')
       .eq('posted_to_twitter', false)
       .order('priority', { ascending: false })
       .order('pub_date', { ascending: false })
@@ -324,7 +324,7 @@ async function handleTwitterPost() {
       isUSRelated: pendingNews.is_us_related || false,
       link: pendingNews.link
     })
-    const tweetResult = await postTweet(tweetText)
+    const tweetResult = await postTweet(tweetText, pendingNews.image_url || null)
 
     if (tweetResult && 'rateLimited' in tweetResult) {
       console.warn('[Twitter Post] Twitter rate limit during news post. Skipping rest of job.')
