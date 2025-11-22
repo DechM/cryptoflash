@@ -104,7 +104,14 @@ export async function getUserByUsername(username: string): Promise<XUser | null>
     })
 
     if (!response.ok) {
-      console.warn(`[X Monitor] Failed to get user ${username}: ${response.status}`)
+      if (response.status === 429) {
+        // Rate limited - check retry-after header
+        const retryAfter = response.headers.get('retry-after')
+        const resetAt = response.headers.get('x-rate-limit-reset')
+        console.warn(`[X Monitor] Rate limited for ${username}: 429. Retry after: ${retryAfter}s, Reset at: ${resetAt}`)
+      } else {
+        console.warn(`[X Monitor] Failed to get user ${username}: ${response.status}`)
+      }
       return null
     }
 
