@@ -52,28 +52,29 @@ function parseRSS(xml: string, feedName: string): RSSFeed {
   const feedTitle = titleMatch ? titleMatch[1].trim() : feedName
 
   // Extract all <item> blocks
-  const itemRegex = /<item[^>]*>(.*?)<\/item>/gis
+  // Use [\s\S] instead of . with 's' flag for compatibility
+  const itemRegex = /<item[^>]*>([\s\S]*?)<\/item>/gi
   let itemMatch
 
   while ((itemMatch = itemRegex.exec(xml)) !== null) {
     const itemXml = itemMatch[1]
     
     // Extract title
-    const titleMatch = itemXml.match(/<title[^>]*>(.*?)<\/title>/is)
+    const titleMatch = itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)
     const title = titleMatch ? titleMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/gi, '$1').trim() : ''
 
     // Extract description
-    const descMatch = itemXml.match(/<description[^>]*>(.*?)<\/description>/is)
+    const descMatch = itemXml.match(/<description[^>]*>([\s\S]*?)<\/description>/i)
     const description = descMatch 
       ? descMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/gi, '$1').replace(/<[^>]+>/g, '').trim() 
       : undefined
 
     // Extract link
-    const linkMatch = itemXml.match(/<link[^>]*>(.*?)<\/link>/is)
+    const linkMatch = itemXml.match(/<link[^>]*>([\s\S]*?)<\/link>/i)
     const link = linkMatch ? linkMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/gi, '$1').trim() : ''
 
     // Extract pubDate
-    const pubDateMatch = itemXml.match(/<pubDate[^>]*>(.*?)<\/pubDate>/is)
+    const pubDateMatch = itemXml.match(/<pubDate[^>]*>([\s\S]*?)<\/pubDate>/i)
     const pubDate = pubDateMatch ? pubDateMatch[1].trim() : undefined
 
     // Extract image from <enclosure> or <media:content>
