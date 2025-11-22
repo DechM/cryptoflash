@@ -57,16 +57,26 @@ export function filterXTweets(
       isFresh = hoursSinceTweet < 1
     }
 
-    // Only include if has hook OR important keywords
-    if (reformatted.hook || keywordWeight > 0) {
-      const priority = calculatePriority(
-        reformatted.hook || null,
-        keywordWeight,
-        isUS,
-        hasImage,
-        isFresh,
-        authorUsername
-      )
+    // WatcherGuru: Always post (100% priority, bypass filters)
+    const isWatcherGuru = authorUsername.toLowerCase() === 'watcherguru'
+    
+    // Only include if has hook OR important keywords OR WatcherGuru
+    if (isWatcherGuru || reformatted.hook || keywordWeight > 0) {
+      let priority: number
+      
+      if (isWatcherGuru) {
+        // WatcherGuru gets maximum priority (always post)
+        priority = 100
+      } else {
+        priority = calculatePriority(
+          reformatted.hook || null,
+          keywordWeight,
+          isUS,
+          hasImage,
+          isFresh,
+          authorUsername
+        )
+      }
 
       filtered.push({
         tweetId: tweet.id,

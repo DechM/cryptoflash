@@ -299,10 +299,25 @@ async function handleTwitterPost() {
   const newsPostsCount = newsPostsToday || 0
   console.log(`[Twitter Post] News posts today: ${newsPostsCount}/${MAX_NEWS_POSTS_PER_DAY}`)
 
-  // Check for pending news items (only if under daily limit)
-  // Only post news with priority >= 70 (most important news only)
+  // Check for pending news items
+  // WatcherGuru posts always get priority (bypass daily limit and priority threshold)
   let pendingNews: { id: string; title: string; hook?: string; is_us_related: boolean; link: string; image_url?: string | null; priority: number } | null = null
-  if (newsPostsCount < MAX_NEWS_POSTS_PER_DAY) {
+  
+  // First, check for WatcherGuru posts (always post these, bypass limits)
+  const { data: watcherGuruNews } = await supabaseAdmin
+    .from('news_posts')
+    .select('id, title, hook, is_us_related, link, image_url, priority')
+    .eq('posted_to_twitter', false)
+    .like('source', 'X:WatcherGuru')
+    .order('pub_date', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (watcherGuruNews) {
+    pendingNews = watcherGuruNews
+    console.log(`[Twitter Post] Found WatcherGuru post (always posted, bypassing limits): ${pendingNews.title}`)
+  } else if (newsPostsCount < MAX_NEWS_POSTS_PER_DAY) {
+    // If no WatcherGuru post, check for other high-priority news
     const { data: newsData } = await supabaseAdmin
       .from('news_posts')
       .select('id, title, hook, is_us_related, link, image_url, priority')
