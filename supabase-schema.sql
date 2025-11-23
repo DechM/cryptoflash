@@ -335,6 +335,10 @@ CREATE INDEX IF NOT EXISTS idx_news_posts_priority ON news_posts(priority DESC);
 CREATE INDEX IF NOT EXISTS idx_news_posts_pub_date ON news_posts(pub_date DESC);
 CREATE INDEX IF NOT EXISTS idx_news_posts_source ON news_posts(source);
 
+-- Add video_url column if it doesn't exist (for video support in news posts)
+ALTER TABLE news_posts
+  ADD COLUMN IF NOT EXISTS video_url TEXT;
+
 CREATE TRIGGER update_news_posts_updated_at BEFORE UPDATE ON news_posts
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
