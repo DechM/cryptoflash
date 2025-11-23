@@ -306,12 +306,12 @@ async function handleTwitterPost() {
 
   // Check for pending news items
   // WatcherGuru posts always get priority (bypass daily limit and priority threshold)
-  let pendingNews: { id: string; title: string; hook?: string; is_us_related: boolean; link: string; image_url?: string | null; video_url?: string | null; priority: number } | null = null
+  let pendingNews: { id: string; title: string; hook?: string; is_us_related: boolean; link: string; image_url?: string | null; video_url?: string | null; source?: string; priority: number } | null = null
   
     // First, check for WatcherGuru posts (always post these, bypass limits)
     const { data: watcherGuruNews } = await supabaseAdmin
       .from('news_posts')
-      .select('id, title, hook, is_us_related, link, image_url, video_url, priority')
+      .select('id, title, hook, is_us_related, link, image_url, video_url, source, priority')
       .eq('posted_to_twitter', false)
       .like('source', 'X:WatcherGuru')
       .order('pub_date', { ascending: false })
@@ -325,7 +325,7 @@ async function handleTwitterPost() {
     // If no WatcherGuru post, check for other high-priority news
     const { data: newsData } = await supabaseAdmin
       .from('news_posts')
-      .select('id, title, hook, is_us_related, link, image_url, video_url, priority')
+      .select('id, title, hook, is_us_related, link, image_url, video_url, source, priority')
       .eq('posted_to_twitter', false)
       .gte('priority', MIN_NEWS_PRIORITY) // Only most important news
       .order('priority', { ascending: false })
