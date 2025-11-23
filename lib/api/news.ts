@@ -6,7 +6,7 @@
 import { RSSItem } from './rss'
 
 // Level 1: Hook words (must appear in first 5-7 words of title)
-const HOOK_WORDS = [
+export const NEWS_HOOK_WORDS = [
   'JUST IN',
   'BREAKING',
   'UPDATE',
@@ -18,6 +18,8 @@ const HOOK_WORDS = [
   'ALERT',
   'FLASH'
 ] as const
+
+const HOOK_WORDS = NEWS_HOOK_WORDS
 
 // Hook word weights (higher = more important)
 const HOOK_WEIGHTS: Record<string, number> = {
