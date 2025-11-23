@@ -139,6 +139,7 @@ export async function getUserByUsername(username: string): Promise<XUser | null>
 /**
  * Get recent tweets from a user
  * Free tier: 1 request / 15 mins per user
+ * Includes retry logic for rate limiting (429 errors)
  */
 export async function getUserTweets(
   userId: string,
@@ -146,26 +147,126 @@ export async function getUserTweets(
   sinceId?: string,
   maxResults: number = 10
 ): Promise<XTweet[]> {
-  try {
-    let url = `https://api.twitter.com/2/users/${userId}/tweets?max_results=${maxResults}&tweet.fields=created_at,author_id,public_metrics&expansions=attachments.media_keys&media.fields=url,preview_image_url,type,variants`
-    
-    if (sinceId) {
-      url += `&since_id=${sinceId}`
-    }
+  let retries = 0
+  const maxRetries = 2 // Only retry twice to avoid long delays
+  let lastError: any = null
 
-    const authHeader = getOAuthHeaders('GET', url)
-
-    const response = await fetch(url, {
-      headers: {
-        'Authorization': authHeader
+  while (retries <= maxRetries) {
+    try {
+      let url = `https://api.twitter.com/2/users/${userId}/tweets?max_results=${maxResults}&tweet.fields=created_at,author_id,public_metrics&expansions=attachments.media_keys&media.fields=url,preview_image_url,type,variants`
+      
+      if (sinceId) {
+        url += `&since_id=${sinceId}`
       }
-    })
 
-    if (!response.ok) {
+      const authHeader = getOAuthHeaders('GET', url)
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': authHeader
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        const tweets: XTweet[] = []
+
+        if (data.data && Array.isArray(data.data)) {
+          // Get media URLs from includes (separate images and videos)
+          const imageMap = new Map<string, string>()
+          const videoMap = new Map<string, string>()
+          
+          if (data.includes?.media) {
+            for (const media of data.includes.media) {
+              if (media.media_key) {
+                if (media.type === 'video' || media.type === 'animated_gif') {
+                  // Find the highest bitrate video variant
+                  const videoVariant = media.variants
+                    ?.filter((v: any) => v.content_type === 'video/mp4')
+                    .sort((a: any, b: any) => (b.bit_rate || 0) - (a.bit_rate || 0))
+                    ?.[0]
+                  if (videoVariant?.url) {
+                    videoMap.set(media.media_key, videoVariant.url)
+                  } else if (media.url) {
+                    videoMap.set(media.media_key, media.url)
+                  }
+                } else if (media.url || media.preview_image_url) {
+                  imageMap.set(media.media_key, media.url || media.preview_image_url)
+                }
+              }
+            }
+          }
+
+          for (const tweet of data.data) {
+            const mediaUrls: string[] = []
+            const videoUrls: string[] = []
+            
+            if (tweet.attachments?.media_keys) {
+              for (const key of tweet.attachments.media_keys) {
+                if (videoMap.has(key)) {
+                  videoUrls.push(videoMap.get(key)!)
+                } else if (imageMap.has(key)) {
+                  mediaUrls.push(imageMap.get(key)!)
+                }
+              }
+            }
+
+            tweets.push({
+              id: tweet.id,
+              text: tweet.text,
+              author_id: tweet.author_id,
+              author_username: username,
+              created_at: tweet.created_at,
+              media_urls: mediaUrls.length > 0 ? mediaUrls : undefined,
+              video_urls: videoUrls.length > 0 ? videoUrls : undefined,
+              public_metrics: tweet.public_metrics
+            })
+          }
+        }
+
+        return tweets
+      }
+
+      // Handle rate limiting (429)
+      if (response.status === 429) {
+        const errorData = await response.json().catch(() => ({}))
+        const retryAfter = errorData.retry_after ? Math.ceil(errorData.retry_after * 1000) : 900000 // Default: 15 minutes
+        
+        console.warn(`[X Monitor] Rate limited (429) for ${username} (${userId}). Retry after: ${retryAfter}ms (attempt ${retries + 1}/${maxRetries})`)
+        
+        if (retries < maxRetries) {
+          // For rate limits, wait longer (usually 15 minutes for free tier)
+          // But we'll only retry once to avoid blocking the entire scan
+          await new Promise(resolve => setTimeout(resolve, Math.min(retryAfter, 5000))) // Max 5 seconds wait
+          retries++
+          continue
+        } else {
+          // Rate limited and exhausted retries - return empty array
+          // The next cron run (15 mins later) will try again
+          console.warn(`[X Monitor] Skipping ${username} due to rate limit. Will retry in next cron run.`)
+          return []
+        }
+      }
+
+      // Other errors
       const errorData = await response.json().catch(() => ({}))
       console.warn(`[X Monitor] Failed to get tweets for user ${userId}: ${response.status}`, errorData)
-      return []
+      lastError = { status: response.status, message: errorData }
+      break
+    } catch (error: any) {
+      console.warn(`[X Monitor] Error getting tweets for user ${userId}:`, error.message)
+      lastError = error
+      break
     }
+  }
+
+  // If we exhausted retries or got other errors, return empty array
+  if (lastError) {
+    console.warn(`[X Monitor] Failed to get tweets for ${username} after retries:`, lastError)
+  }
+  
+  return []
+}
 
     const data = await response.json()
     const tweets: XTweet[] = []
