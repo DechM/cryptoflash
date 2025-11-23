@@ -43,8 +43,9 @@ export function filterXTweets(
       const tweetTime = new Date(tweet.created_at).getTime()
       const minutesSinceTweet = (now - tweetTime) / (1000 * 60)
       
-      // Skip tweets older than 30 minutes (except WatcherGuru - we'll check separately)
-      if (minutesSinceTweet > 30 && authorUsername.toLowerCase() !== 'watcherguru') {
+      // Skip tweets older than 30 minutes (ALL accounts, including WatcherGuru)
+      // Breaking news must be fresh - old news is not breaking news
+      if (minutesSinceTweet > 30) {
         continue // Skip old tweets - we want breaking news, not old news
       }
     } else {

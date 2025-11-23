@@ -305,29 +305,35 @@ async function handleTwitterPost() {
   console.log(`[Twitter Post] News posts today: ${newsPostsCount}/${MAX_NEWS_POSTS_PER_DAY}`)
 
   // Check for pending news items
-  // WatcherGuru posts always get priority (bypass daily limit and priority threshold)
-  let pendingNews: { id: string; title: string; hook?: string; is_us_related: boolean; link: string; image_url?: string | null; video_url?: string | null; source?: string; priority: number } | null = null
+  // WatcherGuru posts get priority (bypass daily limit and priority threshold), but still must be fresh
+  let pendingNews: { id: string; title: string; hook?: string; is_us_related: boolean; link: string; image_url?: string | null; video_url?: string | null; source?: string; priority: number; pub_date?: string | null } | null = null
   
-    // First, check for WatcherGuru posts (always post these, bypass limits)
+  if (newsPostsCount < MAX_NEWS_POSTS_PER_DAY) {
+    // First, check for WatcherGuru posts (always post these if fresh, bypass limits)
     const { data: watcherGuruNews } = await supabaseAdmin
       .from('news_posts')
-      .select('id, title, hook, is_us_related, link, image_url, video_url, source, priority')
+      .select('id, title, hook, is_us_related, link, image_url, video_url, source, priority, pub_date')
       .eq('posted_to_twitter', false)
       .like('source', 'X:WatcherGuru')
+      .gte('pub_date', new Date(Date.now() - 30 * 60 * 1000).toISOString()) // Only last 30 minutes
       .order('pub_date', { ascending: false })
       .limit(1)
       .maybeSingle()
 
-  if (watcherGuruNews) {
-    pendingNews = watcherGuruNews
-    console.log(`[Twitter Post] Found WatcherGuru post (always posted, bypassing limits): ${pendingNews.title}`)
-  } else if (newsPostsCount < MAX_NEWS_POSTS_PER_DAY) {
-    // If no WatcherGuru post, check for other high-priority news
+    if (watcherGuruNews) {
+      pendingNews = watcherGuruNews
+      console.log(`[Twitter Post] Found WatcherGuru post (always posted if fresh, bypassing limits): ${pendingNews.title}`)
+    }
+  }
+  
+  // If no WatcherGuru post, check for other high-priority news
+  if (!pendingNews && newsPostsCount < MAX_NEWS_POSTS_PER_DAY) {
     const { data: newsData } = await supabaseAdmin
       .from('news_posts')
-      .select('id, title, hook, is_us_related, link, image_url, video_url, source, priority')
+      .select('id, title, hook, is_us_related, link, image_url, video_url, source, priority, pub_date')
       .eq('posted_to_twitter', false)
       .gte('priority', MIN_NEWS_PRIORITY) // Only most important news
+      .gte('pub_date', new Date(Date.now() - 30 * 60 * 1000).toISOString()) // Only last 30 minutes
       .order('priority', { ascending: false })
       .order('pub_date', { ascending: false })
       .limit(1)
@@ -338,7 +344,7 @@ async function handleTwitterPost() {
     if (pendingNews) {
       console.log(`[Twitter Post] Found news item with priority ${pendingNews.priority}: ${pendingNews.title}`)
     } else {
-      console.log(`[Twitter Post] No news items found with priority >= ${MIN_NEWS_PRIORITY}`)
+      console.log(`[Twitter Post] No news items found with priority >= ${MIN_NEWS_PRIORITY} (or all are older than 30 minutes)`)
     }
   } else {
     console.log(`[Twitter Post] News post limit reached (${newsPostsCount}/${MAX_NEWS_POSTS_PER_DAY}), skipping news checks`)
