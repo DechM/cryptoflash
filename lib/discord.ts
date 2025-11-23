@@ -1,5 +1,5 @@
 import { WhaleEvent } from './types'
-import { NEWS_HOOK_WORDS } from './api/news'
+import { NEWS_HOOK_WORDS } from './api/twitter'
 
 const SIDE_CONFIG: Record<string, { label: string; color: number; emoji: string }> = {
   buy: { label: 'BUY', color: 0x3b82f6, emoji: '🟢' },
