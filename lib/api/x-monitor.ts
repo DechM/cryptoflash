@@ -294,9 +294,30 @@ export async function getCachedUserId(username: string): Promise<string | null> 
       const hoursSinceUpdate = (now - lastUpdated) / (1000 * 60 * 60)
       
       if (hoursSinceUpdate < 23) {
-        // Cache is still valid, use it
-        console.log(`[X Monitor] Using cached user ID for ${username}`)
-        return cached.user_id
+        // Cache is still valid, BUT validate it matches the username
+        // This prevents using wrong IDs if Grok gave us incorrect data
+        try {
+          // Quick validation: verify the cached ID's username matches
+          const { data: cachedUser } = await supabaseAdmin
+            .from('x_user_ids')
+            .select('username, name')
+            .eq('user_id', cached.user_id)
+            .maybeSingle()
+          
+          // If cached user exists and username matches, use it
+          if (cachedUser && cachedUser.username.toLowerCase() === username.toLowerCase()) {
+            console.log(`[X Monitor] Using validated cached user ID for ${username}`)
+            return cached.user_id
+          } else {
+            // Cache mismatch - refresh it
+            console.warn(`[X Monitor] Cache mismatch for ${username}. Cached ID ${cached.user_id} doesn't match username. Refreshing...`)
+            // Fall through to refresh
+          }
+        } catch (error) {
+          // If validation fails, refresh cache
+          console.warn(`[X Monitor] Cache validation failed for ${username}, refreshing...`)
+          // Fall through to refresh
+        }
       } else {
         // Cache expired, try to refresh (but only if we haven't hit rate limit)
         console.log(`[X Monitor] Cache expired for ${username}, attempting refresh...`)
