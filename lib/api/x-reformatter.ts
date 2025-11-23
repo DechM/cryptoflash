@@ -149,6 +149,7 @@ function removeUrls(text: string): string {
 
 /**
  * Reformat tweet text (not copy-paste)
+ * Changes structure and phrasing to avoid 1:1 copying while preserving meaning
  */
 function reformatText(originalText: string, hook?: string): string {
   let text = originalText.trim()
@@ -173,13 +174,71 @@ function reformatText(originalText: string, hook?: string): string {
     .replace(/^["']|["']$/g, '') // Remove quotes at start/end
     .trim()
 
-  // Reformat common phrases
+  // Reformat common phrases (expanded list for better variation)
   text = text
+    // Approval/decision phrases
     .replace(/\bgets?\s+approval\b/gi, 'approved')
     .replace(/\bgets?\s+approved\b/gi, 'approved')
     .replace(/\bapproves?\b/gi, 'just approved')
+    .replace(/\bapproval\s+for\b/gi, 'approval of')
+    .replace(/\bdenies?\b/gi, 'just denied')
+    .replace(/\brejects?\b/gi, 'rejected')
+    .replace(/\baccepted\b/gi, 'just accepted')
+    
+    // Announcement phrases
     .replace(/\bannounces?\b/gi, 'just announced')
+    .replace(/\bannouncement\s+by\b/gi, 'announcement from')
+    .replace(/\bannouncement\s+from\b/gi, 'announcement by')
+    .replace(/\breveals?\b/gi, 'revealed')
+    .replace(/\bconfirms?\b/gi, 'confirmed')
+    .replace(/\bdenies?\b/gi, 'denied')
+    
+    // Reporting phrases
+    .replace(/\breports?\b/gi, 'just reported')
+    .replace(/\bstates?\b/gi, 'stated')
+    .replace(/\bclaims?\b/gi, 'claimed')
+    .replace(/\badds?\b/gi, 'added')
+    .replace(/\bnotes?\b/gi, 'noted')
+    .replace(/\bexplains?\b/gi, 'explained')
+    
+    // Action phrases
     .replace(/\bfiles?\s+for\b/gi, 'just filed for')
+    .replace(/\bfiles?\s+a\b/gi, 'filed a')
+    .replace(/\bseeks?\b/gi, 'seeking')
+    .replace(/\brequests?\b/gi, 'requested')
+    .replace(/\basks?\b/gi, 'asked')
+    .replace(/\burges?\b/gi, 'urged')
+    .replace(/\bcalls?\s+for\b/gi, 'calling for')
+    .replace(/\bcalls?\s+on\b/gi, 'calling on')
+    
+    // Warning/prediction phrases
+    .replace(/\bwarns?\b/gi, 'warned')
+    .replace(/\bpredicts?\b/gi, 'predicted')
+    .replace(/\bsuggests?\b/gi, 'suggested')
+    .replace(/\bexpects?\b/gi, 'expected')
+    
+    // Structural changes (remove/add articles without changing meaning)
+    .replace(/\bapplication\s+from\b/gi, "application")
+    .replace(/\bfrom\s+([A-Z][a-z]+)\s+application\b/gi, "$1's application")
+    .replace(/\bby\s+([A-Z][a-z]+)\s+announcement\b/gi, "$1 announcement")
+    .replace(/\bthe\s+([A-Z][a-z]+)\s+just\s+approved\b/gi, '$1 just approved')
+    .replace(/\ba\s+new\s+/gi, 'new ')
+    .replace(/\bthe\s+new\s+/gi, 'new ')
+    
+    // Remove filler phrases that don't change meaning
+    .replace(/\bthis\s+is\s+a\s+/gi, '')
+    .replace(/\bthis\s+is\s+/gi, '')
+    .replace(/\bit\s+is\s+a\s+/gi, '')
+    .replace(/\bit\s+is\s+/gi, '')
+    .replace(/\baccording\s+to\s+/gi, '')
+    .replace(/\bas\s+reported\s+by\s+/gi, '')
+    .replace(/\bas\s+per\s+/gi, '')
+
+  // Clean up multiple spaces again after replacements
+  text = text.replace(/\s+/g, ' ').trim()
+  
+  // Remove trailing punctuation that might be left after cleanup
+  text = text.replace(/\s*[,;]\s*$/, '')
 
   return text
 }
