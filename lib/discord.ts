@@ -562,6 +562,12 @@ export async function sendNewsToDiscord(news: {
     return null
   }
 
+  // Validate channel ID format (Discord channel IDs are 17-19 digit numbers)
+  if (!/^\d{17,19}$/.test(DISCORD_NEWS_CHANNEL_ID)) {
+    console.error(`[Discord] Invalid DISCORD_NEWS_CHANNEL_ID format: ${DISCORD_NEWS_CHANNEL_ID}. Expected 17-19 digit number.`)
+    return null
+  }
+
   try {
     // Format title with hook
     let title = news.title
@@ -623,7 +629,13 @@ export async function sendNewsToDiscord(news: {
 
     if (!response.ok) {
       const text = await response.text()
-      console.error('[Discord] Failed to send news post:', response.status, text)
+      const errorData = JSON.parse(text).catch(() => ({}))
+      
+      if (response.status === 404) {
+        console.error(`[Discord] Channel not found (404): DISCORD_NEWS_CHANNEL_ID=${DISCORD_NEWS_CHANNEL_ID}. Please check if the channel exists and the bot has access to it.`, errorData)
+      } else {
+        console.error('[Discord] Failed to send news post:', response.status, text)
+      }
       return null
     }
 

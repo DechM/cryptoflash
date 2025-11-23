@@ -346,13 +346,31 @@ async function handleTwitterPost() {
 
   // Post news if available (before KOTH, but after whale)
   if (pendingNews) {
-    console.log('[Twitter Post] Found news item candidate:', pendingNews.title)
-    const tweetText = formatNewsTweet({
-      title: pendingNews.title,
-      hook: pendingNews.hook || undefined,
-      isUSRelated: pendingNews.is_us_related || false,
-      link: pendingNews.link
-    })
+    // HARD FILTER: Only post news from the last 30 minutes (breaking news must be VERY fresh)
+    // We scan every 15 minutes, so 30 minutes ensures we catch everything from the last scan
+    if (pendingNews.pub_date) {
+      const newsTime = new Date(pendingNews.pub_date).getTime()
+      const minutesSinceNews = (Date.now() - newsTime) / (1000 * 60)
+      
+      if (minutesSinceNews > 30) {
+        console.warn(`[Twitter Post] Skipping old news (${minutesSinceNews.toFixed(0)}min old): ${pendingNews.title}`)
+        // Mark as posted to avoid retrying
+        await supabaseAdmin
+          .from('news_posts')
+          .update({ posted_to_twitter: true })
+          .eq('id', pendingNews.id)
+        pendingNews = null
+      }
+    }
+
+    if (pendingNews) {
+      console.log('[Twitter Post] Found news item candidate:', pendingNews.title)
+      const tweetText = formatNewsTweet({
+        title: pendingNews.title,
+        hook: pendingNews.hook || undefined,
+        isUSRelated: pendingNews.is_us_related || false,
+        link: pendingNews.link
+      })
     const tweetResult = await postTweet(
       tweetText, 
       pendingNews.image_url || null,

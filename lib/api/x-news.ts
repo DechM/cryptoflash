@@ -37,6 +37,21 @@ export function filterXTweets(
   const now = Date.now()
 
   for (const tweet of tweets) {
+    // HARD FILTER: Only include tweets from the last 30 minutes (breaking news must be VERY fresh)
+    // We scan every 15 minutes, so 30 minutes ensures we catch everything from the last scan
+    if (tweet.created_at) {
+      const tweetTime = new Date(tweet.created_at).getTime()
+      const minutesSinceTweet = (now - tweetTime) / (1000 * 60)
+      
+      // Skip tweets older than 30 minutes (except WatcherGuru - we'll check separately)
+      if (minutesSinceTweet > 30 && authorUsername.toLowerCase() !== 'watcherguru') {
+        continue // Skip old tweets - we want breaking news, not old news
+      }
+    } else {
+      // If no created_at, skip (can't verify freshness)
+      continue
+    }
+
     // Reformat tweet
     const reformatted = reformatTweet(tweet)
 
@@ -50,12 +65,13 @@ export function filterXTweets(
     const isUS = reformatted.isUSRelated || checkUSRelated(reformatted.text)
     const hasImage = !!reformatted.imageUrl
 
-    // Check if tweet is fresh (< 1 hour old)
+    // Check if tweet is fresh (< 15 minutes old) for priority scoring
+    // Very fresh tweets get bonus priority
     let isFresh = false
     if (tweet.created_at) {
       const tweetTime = new Date(tweet.created_at).getTime()
-      const hoursSinceTweet = (now - tweetTime) / (1000 * 60 * 60)
-      isFresh = hoursSinceTweet < 1
+      const minutesSinceTweet = (now - tweetTime) / (1000 * 60)
+      isFresh = minutesSinceTweet < 15 // Very fresh = last 15 minutes
     }
 
     // WatcherGuru: Always post (100% priority, bypass filters)

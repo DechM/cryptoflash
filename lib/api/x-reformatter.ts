@@ -193,7 +193,11 @@ function reformatText(originalText: string, hook?: string): string {
     .replace(/\bconfirms?\b/gi, 'confirmed')
     .replace(/\bdenies?\b/gi, 'denied')
     
-    // Reporting phrases
+    // Reporting phrases - but preserve subject before "says/said"
+    // Pattern: "X says Y" -> keep "X says Y" (don't change "says" if there's a subject before it)
+    // Only change standalone "reports/states" without subject
+    .replace(/\b([A-Z][a-zA-Z\s]+?)\s+says\s+/gi, '$1 says ') // Preserve "X says"
+    .replace(/\b([A-Z][a-zA-Z\s]+?)\s+said\s+/gi, '$1 said ') // Preserve "X said"
     .replace(/\breports?\b/gi, 'just reported')
     .replace(/\bstates?\b/gi, 'stated')
     .replace(/\bclaims?\b/gi, 'claimed')
