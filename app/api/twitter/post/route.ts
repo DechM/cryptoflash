@@ -352,21 +352,30 @@ async function handleTwitterPost() {
 
   // Post news if available (before KOTH, but after whale)
   if (pendingNews) {
-    // HARD FILTER: Only post news from the last 30 minutes (breaking news must be VERY fresh)
-    // We scan every 15 minutes, so 30 minutes ensures we catch everything from the last scan
+    // HARD FILTER: Only post news from the last 20 minutes (breaking news must be VERY fresh)
+    // We scan every 15 minutes, so 20 minutes ensures we catch everything from the last scan
+    // This prevents posting old or fake news - only real-time breaking news
     if (pendingNews.pub_date) {
       const newsTime = new Date(pendingNews.pub_date).getTime()
       const minutesSinceNews = (Date.now() - newsTime) / (1000 * 60)
       
-      if (minutesSinceNews > 30) {
+      if (minutesSinceNews > 20) {
         console.warn(`[Twitter Post] Skipping old news (${minutesSinceNews.toFixed(0)}min old): ${pendingNews.title}`)
-        // Mark as posted to avoid retrying
+        // Mark as posted to avoid retrying (old news should not be posted)
         await supabaseAdmin
           .from('news_posts')
           .update({ posted_to_twitter: true })
           .eq('id', pendingNews.id)
         pendingNews = null
       }
+    } else {
+      // If no pub_date, skip (can't verify freshness - could be fake)
+      console.warn(`[Twitter Post] Skipping news without pub_date: ${pendingNews.title}`)
+      await supabaseAdmin
+        .from('news_posts')
+        .update({ posted_to_twitter: true })
+        .eq('id', pendingNews.id)
+      pendingNews = null
     }
 
     if (pendingNews) {
@@ -383,24 +392,24 @@ async function handleTwitterPost() {
         pendingNews.video_url || null // Priority: video > image > text only
       )
 
-    if (tweetResult && 'rateLimited' in tweetResult) {
-      console.warn('[Twitter Post] Twitter rate limit during news post. Skipping rest of job.')
-      const fallbackReset = Math.floor(Date.now() / 1000) + (20 * 60)
-      await setStoredResumeAt(tweetResult.resetAt || fallbackReset)
-      await recordCronSuccess('twitter:post', {
-        postedCount: 0,
-        reason: 'rate-limited-news',
-        resetAt: tweetResult.resetAt || null
-      })
-      return {
-        success: false,
-        rateLimited: true,
-        rateLimitedUntil: tweetResult.resetAt || null,
-        message: 'Twitter rate limit hit while posting news'
+      if (tweetResult && 'rateLimited' in tweetResult) {
+        console.warn('[Twitter Post] Twitter rate limit during news post. Skipping rest of job.')
+        const fallbackReset = Math.floor(Date.now() / 1000) + (20 * 60)
+        await setStoredResumeAt(tweetResult.resetAt || fallbackReset)
+        await recordCronSuccess('twitter:post', {
+          postedCount: 0,
+          reason: 'rate-limited-news',
+          resetAt: tweetResult.resetAt || null
+        })
+        return {
+          success: false,
+          rateLimited: true,
+          rateLimitedUntil: tweetResult.resetAt || null,
+          message: 'Twitter rate limit hit while posting news'
+        }
       }
-    }
 
-    if (tweetResult) {
+      if (tweetResult) {
       console.log('[Twitter Post] Posted news tweet:', tweetResult.id)
 
       // Post to Discord automatically after successful X post
@@ -446,9 +455,10 @@ async function handleTwitterPost() {
         mode: 'news',
         tweetId: tweetResult.id
       })
-      return newsResult
-    } else {
-      console.error('[Twitter Post] Failed to post news tweet - postTweet returned null/undefined')
+        return newsResult
+      } else {
+        console.error('[Twitter Post] Failed to post news tweet - postTweet returned null/undefined')
+      }
     }
   }
 

@@ -155,8 +155,21 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Insert new items into database
-    const insertData = newItems.map(item => ({
+    // Double-check freshness before inserting (safety net - should already be filtered)
+    const now = Date.now()
+    const freshItems = newItems.filter(item => {
+      if (!item.createdAt) return false // Skip items without timestamp
+      const itemTime = new Date(item.createdAt).getTime()
+      const minutesSinceItem = (now - itemTime) / (1000 * 60)
+      return minutesSinceItem <= 20 // Only items from last 20 minutes
+    })
+
+    if (freshItems.length < newItems.length) {
+      console.log(`[News Scan] Filtered out ${newItems.length - freshItems.length} old items before inserting`)
+    }
+
+    // Insert only fresh items into database
+    const insertData = freshItems.map(item => ({
       title: item.formattedText, // Use reformatted text as title
       description: item.originalText || null, // Store original text in description
       link: `https://twitter.com/${item.authorUsername}/status/${item.tweetId}`,
@@ -182,18 +195,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to store news items' }, { status: 500 })
     }
 
-    console.log(`[News Scan] Successfully stored ${newItems.length} new items`)
+    console.log(`[News Scan] Successfully stored ${freshItems.length} new items (${newItems.length - freshItems.length} filtered as old)`)
 
     await recordCronSuccess('news:scan', {
       scannedAccounts: scannedCount,
-      newItems: newItems.length,
+      newItems: freshItems.length,
+      filteredOld: newItems.length - freshItems.length,
       totalRelevant: allFilteredItems.length
     })
 
     return NextResponse.json({
       success: true,
       scannedAccounts: scannedCount,
-      newItems: newItems.length,
+      newItems: freshItems.length,
+      filteredOld: newItems.length - freshItems.length,
       totalRelevant: allFilteredItems.length
     })
   } catch (error: unknown) {

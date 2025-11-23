@@ -37,19 +37,20 @@ export function filterXTweets(
   const now = Date.now()
 
   for (const tweet of tweets) {
-    // HARD FILTER: Only include tweets from the last 30 minutes (breaking news must be VERY fresh)
-    // We scan every 15 minutes, so 30 minutes ensures we catch everything from the last scan
+    // HARD FILTER: Only include tweets from the last 20 minutes (breaking news must be VERY fresh)
+    // We scan every 15 minutes, so 20 minutes ensures we catch everything from the last scan
+    // This prevents posting old or fake news - only real-time breaking news
     if (tweet.created_at) {
       const tweetTime = new Date(tweet.created_at).getTime()
       const minutesSinceTweet = (now - tweetTime) / (1000 * 60)
       
-      // Skip tweets older than 30 minutes (ALL accounts, including WatcherGuru)
-      // Breaking news must be fresh - old news is not breaking news
-      if (minutesSinceTweet > 30) {
+      // Skip tweets older than 20 minutes (ALL accounts, no exceptions)
+      // Breaking news must be fresh - old news is not breaking news, and could be fake/outdated
+      if (minutesSinceTweet > 20) {
         continue // Skip old tweets - we want breaking news, not old news
       }
     } else {
-      // If no created_at, skip (can't verify freshness)
+      // If no created_at, skip (can't verify freshness - could be fake)
       continue
     }
 
@@ -66,35 +67,26 @@ export function filterXTweets(
     const isUS = reformatted.isUSRelated || checkUSRelated(reformatted.text)
     const hasImage = !!reformatted.imageUrl
 
-    // Check if tweet is fresh (< 15 minutes old) for priority scoring
-    // Very fresh tweets get bonus priority
+    // Check if tweet is fresh (< 10 minutes old) for priority scoring
+    // Very fresh tweets get bonus priority - ensures we prioritize real-time news
     let isFresh = false
     if (tweet.created_at) {
       const tweetTime = new Date(tweet.created_at).getTime()
       const minutesSinceTweet = (now - tweetTime) / (1000 * 60)
-      isFresh = minutesSinceTweet < 15 // Very fresh = last 15 minutes
+      isFresh = minutesSinceTweet < 10 // Very fresh = last 10 minutes
     }
 
-    // WatcherGuru: Always post (100% priority, bypass filters)
-    const isWatcherGuru = authorUsername.toLowerCase() === 'watcherguru'
-    
-    // Only include if has hook OR important keywords OR WatcherGuru
-    if (isWatcherGuru || reformatted.hook || keywordWeight > 0) {
-      let priority: number
-      
-      if (isWatcherGuru) {
-        // WatcherGuru gets maximum priority (always post)
-        priority = 100
-      } else {
-        priority = calculatePriority(
-          reformatted.hook || null,
-          keywordWeight,
-          isUS,
-          hasImage,
-          isFresh,
-          authorUsername
-        )
-      }
+    // Only include if has hook OR important keywords
+    // All accounts are treated equally - no special exceptions for freshness
+    if (reformatted.hook || keywordWeight > 0) {
+      const priority = calculatePriority(
+        reformatted.hook || null,
+        keywordWeight,
+        isUS,
+        hasImage,
+        isFresh,
+        authorUsername
+      )
 
       filtered.push({
         tweetId: tweet.id,
