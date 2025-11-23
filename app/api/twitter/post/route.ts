@@ -696,7 +696,7 @@ async function handleTwitterPost() {
     rateLimitedUntil
   })
   
-  return NextResponse.json(result)
+  return result
 }
 
 export async function POST(request: Request) {

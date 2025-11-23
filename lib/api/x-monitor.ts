@@ -230,22 +230,11 @@ export async function getUserTweets(
       // Handle rate limiting (429)
       if (response.status === 429) {
         const errorData = await response.json().catch(() => ({}))
-        const retryAfter = errorData.retry_after ? Math.ceil(errorData.retry_after * 1000) : 900000 // Default: 15 minutes
-        
-        console.warn(`[X Monitor] Rate limited (429) for ${username} (${userId}). Retry after: ${retryAfter}ms (attempt ${retries + 1}/${maxRetries})`)
-        
-        if (retries < maxRetries) {
-          // For rate limits, wait longer (usually 15 minutes for free tier)
-          // But we'll only retry once to avoid blocking the entire scan
-          await new Promise(resolve => setTimeout(resolve, Math.min(retryAfter, 5000))) // Max 5 seconds wait
-          retries++
-          continue
-        } else {
-          // Rate limited and exhausted retries - return empty array
-          // The next cron run (15 mins later) will try again
-          console.warn(`[X Monitor] Skipping ${username} due to rate limit. Will retry in next cron run.`)
-          return []
-        }
+        // Twitter API free tier: 1 request / 15 mins per user
+        // If rate limited, don't retry now - skip and try in next cron run (15 mins later)
+        console.warn(`[X Monitor] Rate limited (429) for ${username} (${userId}). Skipping - will retry in next cron run (15 mins).`)
+        // Return empty array - next cron run will try again
+        return []
       }
 
       // Other errors
