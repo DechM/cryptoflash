@@ -56,7 +56,7 @@ const KOTH_SPECULATION_HOOKS = [
   'Breakout loading?'
 ] as const
 
-const NEWS_HOOK_WORDS = [
+export const NEWS_HOOK_WORDS = [
   'JUST IN',
   'BREAKING',
   'UPDATE',
