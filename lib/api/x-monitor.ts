@@ -27,28 +27,33 @@ export interface XUser {
   name: string
 }
 
-// Top X accounts to monitor (15-20 most important)
+// Top X accounts to monitor (24 most important crypto news sources)
 const MONITORED_ACCOUNTS = [
-  'WatcherGuru',
-  'DeItaone',
-  'lookonchain',
-  'tier10k',
-  'tree_of_alpha',
-  '0xfoobar',
-  'CryptoWhale',
-  'BTC_Archive',
-  'onchainalerts',
-  'arkhamintel',
-  'nansen_ai',
-  'whale_alert_io',
-  'Cointelegraph',
-  'CoinDesk',
-  'TheBlock__',
-  'CryptoSlate',
-  'DecryptMedia',
-  'CryptoKaleo',
-  'CryptoCred',
-  'CryptoCobain'
+  'WatcherGuru',        // Real-time crypto/finance JUST IN, 10-20/ден, 3.6M followers
+  'DeItaone',           // Bloomberg macro + regs, 5-15/ден, 1.1M followers
+  'lookonchain',        // On-chain whales/hacks, 15-25/ден, 671k followers
+  'tier10k',            // DeFi yields/airdrop alerts, 8-12/ден, 479k followers
+  'tree_of_alpha',      // Altcoin pumps/listings, 10-15/ден, 242k followers
+  '0xfoobar',           // ETH upgrades/L2, 5-10/ден, 179k followers
+  'unusual_whales',     // ETF flows + macro alerts, 2.5M followers
+  'BTC_Archive',        // BTC history + news, 5-8/ден, 11k followers
+  'onchainalerts',      // Pure on-chain, 10/ден, 2 followers
+  'arkhamintel',        // Arkham on-chain intel, 8-12/ден
+  'nansen_ai',          // Nansen flows/alerts, 7-10/ден, 348k followers
+  'whale_alert_io',     // Whale moves ($100M+), 20+/ден, 273 followers
+  'Cointelegraph',      // Official crypto news, 10-15/ден, 2.9M followers
+  'CoinDesk',           // Leading news/alerts, 12-18/ден, 3.4M followers
+  'TheBlock__',         // Research + breaking, 8-12/ден, 122k followers
+  'CryptoSlate',        // Insights + data alerts, 10/ден, 68k followers
+  'DecryptMedia',       // Hacks/DeFi news, 9-14/ден, 237k followers
+  'CryptoKaleo',        // Bull/bear signals, 6-10/ден, 730k followers
+  'CryptoCred',         // Trading alerts, 5-8/ден, 732k followers
+  'CryptoCobain',       // Memes + breaking, 5-10/ден, 1.3k followers
+  'cz_binance',         // Binance listings/regs, 8.5M followers
+  'VitalikButerin',     // ETH/L2 updates, 5.2M followers
+  'sassal0x',           // ETH/DeFi deep dives, 520k followers
+  'woonomic',          // On-chain BTC analysis, 1.1M followers
+  'APompliano'         // Macro/crypto insights, 1.6M followers
 ] as const
 
 /**
