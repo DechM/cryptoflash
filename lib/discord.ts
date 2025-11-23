@@ -37,6 +37,7 @@ const DISCORD_SERVER_ID = process.env.DISCORD_SERVER_ID || ''
 const DISCORD_WHALE_ROLE_ID = process.env.DISCORD_WHALE_ROLE_ID || ''
 const DISCORD_ALERT_CHANNEL_ID = process.env.DISCORD_ALERT_CHANNEL_ID || ''
 const DISCORD_KOTH_CHANNEL_ID = process.env.DISCORD_KOTH_CHANNEL_ID || ''
+const DISCORD_NEWS_CHANNEL_ID = process.env.DISCORD_NEWS_CHANNEL_ID || ''
 
 interface DiscordMessageResponse {
   id?: string | null

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { postTweet, formatTwitterPost, formatWhaleTweet, formatNewsTweet } from '@/lib/api/twitter'
+import { sendNewsToDiscord } from '@/lib/discord'
 import { Token, WhaleEvent } from '@/lib/types'
 import { MIN_WHALE_ALERT_USD } from '@/lib/whales'
 import { recordCronFailure, recordCronSuccess } from '@/lib/cron'
@@ -377,6 +378,23 @@ async function handleTwitterPost() {
 
     if (tweetResult) {
       console.log('[Twitter Post] Posted news tweet:', tweetResult.id)
+
+      // Post to Discord automatically after successful X post
+      try {
+        await sendNewsToDiscord({
+          title: pendingNews.title,
+          hook: pendingNews.hook || null,
+          isUSRelated: pendingNews.is_us_related || false,
+          link: pendingNews.link,
+          imageUrl: pendingNews.image_url || null,
+          videoUrl: pendingNews.video_url || null,
+          source: pendingNews.source || 'CryptoFlash'
+        })
+        console.log('[Twitter Post] Posted news to Discord successfully')
+      } catch (discordError: any) {
+        console.warn('[Twitter Post] Failed to post news to Discord:', discordError.message)
+        // Don't fail the whole job if Discord fails
+      }
 
       const { error: updateError } = await supabaseAdmin
         .from('news_posts')
