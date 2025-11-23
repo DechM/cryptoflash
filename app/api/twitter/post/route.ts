@@ -371,11 +371,11 @@ async function handleTwitterPost() {
         isUSRelated: pendingNews.is_us_related || false,
         link: pendingNews.link
       })
-    const tweetResult = await postTweet(
-      tweetText, 
-      pendingNews.image_url || null,
-      pendingNews.video_url || null // Priority: video > image > text only
-    )
+      const tweetResult = await postTweet(
+        tweetText, 
+        pendingNews.image_url || null,
+        pendingNews.video_url || null // Priority: video > image > text only
+      )
 
     if (tweetResult && 'rateLimited' in tweetResult) {
       console.warn('[Twitter Post] Twitter rate limit during news post. Skipping rest of job.')
