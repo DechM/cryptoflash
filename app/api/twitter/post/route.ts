@@ -25,7 +25,7 @@ export const maxDuration = 300 // 5 minutes for video download/upload
  */
 
 // Rate limiting constants
-const MIN_POST_INTERVAL = 20 * 60 * 1000 // 20 minutes between posts
+const MIN_POST_INTERVAL = 25 * 60 * 1000 // 25 minutes between posts (20-30 min range to avoid spamming)
 const MAX_POSTS_PER_DAY = 15 // 15 posts/day = 450 posts/month (safe margin for 500/month free tier)
 const WHALE_RETENTION_HOURS = Number(process.env.WHALE_EVENT_RETENTION_HOURS || '48')
 const KOTH_REPOST_COOLDOWN_HOURS = Number(process.env.KOTH_REPOST_COOLDOWN_HOURS || '48')

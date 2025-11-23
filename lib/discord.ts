@@ -1,4 +1,5 @@
 import { WhaleEvent } from './types'
+import { NEWS_HOOK_WORDS } from './api/news'
 
 const SIDE_CONFIG: Record<string, { label: string; color: number; emoji: string }> = {
   buy: { label: 'BUY', color: 0x3b82f6, emoji: '🟢' },
@@ -569,14 +570,22 @@ export async function sendNewsToDiscord(news: {
   }
 
   try {
-    // Format title with hook
-    let title = news.title
-    if (news.hook) {
+    // Format title with hook (but check if hook already exists to avoid duplication)
+    let title = news.title.trim()
+    
+    // Check if title already has a hook (to avoid duplication like "JUST IN: 🇺🇸 JUST IN: 🇺🇸 ...")
+    const upperTitle = title.toUpperCase()
+    const hasExistingHook = NEWS_HOOK_WORDS.some(hook => upperTitle.startsWith(hook))
+    
+    if (!hasExistingHook && news.hook) {
+      // Only add hook if it doesn't already exist
       const flag = news.isUSRelated ? '🇺🇸 ' : ''
       title = `${news.hook}: ${flag}${title}`
-    } else if (news.isUSRelated) {
+    } else if (!hasExistingHook && news.isUSRelated) {
+      // Only add flag if no hook exists
       title = `🇺🇸 ${title}`
     }
+    // If hook already exists, use title as-is
 
     // Determine color based on hook
     let color = 0x10b981 // Default green
