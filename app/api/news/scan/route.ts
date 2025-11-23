@@ -75,15 +75,29 @@ export async function GET(request: NextRequest) {
           continue
         }
 
-        // Filter and score tweets
-        const filtered = filterXTweets(tweets, username)
+        // VALIDATION: Double-check that tweets are from the correct user
+        // This is a safety net in case getUserTweets validation fails
+        const validatedTweets = tweets.filter(tweet => {
+          if (tweet.author_id !== userId) {
+            console.error(`[News Scan] SECURITY: Tweet ${tweet.id} from ${username} has mismatched author_id. Expected ${userId}, got ${tweet.author_id}. Skipping.`)
+            return false
+          }
+          return true
+        })
+
+        if (validatedTweets.length < tweets.length) {
+          console.warn(`[News Scan] Filtered out ${tweets.length - validatedTweets.length} tweets with mismatched author_id for ${username}`)
+        }
+
+        // Filter and score validated tweets only
+        const filtered = filterXTweets(validatedTweets, username)
         allFilteredItems.push(...filtered)
         console.log(`[News Scan] ${username}: ${tweets.length} tweets → ${filtered.length} relevant`)
 
         // Rate limit: 1 request / 15 mins per user for free tier
-        // Add delay between accounts to respect rate limits
+        // Add delay between accounts to respect rate limits (5 seconds for safety)
         if (username !== accounts[accounts.length - 1]) {
-          await new Promise(resolve => setTimeout(resolve, 2000)) // 2 second delay
+          await new Promise(resolve => setTimeout(resolve, 5000)) // 5 second delay to avoid rate limits
         }
       } catch (error: any) {
         console.error(`[News Scan] Error processing ${username}:`, error.message)

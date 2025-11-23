@@ -43,7 +43,7 @@ const MONITORED_ACCOUNTS = [
   'whale_alert_io',     // Whale moves ($100M+), 20+/ден, 273 followers
   'Cointelegraph',      // Official crypto news, 10-15/ден, 2.9M followers
   'CoinDesk',           // Leading news/alerts, 12-18/ден, 3.4M followers
-  'TheBlock__',         // Research + breaking, 8-12/ден, 122k followers
+  'TheBlock',           // Research + breaking, 8-12/ден, 122k followers
   'CryptoSlate',        // Insights + data alerts, 10/ден, 68k followers
   'DecryptMedia',       // Hacks/DeFi news, 9-14/ден, 237k followers
   'CryptoKaleo',        // Bull/bear signals, 6-10/ден, 730k followers
@@ -198,6 +198,13 @@ export async function getUserTweets(
           }
 
           for (const tweet of data.data) {
+            // VALIDATION: Ensure tweet is from the correct user
+            // This prevents posting tweets from wrong accounts if user ID is incorrect
+            if (tweet.author_id !== userId) {
+              console.error(`[X Monitor] SECURITY: Tweet ${tweet.id} has mismatched author_id. Expected ${userId}, got ${tweet.author_id}. Skipping.`)
+              continue // Skip this tweet - it's not from the expected user
+            }
+
             const mediaUrls: string[] = []
             const videoUrls: string[] = []
             
