@@ -166,6 +166,36 @@ export async function removeUserRole(userId: string) {
   }
 }
 
+/**
+ * Add reactions to a Discord message
+ */
+async function addReactions(channelId: string, messageId: string, emojis: string[]): Promise<void> {
+  if (!DISCORD_BOT_TOKEN) return
+
+  for (const emoji of emojis) {
+    try {
+      const response = await fetch(
+        `https://discord.com/api/channels/${channelId}/messages/${messageId}/reactions/${encodeURIComponent(emoji)}/@me`,
+        {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bot ${DISCORD_BOT_TOKEN}`,
+          },
+        }
+      )
+
+      if (!response.ok && response.status !== 204) {
+        console.warn(`[Discord] Failed to add reaction ${emoji}: ${response.status}`)
+      }
+
+      // Small delay between reactions to avoid rate limits
+      await new Promise(resolve => setTimeout(resolve, 250))
+    } catch (error) {
+      console.warn(`[Discord] Error adding reaction ${emoji}:`, error)
+    }
+  }
+}
+
 export async function sendWhaleEventToDiscord(event: WhaleEvent): Promise<DiscordMessageResponse | null> {
   if (!DISCORD_ALERT_CHANNEL_ID) {
     console.warn('[Discord] DISCORD_ALERT_CHANNEL_ID not configured; skipping whale alert.')
@@ -180,52 +210,54 @@ export async function sendWhaleEventToDiscord(event: WhaleEvent): Promise<Discor
   const amountUsdText = formatUsd(event.amount_usd)
   const amountTokenText = formatTokens(event.amount_tokens)
 
-  const headerParts = [
-    side.emoji,
-    `${event.token_symbol || event.token_name || 'Unknown'} Whale Alert`,
-    side.emoji
-  ]
+  // Enhanced title with better formatting
+  const tokenDisplay = event.token_symbol || event.token_name || 'Unknown'
+  const title = `${side.emoji} ${tokenDisplay} Whale Alert ${side.emoji}`
 
+  // Enhanced description with better structure
   const descriptionLines = [
-    `**Value:** ${amountUsdText}`,
-    `**Amount:** ${amountTokenText}`,
-    event.chain ? `**Chain:** ${event.chain}` : null,
-    event.token_symbol && event.token_name ? `**Token:** ${event.token_symbol} · ${event.token_name}` : null
+    `**💰 Value:** ${amountUsdText}`,
+    `**📊 Amount:** ${amountTokenText} ${event.token_symbol || ''}`.trim(),
+    event.chain ? `**⛓️ Chain:** ${event.chain}` : null,
+    event.token_symbol && event.token_name ? `**🪙 Token:** ${event.token_symbol} · ${event.token_name}` : null
   ].filter(Boolean)
 
+  // Enhanced embed with better colors and structure
   const embed = {
-    title: headerParts.join(' '),
+    title,
     description: descriptionLines.join('\n'),
     color: side.color,
     fields: [
       {
-        name: 'Event',
-        value: side.label,
+        name: '📋 Event Type',
+        value: `**${side.label}**`,
         inline: true,
       },
       event.block_time
         ? {
-            name: 'Time',
+            name: '⏰ Time',
             value: `<t:${Math.floor(new Date(event.block_time).getTime() / 1000)}:R>`,
             inline: true,
           }
         : null,
-      event.tx_url && event.tx_hash
-        ? {
-            name: 'Transaction',
-            value: `[Open Transaction](${event.tx_url})`,
-          }
-        : null,
       event.sender && event.receiver
         ? {
-            name: 'Flow',
-            value: `${event.sender.slice(0, 4)}... → ${event.receiver.slice(-4)}`,
-            inline: true,
+            name: '🔄 Flow',
+            value: `\`${event.sender.slice(0, 6)}...${event.sender.slice(-4)}\` → \`${event.receiver.slice(0, 6)}...${event.receiver.slice(-4)}\``,
+            inline: false,
+          }
+        : null,
+      event.tx_url && event.tx_hash
+        ? {
+            name: '🔗 Transaction',
+            value: `[View on Explorer](${event.tx_url})`,
+            inline: false,
           }
         : null,
     ].filter(Boolean),
     footer: {
-      text: 'CryptoFlash Whale Alerts • Stay ahead of mega flows',
+      text: '🐋 CryptoFlash Whale Alerts • Real-time on-chain intelligence',
+      icon_url: 'https://cryptoflash.app/favicon.ico',
     },
     timestamp: event.block_time ? new Date(event.block_time).toISOString() : undefined,
   }
@@ -250,7 +282,14 @@ export async function sendWhaleEventToDiscord(event: WhaleEvent): Promise<Discor
   }
 
   try {
-    return await response.json()
+    const result = await response.json()
+    
+    // Add automatic reactions
+    if (result.id) {
+      await addReactions(DISCORD_ALERT_CHANNEL_ID, result.id, ['🐋', '🔥', '💎'])
+    }
+    
+    return result
   } catch {
     return { id: null }
   }
@@ -339,57 +378,60 @@ export async function sendKothAlertToDiscord(token: KothTokenPayload, watchers: 
       ? `${token.whaleCount}${inflowsText ? ` (infl. ${inflowsText} SOL)` : ''}`
       : null
 
+  // Enhanced embed with better structure
   const embed = {
     title: `🏆 ${token.name} (${token.symbol}) KOTH Alert`,
     description: [
-      `**Score:** ${token.score !== undefined ? `${token.score.toFixed(1)}/100` : '—'}`,
-      `**Progress:** ${formatPercent(token.progress)}`,
-      `**Price:** ${formatTinyUsd(token.priceUsd)}`
+      `**📊 Score:** ${token.score !== undefined ? `**${token.score.toFixed(1)}/100**` : '—'}`,
+      `**📈 Progress:** ${formatPercent(token.progress)}`,
+      `**💵 Price:** ${formatTinyUsd(token.priceUsd)}`
     ].join('\n'),
-    color: 0xf97316,
+    color: 0xf97316, // Orange for KOTH
     fields: [
       liquidityText
         ? {
-            name: 'Liquidity',
-            value: liquidityText,
+            name: '💧 Liquidity',
+            value: `**${liquidityText}**`,
             inline: true
           }
         : null,
       volumeText
         ? {
-            name: '24h Volume',
-            value: volumeText,
+            name: '📊 24h Volume',
+            value: `**${volumeText}**`,
             inline: true
           }
         : null,
       curveSpeedText
         ? {
-            name: 'Curve Speed',
-            value: curveSpeedText,
+            name: '⚡ Curve Speed',
+            value: `**${curveSpeedText}**`,
             inline: true
           }
         : null,
       whalesFieldValue
         ? {
-            name: 'Whales',
-            value: whalesFieldValue,
+            name: '🐋 Whales',
+            value: `**${whalesFieldValue}**`,
             inline: true
           }
         : null,
       {
-        name: 'Watchers',
+        name: '👀 Watchers',
         value: watchersPreview || '—',
         inline: false
       },
       {
-        name: 'Links',
-        value: `[View on Pump.fun](${pumpFunUrl})`,
+        name: '🔗 Links',
+        value: `[View on Pump.fun](${pumpFunUrl}) • [Track on CryptoFlash](https://cryptoflash.app/dashboard)`,
         inline: false
       }
     ].filter(Boolean),
     footer: {
-      text: 'CryptoFlash KOTH Alerts • Telegram retired, Discord in full control'
-    }
+      text: '⚔️ CryptoFlash KOTH Tracker • Real-time bonding curve intelligence',
+      icon_url: 'https://cryptoflash.app/favicon.ico',
+    },
+    timestamp: new Date().toISOString(),
   }
 
   const payload = {
@@ -412,15 +454,59 @@ export async function sendKothAlertToDiscord(token: KothTokenPayload, watchers: 
   }
 
   try {
-    return await response.json()
+    const result = await response.json()
+    
+    // Add automatic reactions
+    if (result.id) {
+      await addReactions(DISCORD_KOTH_CHANNEL_ID, result.id, ['🏆', '🔥', '⚔️'])
+    }
+    
+    return result
   } catch {
     return { id: null }
   }
 }
 
 /**
+ * Create a thread in a Discord channel
+ */
+async function createThread(channelId: string, messageId: string, threadName: string): Promise<string | null> {
+  if (!DISCORD_BOT_TOKEN) return null
+
+  try {
+    const response = await fetch(
+      `https://discord.com/api/channels/${channelId}/messages/${messageId}/threads`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bot ${DISCORD_BOT_TOKEN}`,
+        },
+        body: JSON.stringify({
+          name: threadName,
+          auto_archive_duration: 1440, // 24 hours
+        }),
+      }
+    )
+
+    if (!response.ok) {
+      const text = await response.text()
+      console.warn(`[Discord] Failed to create thread: ${response.status} ${text}`)
+      return null
+    }
+
+    const result = await response.json()
+    return result.id || null
+  } catch (error) {
+    console.warn('[Discord] Error creating thread:', error)
+    return null
+  }
+}
+
+/**
  * Send news post to Discord
  * Formats news as embed with image/video if available
+ * Creates a thread for discussion
  */
 export async function sendNewsToDiscord(news: {
   title: string
@@ -451,34 +537,53 @@ export async function sendNewsToDiscord(news: {
       title = `🇺🇸 ${title}`
     }
 
-    // Create embed
+    // Determine color based on hook
+    let color = 0x10b981 // Default green
+    if (news.hook === 'BREAKING') {
+      color = 0xef4444 // Red for breaking
+    } else if (news.hook === 'JUST IN') {
+      color = 0x3b82f6 // Blue for just in
+    }
+
+    // Create enhanced embed
     const embed: any = {
       title: title.length > 256 ? title.substring(0, 253) + '...' : title,
-      description: news.link ? `[Read more](${news.link})` : undefined,
-      color: news.hook === 'BREAKING' ? 0xef4444 : news.hook === 'JUST IN' ? 0x3b82f6 : 0x10b981,
+      description: news.link ? `[📰 Read full article](${news.link})` : undefined,
+      color,
+      fields: news.source
+        ? [
+            {
+              name: '📡 Source',
+              value: news.source,
+              inline: true,
+            },
+          ]
+        : [],
       timestamp: new Date().toISOString(),
-      footer: news.source ? { text: news.source } : undefined
+      footer: {
+        text: '📰 CryptoFlash Breaking News • Stay informed, stay ahead',
+        icon_url: 'https://cryptoflash.app/favicon.ico',
+      },
     }
 
     // Add image or video thumbnail
     if (news.videoUrl) {
-      // For videos, use thumbnail if available, otherwise use video URL as image
       embed.image = { url: news.videoUrl }
     } else if (news.imageUrl) {
       embed.image = { url: news.imageUrl }
     }
 
     const payload = {
-      embeds: [embed]
+      embeds: [embed],
     }
 
     const response = await fetch(`https://discord.com/api/channels/${DISCORD_NEWS_CHANNEL_ID}/messages`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bot ${DISCORD_BOT_TOKEN}`
+        Authorization: `Bot ${DISCORD_BOT_TOKEN}`,
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     })
 
     if (!response.ok) {
@@ -490,6 +595,19 @@ export async function sendNewsToDiscord(news: {
     try {
       const result = await response.json()
       console.log('[Discord] Posted news to Discord:', result.id)
+
+      // Create thread for discussion (thread name max 100 chars)
+      const threadName = news.title.length > 90 ? news.title.substring(0, 87) + '...' : news.title
+      const threadId = await createThread(DISCORD_NEWS_CHANNEL_ID, result.id, threadName)
+      if (threadId) {
+        console.log('[Discord] Created thread for news:', threadId)
+      }
+
+      // Add automatic reactions
+      if (result.id) {
+        await addReactions(DISCORD_NEWS_CHANNEL_ID, result.id, ['📰', '🔥', '💬'])
+      }
+
       return result
     } catch {
       return { id: null }
