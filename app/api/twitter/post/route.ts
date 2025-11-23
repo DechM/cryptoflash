@@ -35,7 +35,7 @@ const TWITTER_WHALE_MIN_USD = Number(process.env.TWITTER_WHALE_MIN_USD || '30000
 const MAX_WHALE_POSTS_PER_DAY = 2 // Max 2 whale alerts per day
 const MAX_KOTH_POSTS_PER_DAY = 1 // Max 1 KOTH alert per day
 const MAX_NEWS_POSTS_PER_DAY = 12 // Max 12 news posts per day (rest of quota for quality breaking news)
-const MIN_NEWS_PRIORITY = 70 // Minimum priority score to post (only most important news)
+const MIN_NEWS_PRIORITY = Number(process.env.MIN_NEWS_PRIORITY || '70') // Minimum priority score to post (only most important news)
 
 function getCooldownCutoff(hours: number): number {
   return Date.now() - hours * 60 * 60 * 1000
