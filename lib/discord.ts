@@ -438,33 +438,68 @@ export async function sendKothAlertToDiscord(token: KothTokenPayload, watchers: 
     embeds: [embed]
   }
 
-  const response = await fetch(`https://discord.com/api/channels/${DISCORD_KOTH_CHANNEL_ID}/messages`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bot ${DISCORD_BOT_TOKEN}`
-    },
-    body: JSON.stringify(payload)
-  })
+  // Retry logic with exponential backoff for rate limiting
+  let retries = 0
+  const maxRetries = 3
+  let lastError: any = null
 
-  if (!response.ok) {
+  while (retries <= maxRetries) {
+    const response = await fetch(`https://discord.com/api/channels/${DISCORD_KOTH_CHANNEL_ID}/messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bot ${DISCORD_BOT_TOKEN}`
+      },
+      body: JSON.stringify(payload)
+    })
+
+    if (response.ok) {
+      try {
+        const result = await response.json()
+        
+        // Add automatic reactions (with delay to avoid rate limits)
+        if (result.id) {
+          // Small delay before adding reactions
+          await new Promise(resolve => setTimeout(resolve, 500))
+          await addReactions(DISCORD_KOTH_CHANNEL_ID, result.id, ['🏆', '🔥', '⚔️'])
+        }
+        
+        return result
+      } catch {
+        return { id: null }
+      }
+    }
+
+    // Handle rate limiting (429)
+    if (response.status === 429) {
+      const errorData = await response.json().catch(() => ({}))
+      const retryAfter = errorData.retry_after ? Math.ceil(errorData.retry_after * 1000) : (retries + 1) * 1000
+      
+      console.warn(`[Discord] Rate limited (429) for KOTH alert. Retry after ${retryAfter}ms (attempt ${retries + 1}/${maxRetries})`)
+      
+      if (retries < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, retryAfter))
+        retries++
+        continue
+      } else {
+        lastError = { status: 429, message: 'Rate limited', retry_after: retryAfter }
+        break
+      }
+    }
+
+    // Other errors
     const text = await response.text()
     console.error('[Discord] Failed to send KOTH alert:', response.status, text)
-    return null
+    lastError = { status: response.status, message: text }
+    break
   }
 
-  try {
-    const result = await response.json()
-    
-    // Add automatic reactions
-    if (result.id) {
-      await addReactions(DISCORD_KOTH_CHANNEL_ID, result.id, ['🏆', '🔥', '⚔️'])
-    }
-    
-    return result
-  } catch {
-    return { id: null }
+  // If we exhausted retries, log and return null
+  if (lastError) {
+    console.error('[Discord] Failed to send KOTH alert after retries:', lastError)
   }
+  
+  return null
 }
 
 /**

@@ -161,38 +161,49 @@ async function runAlertsJob() {
       }
     }
 
+    // Send alerts with delay between each to avoid Discord rate limiting
     for (const { token, watchers } of tokenWatchers.values()) {
-      await sendKothAlertToDiscord(
-        {
-          tokenAddress: token.tokenAddress,
-          name: token.name,
-          symbol: token.symbol,
-          score: token.score,
-          progress: token.progress,
-          priceUsd: token.priceUsd,
-          liquidity: token.liquidity,
-          volume24h: token.volume24h,
-          curveSpeed: token.curveSpeed,
-          whaleCount: token.whaleCount,
-          whaleInflows: token.whaleInflows
-        },
-        watchers.map(watcher => ({
-          displayName: watcher.discordUsername || watcher.displayName,
-          alertType: watcher.alertType,
-          threshold: watcher.threshold
-        }))
-      )
+      try {
+        await sendKothAlertToDiscord(
+          {
+            tokenAddress: token.tokenAddress,
+            name: token.name,
+            symbol: token.symbol,
+            score: token.score,
+            progress: token.progress,
+            priceUsd: token.priceUsd,
+            liquidity: token.liquidity,
+            volume24h: token.volume24h,
+            curveSpeed: token.curveSpeed,
+            whaleCount: token.whaleCount,
+            whaleInflows: token.whaleInflows
+          },
+          watchers.map(watcher => ({
+            displayName: watcher.discordUsername || watcher.displayName,
+            alertType: watcher.alertType,
+            threshold: watcher.threshold
+          }))
+        )
 
-      for (const watcher of watchers) {
-        await supabaseAdmin.from('alert_history').insert({
-          user_id: watcher.userId,
-          token_address: token.tokenAddress,
-          token_name: token.name,
-          token_symbol: token.symbol,
-          alert_score: token.score,
-          alert_progress: token.progress,
-          sent_at: new Date().toISOString()
-        })
+        // Record alert history
+        for (const watcher of watchers) {
+          await supabaseAdmin.from('alert_history').insert({
+            user_id: watcher.userId,
+            token_address: token.tokenAddress,
+            token_name: token.name,
+            token_symbol: token.symbol,
+            alert_score: token.score,
+            alert_progress: token.progress,
+            sent_at: new Date().toISOString()
+          })
+        }
+
+        // Delay between Discord messages to avoid rate limiting (Discord: 5 req/5 sec per channel)
+        // Use 1.2 seconds delay to stay safely under the limit
+        await new Promise(resolve => setTimeout(resolve, 1200))
+      } catch (error) {
+        console.error(`[Alerts] Failed to send KOTH alert for ${token.symbol}:`, error)
+        // Continue with next token even if one fails
       }
     }
 
