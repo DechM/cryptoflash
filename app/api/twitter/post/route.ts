@@ -123,11 +123,11 @@ async function handleTwitterPost() {
       reason: 'daily-limit',
       todayCount
     })
-    return NextResponse.json({
+    return {
       success: false,
       message: 'Daily post limit reached',
       todayCount
-    })
+    }
   }
 
   const storedResumeAt = await getStoredResumeAt()
@@ -140,12 +140,12 @@ async function handleTwitterPost() {
       resumeAt: storedResumeAt.toISOString(),
       minutesRemaining
     })
-    return NextResponse.json({
+    return {
       success: false,
       message: 'Twitter rate limit active',
       resumeAt: storedResumeAt.toISOString(),
       minutesRemaining
-    })
+    }
   }
 
   // Check last post time (rate limiting)
@@ -172,13 +172,13 @@ async function handleTwitterPost() {
         minutesRemaining,
         lastPostTime: lastPost.posted_at
       })
-      return NextResponse.json({
+      return {
         success: false,
         message: 'Rate limit: too soon since last post',
         minutesRemaining,
         lastPostTime: lastPost.posted_at,
         minutesSinceLastPost
-      })
+      }
     }
   } else {
     console.log('[Twitter Post] No previous posts found')
@@ -227,12 +227,12 @@ async function handleTwitterPost() {
         reason: 'rate-limited-whale',
         resetAt: tweetResult.resetAt || null
       })
-      return NextResponse.json({
+      return {
         success: false,
         rateLimited: true,
         rateLimitedUntil: tweetResult.resetAt || null,
         message: 'Twitter rate limit hit while posting whale event'
-      })
+      }
     }
 
     if (tweetResult) {
@@ -285,7 +285,7 @@ async function handleTwitterPost() {
         mode: 'whale',
         tweetId: tweetResult.id
       })
-      return NextResponse.json(whaleResult)
+      return whaleResult
     } else {
       console.error('[Twitter Post] Failed to post whale tweet - postTweet returned null/undefined')
     }
@@ -386,12 +386,12 @@ async function handleTwitterPost() {
         reason: 'rate-limited-news',
         resetAt: tweetResult.resetAt || null
       })
-      return NextResponse.json({
+      return {
         success: false,
         rateLimited: true,
         rateLimitedUntil: tweetResult.resetAt || null,
         message: 'Twitter rate limit hit while posting news'
-      })
+      }
     }
 
     if (tweetResult) {
@@ -440,7 +440,7 @@ async function handleTwitterPost() {
         mode: 'news',
         tweetId: tweetResult.id
       })
-      return NextResponse.json(newsResult)
+      return newsResult
     } else {
       console.error('[Twitter Post] Failed to post news tweet - postTweet returned null/undefined')
     }
@@ -465,12 +465,12 @@ async function handleTwitterPost() {
       reason: 'koth-daily-limit',
       kothPostsCount
     })
-    return NextResponse.json({
+    return {
       success: false,
       message: 'KOTH daily limit reached',
       kothPostsCount,
       whalePostsCount
-    })
+    }
   }
 
   // Fetch latest KOTH tokens
@@ -495,7 +495,7 @@ async function handleTwitterPost() {
       postedCount: 0,
       reason: 'no-tokens'
     })
-    return NextResponse.json({ message: 'No tokens available' })
+    return { message: 'No tokens available' }
   }
 
   // Log token stats for debugging
@@ -539,12 +539,12 @@ async function handleTwitterPost() {
       reason: 'no-eligible-tokens',
       tokenStats
     })
-    return NextResponse.json({ 
+    return { 
       success: false,
       message: 'No eligible tokens (69%+ progress, score >= 72)',
       tokenStats,
       eligibleCount: 0
-    })
+    }
   }
 
   // Get already posted tokens
@@ -591,7 +591,7 @@ async function handleTwitterPost() {
       reason: 'already-posted',
       eligibleCount: eligibleTokens.length
     })
-    return NextResponse.json(payload)
+    return payload
   }
 
   // Calculate how many KOTH posts we can still make today
@@ -707,7 +707,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    return await handleTwitterPost()
+    const result = await handleTwitterPost()
+    return NextResponse.json(result)
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error)
     console.error('Error in Twitter post endpoint (POST):', message)
@@ -733,7 +734,7 @@ export async function GET() {
       await recordCronFailure('twitter:post', message)
       return NextResponse.json({ error: message }, { status: 500 })
     }
-    return result
+    return NextResponse.json(result)
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error)
     console.error('[Twitter Post] Error in GET endpoint:', message)
