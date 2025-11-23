@@ -417,3 +417,86 @@ export async function sendKothAlertToDiscord(token: KothTokenPayload, watchers: 
     return { id: null }
   }
 }
+
+/**
+ * Send news post to Discord
+ * Formats news as embed with image/video if available
+ */
+export async function sendNewsToDiscord(news: {
+  title: string
+  hook?: string | null
+  isUSRelated: boolean
+  link: string
+  imageUrl?: string | null
+  videoUrl?: string | null
+  source?: string
+}): Promise<DiscordMessageResponse | null> {
+  if (!DISCORD_NEWS_CHANNEL_ID) {
+    console.warn('[Discord] DISCORD_NEWS_CHANNEL_ID not configured; skipping news post.')
+    return null
+  }
+
+  if (!DISCORD_BOT_TOKEN) {
+    console.warn('[Discord] DISCORD_BOT_TOKEN not configured; skipping news post.')
+    return null
+  }
+
+  try {
+    // Format title with hook
+    let title = news.title
+    if (news.hook) {
+      const flag = news.isUSRelated ? '🇺🇸 ' : ''
+      title = `${news.hook}: ${flag}${title}`
+    } else if (news.isUSRelated) {
+      title = `🇺🇸 ${title}`
+    }
+
+    // Create embed
+    const embed: any = {
+      title: title.length > 256 ? title.substring(0, 253) + '...' : title,
+      description: news.link ? `[Read more](${news.link})` : undefined,
+      color: news.hook === 'BREAKING' ? 0xef4444 : news.hook === 'JUST IN' ? 0x3b82f6 : 0x10b981,
+      timestamp: new Date().toISOString(),
+      footer: news.source ? { text: news.source } : undefined
+    }
+
+    // Add image or video thumbnail
+    if (news.videoUrl) {
+      // For videos, use thumbnail if available, otherwise use video URL as image
+      embed.image = { url: news.videoUrl }
+    } else if (news.imageUrl) {
+      embed.image = { url: news.imageUrl }
+    }
+
+    const payload = {
+      embeds: [embed]
+    }
+
+    const response = await fetch(`https://discord.com/api/channels/${DISCORD_NEWS_CHANNEL_ID}/messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bot ${DISCORD_BOT_TOKEN}`
+      },
+      body: JSON.stringify(payload)
+    })
+
+    if (!response.ok) {
+      const text = await response.text()
+      console.error('[Discord] Failed to send news post:', response.status, text)
+      return null
+    }
+
+    try {
+      const result = await response.json()
+      console.log('[Discord] Posted news to Discord:', result.id)
+      return result
+    } catch {
+      return { id: null }
+    }
+  } catch (error: any) {
+    console.error('[Discord] Error sending news post:', error.message)
+    return null
+  }
+}
+
