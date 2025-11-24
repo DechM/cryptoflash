@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS twitter_rate_limits (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Drop trigger if exists, then create it
+DROP TRIGGER IF EXISTS update_twitter_rate_limits_updated_at ON twitter_rate_limits;
 CREATE TRIGGER update_twitter_rate_limits_updated_at BEFORE UPDATE ON twitter_rate_limits
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
