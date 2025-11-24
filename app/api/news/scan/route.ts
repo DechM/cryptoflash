@@ -71,9 +71,18 @@ export async function GET(request: NextRequest) {
         scannedCount++
 
         if (tweets.length === 0) {
-          console.log(`[News Scan] ${username}: No new tweets`)
+          console.log(`[News Scan] ${username}: No new tweets${sinceId ? ` (since ${sinceId})` : ' (no sinceId)'}`)
           continue
         }
+        
+        // Debug: Log tweet ages
+        const now = Date.now()
+        const tweetAges = tweets.map(t => {
+          if (!t.created_at) return 'no-date'
+          const age = (now - new Date(t.created_at).getTime()) / (1000 * 60)
+          return `${age.toFixed(1)}min`
+        })
+        console.log(`[News Scan] ${username}: ${tweets.length} tweets fetched, ages: ${tweetAges.join(', ')}`)
 
         // VALIDATION: Double-check that tweets are from the correct user
         // This is a safety net in case getUserTweets validation fails
@@ -106,8 +115,20 @@ export async function GET(request: NextRequest) {
     }
 
     console.log(`[News Scan] Total relevant items: ${allFilteredItems.length}`)
+    
+    // Debug: Log age of filtered items
+    if (allFilteredItems.length > 0) {
+      const now = Date.now()
+      const ages = allFilteredItems.map(item => {
+        if (!item.createdAt) return 'no-date'
+        const age = (now - new Date(item.createdAt).getTime()) / (1000 * 60)
+        return `${age.toFixed(1)}min`
+      })
+      console.log(`[News Scan] Filtered items ages: ${ages.join(', ')}`)
+    }
 
     if (allFilteredItems.length === 0) {
+      console.log(`[News Scan] No relevant news found. Scanned ${scannedCount} accounts.`)
       await recordCronSuccess('news:scan', { scannedAccounts: scannedCount, newItems: 0, note: 'No relevant news found' })
       return NextResponse.json({ success: true, scannedAccounts: scannedCount, newItems: 0 })
     }
