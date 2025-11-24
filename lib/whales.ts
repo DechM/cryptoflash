@@ -132,13 +132,23 @@ async function enrichCoinWithPlatform(
         
         // Update cache
         if (detail?.platforms) {
-          await supabaseAdmin
-            .from('coingecko_coin_cache')
-            .upsert({
-              coin_id: coin.id,
-              platforms: detail.platforms,
-              last_updated: new Date().toISOString()
-            }, { onConflict: 'coin_id' })
+          try {
+            const { error: cacheError } = await supabaseAdmin
+              .from('coingecko_coin_cache')
+              .upsert({
+                coin_id: coin.id,
+                platforms: detail.platforms,
+                last_updated: new Date().toISOString()
+              }, { onConflict: 'coin_id' })
+            
+            if (cacheError) {
+              console.error(`[Whale][CoinGecko] Failed to update cache for ${coin.id}:`, cacheError)
+            } else {
+              console.log(`[Whale][CoinGecko] Updated cache for ${coin.id}`)
+            }
+          } catch (cacheError) {
+            console.error(`[Whale][CoinGecko] Exception updating cache for ${coin.id}:`, cacheError)
+          }
         }
       }
     } else {
@@ -148,20 +158,51 @@ async function enrichCoinWithPlatform(
       
       // Save to cache
       if (detail?.platforms) {
-        await supabaseAdmin
-          .from('coingecko_coin_cache')
-          .upsert({
-            coin_id: coin.id,
-            platforms: detail.platforms,
-            last_updated: new Date().toISOString()
-          }, { onConflict: 'coin_id' })
+        try {
+          const { error: cacheError } = await supabaseAdmin
+            .from('coingecko_coin_cache')
+            .upsert({
+              coin_id: coin.id,
+              platforms: detail.platforms,
+              last_updated: new Date().toISOString()
+            }, { onConflict: 'coin_id' })
+          
+          if (cacheError) {
+            console.error(`[Whale][CoinGecko] Failed to save cache for ${coin.id}:`, cacheError)
+          } else {
+            console.log(`[Whale][CoinGecko] Saved to cache: ${coin.id}`)
+          }
+        } catch (cacheError) {
+          console.error(`[Whale][CoinGecko] Exception saving cache for ${coin.id}:`, cacheError)
+        }
       }
     }
   } catch (error) {
     // If cache fails, fetch fresh (fallback)
     console.warn(`[Whale][CoinGecko] Cache error for ${coin.id}, fetching fresh:`, error)
-    const detail = await fetchCoinDetails(coin.id)
-    platforms = detail?.platforms ?? {}
+    try {
+      const detail = await fetchCoinDetails(coin.id)
+      platforms = detail?.platforms ?? {}
+      
+      // Try to save to cache even if read failed
+      if (detail?.platforms) {
+        try {
+          await supabaseAdmin
+            .from('coingecko_coin_cache')
+            .upsert({
+              coin_id: coin.id,
+              platforms: detail.platforms,
+              last_updated: new Date().toISOString()
+            }, { onConflict: 'coin_id' })
+          console.log(`[Whale][CoinGecko] Saved to cache after error: ${coin.id}`)
+        } catch (cacheWriteError) {
+          console.error(`[Whale][CoinGecko] Failed to write cache for ${coin.id}:`, cacheWriteError)
+        }
+      }
+    } catch (fetchError) {
+      console.error(`[Whale][CoinGecko] Failed to fetch coin details for ${coin.id}:`, fetchError)
+      platforms = {}
+    }
   }
 
   const isStable = STABLE_COIN_IDS.has(coin.id)

@@ -47,13 +47,44 @@ export async function GET(request: NextRequest) {
     if (!tokens || tokens.length === 0) {
       await recordCronSuccess('whales:detect', {
         reviewedTokens: 0,
-        note: 'No tokens available'
+        note: 'No tokens available - whale detection paused until fresh data is available'
       })
-      return NextResponse.json({ success: false, message: 'No tokens available for whale detection' })
+      return NextResponse.json({ 
+        success: false, 
+        message: 'No tokens available for whale detection - paused until fresh data',
+        paused: true
+      })
     }
+    
+    // Check if tokens are stale (older than 4 hours) - don't use stale data
+    const now = Date.now()
+    const staleThreshold = 4 * 60 * 60 * 1000 // 4 hours
+    const freshTokens = tokens.filter(token => {
+      if (!token.updated_at) return false
+      const updatedAt = new Date(token.updated_at).getTime()
+      return (now - updatedAt) < staleThreshold
+    })
+    
+    if (freshTokens.length === 0) {
+      await recordCronSuccess('whales:detect', {
+        reviewedTokens: tokens.length,
+        note: 'All tokens are stale (>4h old) - whale detection paused until fresh data'
+      })
+      return NextResponse.json({ 
+        success: false, 
+        message: 'All tokens are stale - whale detection paused until fresh data',
+        paused: true,
+        staleTokens: tokens.length
+      })
+    }
+    
+    // Use only fresh tokens
+    const tokensToProcess = freshTokens
 
     const summary = {
-      reviewedTokens: tokens.length,
+      reviewedTokens: tokensToProcess.length,
+      totalTokens: tokens.length,
+      staleTokens: tokens.length - tokensToProcess.length,
       candidates: 0,
       inserted: 0,
       skippedExisting: 0,
@@ -62,7 +93,7 @@ export async function GET(request: NextRequest) {
       errors: [] as string[]
     }
 
-    for (const token of tokens as TopTokenRecord[]) {
+    for (const token of tokensToProcess as TopTokenRecord[]) {
       try {
         const networkKey = token.network || ''
         const networkConfig = networkKey ? NETWORKS[networkKey] : undefined

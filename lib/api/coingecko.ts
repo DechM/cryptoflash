@@ -70,6 +70,11 @@ export async function fetchTopCoins(limit = 20): Promise<CoinGeckoMarketCoin[]> 
   } catch (error) {
     if (axios.isAxiosError(error)) {
       const status = error.response?.status
+      // Handle rate limit gracefully - return empty array instead of throwing
+      if (status === 429) {
+        console.warn('[CoinGecko] Rate limit hit (429) - monthly limit exceeded')
+        return []
+      }
       const data = typeof error.response?.data === 'string' ? error.response?.data : JSON.stringify(error.response?.data)
       throw new Error(`[CoinGecko] Request failed with status ${status}: ${data}`)
     }
@@ -97,6 +102,11 @@ export async function fetchCoinDetails(id: string): Promise<CoinGeckoCoinDetails
       const status = error.response?.status
       if (status === 404) {
         console.warn(`[CoinGecko] Coin not found: ${id}`)
+        return null
+      }
+      // Handle rate limit gracefully - return null instead of throwing
+      if (status === 429) {
+        console.warn(`[CoinGecko] Rate limit hit (429) for coin ${id} - monthly limit exceeded`)
         return null
       }
     }
