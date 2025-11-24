@@ -14,12 +14,24 @@ async function runAlertsJob() {
       }
     })
     if (!kothResponse.ok) {
-      const message = `Failed to fetch KOTH data (${kothResponse.status})`
+      const errorText = await kothResponse.text().catch(() => 'Unknown error')
+      const message = `Failed to fetch KOTH data (${kothResponse.status}): ${errorText}`
+      console.error('[Alerts Send]', message)
       await recordCronFailure('alerts:send', message)
       return NextResponse.json({ error: message }, { status: 500 })
     }
 
-    const { tokens } = await kothResponse.json()
+    let tokens: any[] = []
+    try {
+      const data = await kothResponse.json()
+      tokens = data?.tokens || []
+    } catch (jsonError) {
+      const errorText = await kothResponse.text().catch(() => 'Invalid JSON response')
+      const message = `Failed to parse KOTH data: ${errorText}`
+      console.error('[Alerts Send]', message, jsonError)
+      await recordCronFailure('alerts:send', message)
+      return NextResponse.json({ error: message }, { status: 500 })
+    }
 
     if (!tokens || tokens.length === 0) {
       await recordCronSuccess('alerts:send', {
@@ -35,10 +47,17 @@ async function runAlertsJob() {
       .select('*')
       .eq('is_active', true)
 
-    if (alertsError || !alerts) {
-      console.error('Error fetching alerts:', alertsError)
-      await recordCronFailure('alerts:send', alertsError || 'Failed to fetch alerts')
-      return NextResponse.json({ error: 'Failed to fetch alerts' }, { status: 500 })
+    if (alertsError) {
+      const errorMessage = alertsError.message || String(alertsError)
+      console.error('[Alerts Send] Error fetching alerts:', errorMessage)
+      await recordCronFailure('alerts:send', errorMessage)
+      return NextResponse.json({ error: 'Failed to fetch alerts', details: errorMessage }, { status: 500 })
+    }
+
+    if (!alerts) {
+      console.warn('[Alerts Send] No alerts returned (null/undefined)')
+      await recordCronSuccess('alerts:send', { sentCount: 0, reason: 'no-alerts' })
+      return NextResponse.json({ message: 'No active alerts to check' })
     }
 
     const sentAlerts: string[] = []

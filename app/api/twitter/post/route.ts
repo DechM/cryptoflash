@@ -57,14 +57,24 @@ async function getStoredResumeAt(): Promise<Date | null> {
 }
 
 async function setStoredResumeAt(unixSeconds: number | null) {
-  const resumeAt = unixSeconds ? new Date(unixSeconds * 1000) : null
-  const iso = resumeAt && Number.isFinite(resumeAt.getTime()) ? resumeAt.toISOString() : null
-  const { error } = await supabaseAdmin
-    .from('twitter_rate_limits')
-    .upsert({ key: 'global', resume_at: iso }, { onConflict: 'key' })
+  try {
+    const resumeAt = unixSeconds ? new Date(unixSeconds * 1000) : null
+    const iso = resumeAt && Number.isFinite(resumeAt.getTime()) ? resumeAt.toISOString() : null
+    const { error } = await supabaseAdmin
+      .from('twitter_rate_limits')
+      .upsert({ key: 'global', resume_at: iso }, { onConflict: 'key' })
 
-  if (error) {
-    console.error('[Twitter Post] Failed to persist rate limit resume_at:', error)
+    if (error) {
+      // If table doesn't exist, log warning but don't crash
+      if (error.message?.includes('does not exist') || error.code === '42P01') {
+        console.warn('[Twitter Post] twitter_rate_limits table does not exist. Please run the SQL migration.')
+      } else {
+        console.error('[Twitter Post] Failed to persist rate limit resume_at:', error)
+      }
+    }
+  } catch (err: any) {
+    // Don't crash if rate limit storage fails - it's not critical
+    console.warn('[Twitter Post] Error storing rate limit (non-critical):', err?.message || err)
   }
 }
 
@@ -294,15 +304,27 @@ async function handleTwitterPost() {
   await cleanupWhaleRetention()
 
   // Check daily news post limit
-  const { count: newsPostsToday } = await supabaseAdmin
+  const { count: newsPostsToday, error: newsCountError } = await supabaseAdmin
     .from('news_posts')
     .select('*', { count: 'exact', head: true })
     .gte('posted_at', today.toISOString())
     .not('tweet_id', 'is', null)
     .eq('posted_to_twitter', true)
 
+  if (newsCountError) {
+    console.error('[Twitter Post] Error counting news posts:', newsCountError)
+  }
+
   const newsPostsCount = newsPostsToday || 0
   console.log(`[Twitter Post] News posts today: ${newsPostsCount}/${MAX_NEWS_POSTS_PER_DAY}`)
+  
+  // Debug: Check total pending news
+  const { count: totalPendingNews } = await supabaseAdmin
+    .from('news_posts')
+    .select('*', { count: 'exact', head: true })
+    .eq('posted_to_twitter', false)
+  
+  console.log(`[Twitter Post] Total pending news items: ${totalPendingNews || 0}`)
 
   // Check for pending news items
   // All accounts treated equally - only fresh breaking news (< 20 minutes)
@@ -311,23 +333,45 @@ async function handleTwitterPost() {
   if (newsPostsCount < MAX_NEWS_POSTS_PER_DAY) {
     // Check for high-priority news (only last 20 minutes - breaking news must be fresh)
     // No special exceptions - all accounts treated equally
-    const { data: newsData } = await supabaseAdmin
+    const twentyMinutesAgo = new Date(Date.now() - 20 * 60 * 1000).toISOString()
+    const { data: newsData, error: newsError } = await supabaseAdmin
       .from('news_posts')
       .select('id, title, hook, is_us_related, link, image_url, video_url, source, priority, pub_date')
       .eq('posted_to_twitter', false)
       .gte('priority', MIN_NEWS_PRIORITY) // Only most important news
-      .gte('pub_date', new Date(Date.now() - 20 * 60 * 1000).toISOString()) // Only last 20 minutes - prevents old/fake news
+      .gte('pub_date', twentyMinutesAgo) // Only last 20 minutes - prevents old/fake news
       .order('priority', { ascending: false })
       .order('pub_date', { ascending: false })
       .limit(1)
       .maybeSingle()
 
+    if (newsError) {
+      console.error('[Twitter Post] Error fetching pending news:', newsError)
+    }
+
     pendingNews = newsData || null
     
     if (pendingNews) {
-      console.log(`[Twitter Post] Found news item with priority ${pendingNews.priority}: ${pendingNews.title}`)
+      const ageMinutes = pendingNews.pub_date 
+        ? Math.round((Date.now() - new Date(pendingNews.pub_date).getTime()) / (1000 * 60))
+        : 'unknown'
+      console.log(`[Twitter Post] Found news item: priority=${pendingNews.priority}, age=${ageMinutes}min, title="${pendingNews.title.substring(0, 50)}..."`)
     } else {
-      console.log(`[Twitter Post] No news items found with priority >= ${MIN_NEWS_PRIORITY} (or all are older than 20 minutes)`)
+      // Debug: Check why no news found
+      const { count: lowPriorityCount } = await supabaseAdmin
+        .from('news_posts')
+        .select('*', { count: 'exact', head: true })
+        .eq('posted_to_twitter', false)
+        .lt('priority', MIN_NEWS_PRIORITY)
+      
+      const { count: oldNewsCount } = await supabaseAdmin
+        .from('news_posts')
+        .select('*', { count: 'exact', head: true })
+        .eq('posted_to_twitter', false)
+        .gte('priority', MIN_NEWS_PRIORITY)
+        .lt('pub_date', twentyMinutesAgo)
+      
+      console.log(`[Twitter Post] No fresh news found. Low priority: ${lowPriorityCount || 0}, Old news: ${oldNewsCount || 0}`)
     }
   } else {
     console.log(`[Twitter Post] News post limit reached (${newsPostsCount}/${MAX_NEWS_POSTS_PER_DAY}), skipping news checks`)
