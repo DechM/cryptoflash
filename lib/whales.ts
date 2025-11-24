@@ -106,8 +106,63 @@ async function enrichCoinWithPlatform(
     }
   }
 
-  const detail = await fetchCoinDetails(coin.id)
-  const platforms = detail?.platforms ?? {}
+  // Check cache first (24 hour cache for coin details)
+  let platforms: Record<string, string | null> = {}
+  const cacheAge = 24 * 60 * 60 * 1000 // 24 hours
+  
+  try {
+    const { data: cached } = await supabaseAdmin
+      .from('coingecko_coin_cache')
+      .select('platforms, last_updated')
+      .eq('coin_id', coin.id)
+      .maybeSingle()
+
+    if (cached?.platforms) {
+      const lastUpdated = new Date(cached.last_updated).getTime()
+      const now = Date.now()
+      
+      if (now - lastUpdated < cacheAge) {
+        // Use cached data
+        platforms = (cached.platforms as Record<string, string | null>) || {}
+        console.log(`[Whale][CoinGecko] Using cached platforms for ${coin.id}`)
+      } else {
+        // Cache expired, fetch fresh
+        const detail = await fetchCoinDetails(coin.id)
+        platforms = detail?.platforms ?? {}
+        
+        // Update cache
+        if (detail?.platforms) {
+          await supabaseAdmin
+            .from('coingecko_coin_cache')
+            .upsert({
+              coin_id: coin.id,
+              platforms: detail.platforms,
+              last_updated: new Date().toISOString()
+            }, { onConflict: 'coin_id' })
+        }
+      }
+    } else {
+      // No cache, fetch fresh
+      const detail = await fetchCoinDetails(coin.id)
+      platforms = detail?.platforms ?? {}
+      
+      // Save to cache
+      if (detail?.platforms) {
+        await supabaseAdmin
+          .from('coingecko_coin_cache')
+          .upsert({
+            coin_id: coin.id,
+            platforms: detail.platforms,
+            last_updated: new Date().toISOString()
+          }, { onConflict: 'coin_id' })
+      }
+    }
+  } catch (error) {
+    // If cache fails, fetch fresh (fallback)
+    console.warn(`[Whale][CoinGecko] Cache error for ${coin.id}, fetching fresh:`, error)
+    const detail = await fetchCoinDetails(coin.id)
+    platforms = detail?.platforms ?? {}
+  }
 
   const isStable = STABLE_COIN_IDS.has(coin.id)
 

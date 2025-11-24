@@ -297,6 +297,17 @@ CREATE INDEX IF NOT EXISTS idx_discord_links_user_id ON discord_links(user_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_discord_links_discord_user_id ON discord_links(discord_user_id);
 
 -- News Posts Table (for RSS news tracking)
+-- CoinGecko coin details cache table
+-- Stores coin details (platforms data) to avoid repeated API calls
+CREATE TABLE IF NOT EXISTS coingecko_coin_cache (
+  coin_id TEXT PRIMARY KEY,
+  platforms JSONB, -- Store platforms data from CoinGecko
+  last_updated TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_coingecko_cache_last_updated ON coingecko_coin_cache(last_updated);
+
 -- X (Twitter) user IDs cache table
 -- Stores username -> user_id mapping to avoid rate limits (1 req/24h per user)
 CREATE TABLE IF NOT EXISTS x_user_ids (
