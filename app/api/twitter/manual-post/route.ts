@@ -37,19 +37,22 @@ export async function POST(request: NextRequest) {
 
     // Post to Twitter
     const tweetResult = await postTweet(text, imageUrl || null, videoUrl || null)
+    const isRateLimited = !!(tweetResult && (tweetResult as any).rateLimited)
 
-    if (!tweetResult || 'rateLimited' in tweetResult) {
+    if (!tweetResult || isRateLimited) {
       return NextResponse.json({
         error: 'Failed to post to Twitter',
-        rateLimited: 'rateLimited' in tweetResult,
+        rateLimited: isRateLimited,
         details: tweetResult
       }, { status: 500 })
     }
 
+    const tweetId = (tweetResult as any).id
+
     const result: any = {
       success: true,
-      tweetId: tweetResult.id,
-      tweetUrl: `https://twitter.com/i/web/status/${tweetResult.id}`
+      tweetId,
+      tweetUrl: `https://twitter.com/i/web/status/${tweetId}`
     }
 
     // Post to Discord if requested
