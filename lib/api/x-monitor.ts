@@ -27,8 +27,9 @@ export interface XUser {
   name: string
 }
 
-// Top X accounts to monitor (24 most important crypto news sources)
+// Top X accounts to monitor (25 most important crypto news sources + our own account)
 const MONITORED_ACCOUNTS = [
+  'CryptoFlashGuru',   // Our own account - auto-post to Discord when we post manually
   'WatcherGuru',        // Real-time crypto/finance JUST IN, 10-20/ден, 3.6M followers
   'DeItaone',           // Bloomberg macro + regs, 5-15/ден, 1.1M followers
   'lookonchain',        // On-chain whales/hacks, 15-25/ден, 671k followers

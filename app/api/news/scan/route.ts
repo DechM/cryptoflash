@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { getMonitoredAccounts, getCachedUserId, getUserTweets } from '@/lib/api/x-monitor'
 import { filterXTweets, FilteredXNewsItem } from '@/lib/api/x-news'
 import { recordCronFailure, recordCronSuccess } from '@/lib/cron'
+import { sendNewsToDiscord } from '@/lib/discord'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -203,22 +204,55 @@ export async function GET(request: NextRequest) {
       console.log(`[News Scan] Filtered out ${newItems.length - freshItems.length} old items before inserting`)
     }
 
-    // Insert only fresh items into database
-    const insertData = freshItems.map(item => ({
-      title: item.formattedText, // Use reformatted text as title
-      description: item.originalText || null, // Store original text in description
-      link: `https://twitter.com/${item.authorUsername}/status/${item.tweetId}`,
-      source: item.source,
-      hook: item.hook || null,
-      is_us_related: item.isUSRelated,
-      priority: item.priority,
-      image_url: item.imageUrl || null,
-      video_url: item.videoUrl || null,
-      pub_date: item.createdAt ? new Date(item.createdAt).toISOString() : null,
-      posted_to_twitter: false,
-      tweet_id: item.tweetId, // Store original tweet ID
-      posted_at: null
-    }))
+    // Separate CryptoFlashGuru posts (our own account) - auto-post to Discord immediately
+    const ourPosts = freshItems.filter(item => item.authorUsername.toLowerCase() === 'cryptoflashguru')
+    const otherPosts = freshItems.filter(item => item.authorUsername.toLowerCase() !== 'cryptoflashguru')
+
+    // Auto-post CryptoFlashGuru posts to Discord immediately (they're already posted to X manually)
+    let discordPostedCount = 0
+    for (const item of ourPosts) {
+      try {
+        const discordResult = await sendNewsToDiscord({
+          title: item.formattedText,
+          hook: item.hook || null,
+          isUSRelated: item.isUSRelated,
+          link: `https://twitter.com/${item.authorUsername}/status/${item.tweetId}`,
+          imageUrl: item.imageUrl || null,
+          videoUrl: item.videoUrl || null,
+          source: 'CryptoFlashGuru (Manual)',
+        })
+        
+        if (discordResult?.id) {
+          discordPostedCount++
+          console.log(`[News Scan] Auto-posted CryptoFlashGuru post to Discord: ${item.tweetId}`)
+        }
+      } catch (error: any) {
+        console.error(`[News Scan] Failed to auto-post CryptoFlashGuru post to Discord:`, error.message)
+        // Continue even if Discord post fails - still store in DB
+      }
+    }
+
+    // Insert all fresh items into database
+    // For CryptoFlashGuru posts: mark as posted_to_twitter=true (already posted manually)
+    // For other posts: mark as posted_to_twitter=false (will be posted by twitter:post cron)
+    const insertData = freshItems.map(item => {
+      const isOurPost = item.authorUsername.toLowerCase() === 'cryptoflashguru'
+      return {
+        title: item.formattedText, // Use reformatted text as title
+        description: item.originalText || null, // Store original text in description
+        link: `https://twitter.com/${item.authorUsername}/status/${item.tweetId}`,
+        source: item.source,
+        hook: item.hook || null,
+        is_us_related: item.isUSRelated,
+        priority: item.priority,
+        image_url: item.imageUrl || null,
+        video_url: item.videoUrl || null,
+        pub_date: item.createdAt ? new Date(item.createdAt).toISOString() : null,
+        posted_to_twitter: isOurPost, // Our posts are already on X (posted manually)
+        tweet_id: item.tweetId, // Store original tweet ID
+        posted_at: isOurPost ? (item.createdAt ? new Date(item.createdAt).toISOString() : new Date().toISOString()) : null
+      }
+    })
 
     const { error: insertError } = await supabaseAdmin
       .from('news_posts')
@@ -231,12 +265,17 @@ export async function GET(request: NextRequest) {
     }
 
     console.log(`[News Scan] Successfully stored ${freshItems.length} new items (${newItems.length - freshItems.length} filtered as old)`)
+    if (ourPosts.length > 0) {
+      console.log(`[News Scan] Auto-posted ${discordPostedCount}/${ourPosts.length} CryptoFlashGuru posts to Discord`)
+    }
 
     await recordCronSuccess('news:scan', {
       scannedAccounts: scannedCount,
       newItems: freshItems.length,
       filteredOld: newItems.length - freshItems.length,
-      totalRelevant: allFilteredItems.length
+      totalRelevant: allFilteredItems.length,
+      ourPosts: ourPosts.length,
+      discordPosted: discordPostedCount
     })
 
     return NextResponse.json({
@@ -244,7 +283,9 @@ export async function GET(request: NextRequest) {
       scannedAccounts: scannedCount,
       newItems: freshItems.length,
       filteredOld: newItems.length - freshItems.length,
-      totalRelevant: allFilteredItems.length
+      totalRelevant: allFilteredItems.length,
+      ourPosts: ourPosts.length,
+      discordPosted: discordPostedCount
     })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error)
