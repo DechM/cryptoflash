@@ -42,3 +42,6 @@ next-env.d.ts
 
 # Generated videos (separate from main project)
 /videos/
+
+# Android app project is a separate repo; ignore from this one
+/SimpleAINoteTaker/
