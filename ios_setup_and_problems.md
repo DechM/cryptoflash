@@ -270,3 +270,184 @@ class UpgradeScreen extends StatefulWidget {
 7. **Всички external links трябва да са функционални**
 8. **App price трябва да е "Free"** ако имаш IAP subscriptions
 
+---
+
+### ⚠️ ITMS-91061: Missing privacy manifest за third-party SDKs
+
+#### Проблем: "Missing privacy manifest - Your app includes share_plus.framework/share_plus"
+
+**Грешка от Apple:**
+```
+ITMS-91061: Missing privacy manifest - Your app includes "Frameworks/share_plus.framework/share_plus", 
+which includes share_plus, an SDK that was identified in the documentation as a commonly used third-party SDK. 
+If a new app includes a commonly used third-party SDK, or an app update adds a commonly used third-party SDK, 
+the SDK must include a privacy manifest file.
+```
+
+**Причина:**
+- Apple изисква privacy manifest файлове за определени third-party SDKs (виж: https://developer.apple.com/support/third-party-SDK-requirements)
+- Privacy manifest файлът трябва да е **вграден вътре в SDK framework-а**, не само в приложението
+- Старите версии на `share_plus` (преди 10.1.2) нямат privacy manifest
+
+**Решение:**
+
+1. **Ъпдейтни SDK-то до версия, която има privacy manifest вграден:**
+   - За `share_plus`: използвай версия `>= 10.1.2` или по-нова (препоръчително: `^12.0.1`)
+   - В `pubspec.yaml`: `share_plus: ^12.0.1`
+
+2. **Почисти кеша и направи чиста инсталация:**
+   ```bash
+   flutter clean
+   rm -rf ios/Pods ios/Podfile.lock
+   rm -rf ~/Library/Developer/Xcode/DerivedData
+   flutter pub get
+   cd ios && pod install --repo-update && cd ..
+   ```
+
+3. **Тествай че privacy manifest файлът е в build-а:**
+   ```bash
+   # Провери в build директорията:
+   find build/ios/iphoneos -path "*share_plus.framework*" -name "PrivacyInfo.xcprivacy"
+   
+   # Трябва да видиш:
+   # build/ios/iphoneos/Runner.app/Frameworks/share_plus.framework/share_plus_privacy.bundle/PrivacyInfo.xcprivacy
+   ```
+
+4. **Провери в архива (след архивиране в Xcode):**
+   ```bash
+   ls -la ~/Library/Developer/Xcode/Archives/[дата]/[архив].xcarchive/Products/Applications/Runner.app/Frameworks/share_plus.framework/
+   ls -la ~/Library/Developer/Xcode/Archives/[дата]/[архив].xcarchive/Products/Applications/Runner.app/Frameworks/share_plus.framework/share_plus_privacy.bundle/
+   ```
+   
+   Трябва да видиш `share_plus_privacy.bundle/PrivacyInfo.xcprivacy` в framework-а.
+
+**ВАЖНО:**
+- ❌ **НЕ** добавяй PrivacyInfo.xcprivacy файл в Runner target - това НЕ работи
+- ✅ Privacy manifest файлът трябва да е **вграден в SDK framework-а**
+- ✅ Ъпдейтвай SDK-то до версия, която има privacy manifest (най-лесното решение)
+
+**Списък на SDKs, които изискват privacy manifest:**
+- Виж: https://developer.apple.com/support/third-party-SDK-requirements
+- Включва: `share_plus`, `file_picker`, `sqflite`, `flutter_local_notifications`, и много други
+
+**Референции:**
+- Apple документация: https://developer.apple.com/support/third-party-SDK-requirements
+- WWDC видео: https://developer.apple.com/videos/play/wwdc2023/10060/
+- Privacy manifests: https://developer.apple.com/documentation/bundleresources/describing-data-use-in-privacy-manifests
+
+---
+
+### ⚠️ Guideline 3.1.2 - Business - Payments - Subscriptions: Missing Terms of Use в App Store metadata
+
+**Проблем:** "The submission did not include all the required information for apps offering auto-renewable subscriptions. A functional link to the Terms of Use (EULA) needs to be included in the App Store metadata."
+
+**Решение:**
+- Добави Terms of Use линк в **App Store Connect → App Description**
+- Стандартният Apple Terms of Use линк: `https://www.apple.com/legal/internet-services/itunes/dev/stdeula/`
+- Ако използваш custom EULA, качи го в EULA field в App Store Connect
+
+**ВАЖНО:** Това е само metadata промяна - НЕ изисква нов билд, само обновяване на App Description в App Store Connect.
+
+---
+
+### ⚠️ Guideline 3.1.2 - Business - Payments - Subscriptions: Required Information in App
+
+**Проблем:** "The submission did not include all the required information for apps offering auto-renewable subscriptions. The following information needs to be included within the app: - Title of auto-renewing subscription - Length of subscription - Price of subscription"
+
+**Решение:**
+- ✅ **Title, Length, и Price трябва да се взимат ДИНАМИЧНО от RevenueCat/StoreKit**, не да са hardcoded
+- ✅ Използвай `Package.storeProduct.priceString` за цената (локализирана от StoreKit)
+- ✅ Използвай `Package.storeProduct.title` за заглавието (ако е нужно)
+- ✅ Използвай `Package.storeProduct.subscriptionPeriod` за дължината (ако е нужно)
+- ❌ **НЕ** hardcode-вай цени като `'\$4.99'` в UI
+- ❌ **НЕ** hardcode-вай subscription title или length
+
+**Пример (RevenueCat):**
+```dart
+// В Premium Screen initState():
+Future<void> _loadPackageInfo() async {
+  try {
+    final package = await _revenueCatService.getMonthlyPackage();
+    if (mounted) {
+      setState(() {
+        _monthlyPackage = package;
+        _isLoadingPackage = false;
+      });
+    }
+  } catch (e) {
+    if (mounted) {
+      setState(() {
+        _isLoadingPackage = false;
+      });
+    }
+  }
+}
+
+// В UI:
+String subscriptionPrice = 'Loading...';
+if (_monthlyPackage != null) {
+  subscriptionPrice = _monthlyPackage!.storeProduct.priceString; // Dynamic from StoreKit
+} else if (!_isLoadingPackage) {
+  subscriptionPrice = '—'; // Fallback
+}
+```
+
+**ВАЖНО:** Apple изисква всички subscription details (title, length, price) да се показват в app-а и да са динамични от StoreKit, не hardcoded.
+
+---
+
+### ⚠️ Black Screen After Successful Purchase (RevenueCat + iOS)
+
+**Проблем:** След успешна покупка (когато се показва "All set" от StoreKit), ап-ът показва черен екран и остава такъв.
+
+**Причина:**
+1. **Двойно викане на `Navigator.pop()`:**
+   - iOS callback `onPurchaseCompleted` вика `Navigator.pop(context, true)` (след refresh)
+   - `_handlePurchase()` също вика `navigator.pop(true)` (след успешна покупка)
+   - Резултат: два пъти `Navigator.pop()` → може да се затвори и Home screen-ът
+
+2. **MaterialApp rebuild по време на покупката:**
+   - RevenueCat `addCustomerInfoUpdateListener` вика `onSubscriptionStatusChanged`
+   - Това вика `notifyListeners()` в SubscriptionProvider
+   - MaterialApp се rebuild-ва (Consumer2 реагира на notifyListeners)
+   - Когато MaterialApp се rebuild-ва, navigator stack-ът може да се загуби
+   - Когато се вика `Navigator.pop()` два пъти, може да се затвори целия navigator stack
+
+**Решение:**
+
+1. **Премахни `Navigator.pop()` от iOS callback-а:**
+   ```dart
+   // iOS callback for immediate UI update
+   // CRITICAL: Only refresh subscription status, do NOT call Navigator.pop() here
+   // Navigator.pop() is handled in _handlePurchase() to avoid double pop and black screen
+   if (Platform.isIOS) {
+     _revenueCatService.onPurchaseCompleted = () async {
+       if (mounted) {
+         final subscription = Provider.of<SubscriptionProvider>(context, listen: false);
+         await subscription.refresh();
+         // Do NOT call Navigator.pop() here - it's handled in _handlePurchase()
+       }
+     };
+   }
+   ```
+
+2. **Остави само `Navigator.pop()` в `_handlePurchase()` с guard check:**
+   ```dart
+   if (mounted) {
+     setState(() {
+       _isPurchasing = false;
+     });
+     
+     // CRITICAL: Guard check to prevent pop when no route in stack (prevents black screen)
+     if (subscription.isPro && navigator.canPop()) {
+       navigator.pop(true);
+     }
+   }
+   ```
+
+**Правила:**
+- ✅ iOS callback-ът само refresh-ва subscription status, без navigation
+- ✅ `Navigator.pop()` се вика само веднъж в `_handlePurchase()` с guard check
+- ✅ Guard check `navigator.canPop()` предотвратява pop когато няма route в stack-а
+
+**ВАЖНО:** Винаги използвай guard check `Navigator.of(context).canPop()` преди `Navigator.pop()` за да избегнеш black screen при navigation errors.
